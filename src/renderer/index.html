@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Electron Vue Demo</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="src/main.js"></script>
+  </body>
+  <style>
+    .node-list .arco-tabs-tab {
+      padding: 0 12px 0 0 !important;
+      margin-top: 8px;
+    }
+
+    .node-list .arco-tabs-tab .arco-tabs-tab-title::before {
+      opacity: 0 !important;
+    }
+
+    .node-list .arco-tabs-tab .arco-tabs-tab-title:hover {
+      color: rgb(var(--primary-6)) !important;
+      font-weight: 500 !important;
+    }
+
+    .arco-scrollbar-track-direction-vertical {
+      transition: none !important;
+      width: 5px !important;
+    }
+
+    .arco-scrollbar-track-direction-horizontal {
+      transition: none !important;
+      height: 5px !important;
+    }
+
+    .arco-scrollbar-track-direction-vertical .arco-scrollbar-thumb-bar {
+      width: 5px !important;
+      margin: 0 !important;
+      background-color: var(--color-neutral-4) !important;
+    }
+
+    .arco-scrollbar-track-direction-horizontal .arco-scrollbar-thumb-bar {
+      height: 5px !important;
+      margin: 0 !important;
+      background-color: var(--color-neutral-4) !important;
+    }
+
+    .arco-modal-container {
+      -webkit-app-region: no-drag;
+    }
+    .arco-modal-header {
+      height: 40px !important;
+    }
+    .arco-modal-fullscreen {
+      border-radius: 0 !important;
+    }
+    .arco-modal-close-btn {
+      margin-right: -8px !important;
+      margin-top: 4px !important;
+    }
+    .arco-modal-header .arco-icon-hover::before {
+      height: 32px !important;
+      width: 32px !important;
+      border-radius: var(--border-radius-small) !important;
+    }
+    .arco-icon-hover .arco-icon {
+      height: 16px !important;
+      width: 16px !important;
+    }
+    .arco-textarea,
+    .arco-modal-body,
+    .scrollbar {
+      &::-webkit-scrollbar {
+        width: 5px;
+      }
+      &::-webkit-scrollbar-thumb {
+        background-color: var(--color-neutral-4);
+        border-radius: 5px;
+      }
+    }
+    .arco-checkbox {
+      padding-left: 0 !important;
+    }
+    html {
+      user-select: none !important;
+    }
+    tbody {
+      user-select: text !important;
+    }
+    body {
+      --border-radius-small: 4px !important;
+    }
+    /* .arco-menu-selected,
+      .arco-menu-item:hover {
+        border-radius: 4px !important;
+      }
+      .arco-trigger-arrow {
+        border-radius: 0px !important;
+      }
+      .arco-message {
+        border-radius: 21px !important;
+      }
+      .arco-tabs-tab {
+        border-radius: var(--border-radius-medium) !important;
+      } */
+    .editor-content-view {
+      user-select: text !important;
+    }
+    .editor-content-view img {
+      max-width: 100%;
+    }
+    .editor-content-view p,
+    .editor-content-view li {
+      white-space: pre-wrap; /* 保留空格 */
+    }
+
+    .editor-content-view blockquote {
+      border-left: 8px solid #d0e5f2;
+      padding: 10px 10px;
+      margin: 10px 0;
+      background-color: #f1f1f1;
+    }
+
+    .editor-content-view code {
+      font-family: monospace;
+      background-color: #eee;
+      padding: 3px;
+      border-radius: 3px;
+    }
+    .editor-content-view pre > code {
+      display: block;
+      padding: 10px;
+    }
+
+    .editor-content-view table {
+      border-collapse: collapse;
+    }
+    .editor-content-view td,
+    .editor-content-view th {
+      border: 1px solid #ccc;
+      min-width: 50px;
+      padding: 6px 12px;
+    }
+    .editor-content-view th {
+      background-color: #f1f1f1;
+    }
+
+    .editor-content-view ul,
+    .editor-content-view ol {
+      padding-left: 20px;
+    }
+
+    .editor-content-view input[type='checkbox'] {
+      margin-right: 5px;
+    }
+
+    /* 节点大小控制器 */
+    .vue-flow__node {
+      min-height: fit-content !important;
+      width: 300px;
+    }
+    .vue-flow__resize-control {
+      position: absolute;
+    }
+
+    .vue-flow__resize-control.left,
+    .vue-flow__resize-control.right {
+      cursor: ew-resize;
+    }
+
+    .vue-flow__resize-control.top,
+    .vue-flow__resize-control.bottom {
+      cursor: ns-resize;
+    }
+
+    .vue-flow__resize-control.top.left,
+    .vue-flow__resize-control.bottom.right {
+      cursor: nwse-resize;
+    }
+
+    .vue-flow__resize-control.bottom.left,
+    .vue-flow__resize-control.top.right {
+      cursor: nesw-resize;
+    }
+
+    /* handle styles */
+    .vue-flow__resize-control.handle {
+      width: 10px;
+      height: 10px;
+      /* border: 1px solid #fff;
+      border-radius: 10px;
+      background-color: #f00; */
+      transform: translate(-50%, -50%);
+    }
+
+    .vue-flow__resize-control.handle.left {
+      left: 0;
+      top: 50%;
+    }
+    .vue-flow__resize-control.handle.right {
+      left: 100%;
+      top: 50%;
+    }
+    .vue-flow__resize-control.handle.top {
+      left: 50%;
+      top: 0;
+    }
+    .vue-flow__resize-control.handle.bottom {
+      left: 50%;
+      top: 100%;
+    }
+    .vue-flow__resize-control.handle.top.left {
+      left: 0;
+    }
+    .vue-flow__resize-control.handle.bottom.left {
+      left: 0;
+    }
+    .vue-flow__resize-control.handle.top.right {
+      left: 100%;
+    }
+    .vue-flow__resize-control.handle.bottom.right {
+      left: 100%;
+    }
+
+    /* .vue-flow__resize-control.handle.bottom.right::before {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-bottom: 1px solid #000;
+      top: -4px;
+      left: -4px;
+      border-right: 1px solid #000;
+      border-bottom-right-radius: var(--border-radius-small);
+    } */
+
+    .comment-node .vue-flow__resize-control.handle.bottom.right::before {
+      border-width: 0px;
+    }
+
+    /* line styles */
+    .vue-flow__resize-control.line {
+      /* border-color: #000;
+      border-width: 0;
+      border-style: solid; */
+    }
+
+    .vue-flow__resize-control.line.left,
+    .vue-flow__resize-control.line.right {
+      width: 1px;
+      transform: translate(-50%, 0);
+      top: 0;
+      height: 100%;
+    }
+
+    .vue-flow__resize-control.line.left {
+      left: 0;
+      border-left-width: 5px;
+    }
+    .vue-flow__resize-control.line.right {
+      left: 100%;
+      border-right-width: 5px;
+    }
+
+    .vue-flow__resize-control.line.top,
+    .vue-flow__resize-control.line.bottom {
+      height: 1px;
+      transform: translate(0, -50%);
+      left: 0;
+      width: 100%;
+    }
+
+    .vue-flow__resize-control.line.top {
+      top: 0;
+      border-top-width: 5px;
+    }
+    .vue-flow__resize-control.line.bottom {
+      border-bottom-width: 5px;
+      top: 100%;
+    }
+
+    .vue-flow__connectionline {
+      z-index: 999999 !important;
+    }
+  </style>
+</html>

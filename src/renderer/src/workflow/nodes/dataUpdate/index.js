@@ -1,0 +1,60 @@
+/**
+ * @file: 数据修改节点
+ * @author: dabao
+ * @date: 2024-03-29
+ */
+import { IconEdit } from '@arco-design/web-vue/es/icon'
+
+export default {
+  type: 'dataUpdate',
+  name: '数据修改',
+  icon: IconEdit,
+  description: '修改数据表中的数据',
+  view: false,
+  config: {
+    basic: {
+      name: '基础配置',
+      fields: {
+        // 修改项
+        updateItems: {
+          id: 'updateItems',
+          name: '修改项',
+          type: 'array',
+          description: '设置修改字段',
+          quickConfig: true,
+          fields: {
+            field: {
+              id: 'field',
+              name: '字段',
+              type: 'input',
+              required: true,
+              description: '要修改的字段名'
+            },
+            value: {
+              id: 'value',
+              name: '值',
+              type: 'input',
+              description: '要修改的值'
+            }
+          }
+        }
+      }
+    }
+  },
+  inputs: [
+    {
+      id: 'query',
+      name: '数据标识',
+      type: 'dataQuery',
+      description: '来自数据读取节点的数据查询标识'
+    }
+  ],
+  outputs: [
+    {
+      id: 'count',
+      name: '修改数量',
+      type: 'number',
+      description: '成功修改的数据数量'
+    }
+  ]
+}

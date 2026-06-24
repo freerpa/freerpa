@@ -1,0 +1,808 @@
+/* 
+ * 文件名：style.css
+ * 作者：dabao
+ * 日期：2024-03-21
+ * 描述：AutoMan官网主样式文件
+ */
+
+/* 重置样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #1b1b1c;
+    --secondary-color: #2d2d2e;
+    --text-color: #1f2937;
+    --light-text: #6b7280;
+    --background: #ffffff;
+    --light-background: #f3f4f6;
+    --border-color: #e5e7eb;
+    --transition: all 0.3s ease;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text-color);
+    line-height: 1.5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+/* 导航栏样式 */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    border-bottom: 1px solid var(--border-color);
+    transition: transform 0.3s ease;
+}
+
+.navbar.hidden {
+    transform: translateY(-100%);
+}
+
+.navbar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 80px;
+}
+
+.logo img {
+    height: 40px;
+}
+
+.nav-links {
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: var(--text-color);
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    position: relative;
+    transition: var(--transition);
+}
+
+.nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--primary-color);
+    transition: var(--transition);
+    transform: translateX(-50%);
+}
+
+.nav-links a:hover {
+    color: var(--primary-color);
+}
+
+.nav-links a:hover::after {
+    width: 100%;
+}
+
+/* 按钮样式 */
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background: var(--secondary-color);
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--primary-color);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    border: 2px solid var(--primary-color);
+    transition: var(--transition);
+}
+
+.btn-secondary:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* 主页区域样式 */
+.hero {
+    padding: 160px 0 100px;
+    background: linear-gradient(135deg, #f0f7ff 0%, #f5f3ff 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.wave-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.waves {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transform-origin: center bottom;
+}
+
+.wave-parallax {
+    width: 100%;
+    height: 100%;
+}
+
+.wave-parallax use {
+    animation: wave 25s cubic-bezier(.55,.5,.45,.5) infinite;
+    will-change: transform;
+}
+
+.wave-parallax use:nth-child(1) {
+    animation-delay: -2s;
+    animation-duration: 17s;
+    opacity: 0.7;
+}
+
+.wave-parallax use:nth-child(2) {
+    animation-delay: -3s;
+    animation-duration: 20s;
+    opacity: 0.5;
+}
+
+.wave-parallax use:nth-child(3) {
+    animation-delay: -4s;
+    animation-duration: 23s;
+    opacity: 0.3;
+}
+
+.wave-parallax use:nth-child(4) {
+    animation-delay: -5s;
+    animation-duration: 26s;
+    opacity: 0.2;
+}
+
+@keyframes wave {
+    0% {
+        transform: translate3d(-90px, 0, 0);
+    }
+    100% {
+        transform: translate3d(85px, 0, 0);
+    }
+}
+
+.hero .container {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    gap: 4rem;
+    align-items: center;
+    justify-content: center;
+}
+.hero-content{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-content h1 {
+    font-size: 4rem;
+    line-height: 1.2;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero-content p {
+    font-size: 1.25rem;
+    color: var(--light-text);
+    margin-bottom: 2rem;
+}
+
+.cta-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.hero-image img {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* 特性区域样式 */
+.features {
+    padding: 100px 0;
+    background: var(--background);
+}
+
+.features h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 4rem;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.feature-card {
+    padding: 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: var(--transition);
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.feature-card i {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.feature-card h3 {
+    margin-bottom: 1rem;
+}
+
+/* 工作流展示区域样式 */
+.workflow {
+    padding: 100px 0;
+    background: var(--light-background);
+}
+
+.workflow h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 4rem;
+}
+
+.workflow-showcase {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 4rem;
+    align-items: center;
+}
+
+.workflow-image img {
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.workflow-info h3 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+}
+
+.workflow-info ul {
+    list-style: none;
+}
+
+.workflow-info li {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.workflow-info i {
+    color: var(--primary-color);
+}
+
+/* 功能特点区域样式 */
+.features-detail {
+    padding: 100px 0;
+    background: var(--background);
+}
+
+.feature-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+}
+
+.feature-item.reverse {
+    direction: rtl;
+}
+
+.feature-item.reverse .feature-content {
+    direction: ltr;
+}
+
+.feature-content h3 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.feature-content p {
+    font-size: 1.1rem;
+    color: var(--light-text);
+    margin-bottom: 2rem;
+}
+
+.feature-content ul {
+    list-style: none;
+}
+
+.feature-content li {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.feature-content i {
+    color: var(--primary-color);
+}
+
+.feature-image img {
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* 关于我们区域样式 */
+.about {
+    padding: 100px 0;
+    background: var(--light-background);
+}
+
+.about h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+}
+
+.about-content {
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.about-content p {
+    font-size: 1.25rem;
+    color: var(--light-text);
+    margin-bottom: 4rem;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+}
+
+.stat-item h3 {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+/* 页脚样式 */
+.footer {
+    background: var(--light-background);
+    padding: 40px 0 40px;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 4rem;
+    margin-bottom: 4rem;
+}
+
+.footer-logo {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.footer-logo img {
+    width: 140px;
+}
+
+.footer-logo p {
+    color: var(--light-text);
+}
+
+.footer-links {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+}
+
+.footer-column h4 {
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+}
+
+.footer-column a {
+    display: block;
+    color: var(--light-text);
+    text-decoration: none;
+    margin-bottom: 0.75rem;
+    transition: var(--transition);
+}
+
+.footer-column a:hover {
+    color: var(--primary-color);
+}
+
+.footer-bottom {
+    text-align: center;
+    /* padding-top: 2rem; */
+    /* border-top: 1px solid var(--border-color); */
+}
+
+/* 动画效果 */
+.animate-text {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.animate-text-delay {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s ease forwards;
+    animation-delay: 0.2s;
+}
+
+.animate-float {
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+    100% {
+        transform: translateY(0);
+    }
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+    .hero-content h1 {
+        font-size: 3rem;
+    }
+    
+    .feature-item {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .feature-item.reverse {
+        direction: ltr;
+    }
+
+    .download-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .hero .container {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .hero-content {
+        order: 1;
+    }
+
+    .hero-image {
+        order: 2;
+    }
+
+    .cta-buttons {
+        justify-content: center;
+    }
+
+    .workflow-showcase {
+        grid-template-columns: 1fr;
+    }
+
+    .stats {
+        grid-template-columns: 1fr;
+    }
+
+    .footer-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .nav-links {
+        display: none;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 下载区域样式 */
+.download {
+    padding: 100px 0;
+    background: var(--background);
+}
+
+.download h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.section-desc {
+    text-align: center;
+    color: var(--light-text);
+    font-size: 1.1rem;
+    margin-bottom: 4rem;
+}
+
+.download-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.download-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: var(--transition);
+}
+
+.download-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.download-icon {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+}
+
+.download-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.download-card p {
+    color: var(--light-text);
+    margin-bottom: 2rem;
+}
+
+.download-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+}
+
+.download-buttons.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.download-buttons .btn-primary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    justify-content: center;
+}
+
+.version {
+    color: var(--light-text);
+    font-size: 0.9rem;
+}
+
+/* 节点展示区域样式 */
+.nodes {
+    padding: 100px 0;
+    background: var(--light-background);
+    overflow: hidden;
+}
+
+.nodes h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.nodes .section-desc {
+    text-align: center;
+    color: var(--light-text);
+    font-size: 1.1rem;
+    margin-bottom: 4rem;
+}
+
+.nodes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.nodes-scroll {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    padding: 8px 0;
+}
+
+/* 添加两侧渐变遮罩 */
+.nodes-scroll::before,
+.nodes-scroll::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 150px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.nodes-scroll::before {
+    left: 0;
+    background: linear-gradient(to right, var(--light-background) 0%, transparent 100%);
+}
+
+.nodes-scroll::after {
+    right: 0;
+    background: linear-gradient(to left, var(--light-background) 0%, transparent 100%);
+}
+
+.nodes-wrapper {
+    display: flex;
+    gap: 2rem;
+    padding: 0 150px;
+}
+
+/* 创建无缝滚动容器 */
+.nodes-track {
+    display: flex;
+    gap: 2rem;
+    animation: scroll linear infinite;
+    width: max-content;
+}
+
+.node-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: white;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    min-width: 192px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: var(--transition);
+}
+
+.node-card i {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.node-card span {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+/* 不同速度的滚动 */
+.nodes-scroll.slow .nodes-track {
+    animation-duration: 60s;
+}
+
+.nodes-scroll.medium .nodes-track {
+    animation-duration: 45s;
+}
+
+.nodes-scroll.fast .nodes-track {
+    animation-duration: 30s;
+}
+
+@keyframes scroll {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(calc(-50% - 1rem));
+    }
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .node-card {
+        min-width: 160px;
+        padding: 0.75rem 1rem;
+    }
+    
+    .nodes-scroll::before,
+    .nodes-scroll::after {
+        width: 80px;
+    }
+    
+    .nodes-wrapper {
+        padding: 0 80px;
+    }
+    
+    .nodes-scroll.slow .nodes-track {
+        animation-duration: 40s;
+    }
+    
+    .nodes-scroll.medium .nodes-track {
+        animation-duration: 30s;
+    }
+    
+    .nodes-scroll.fast .nodes-track {
+        animation-duration: 20s;
+    }
+} 
