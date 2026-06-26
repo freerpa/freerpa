@@ -89,6 +89,8 @@ const title = computed(() => {
     return '工作流'
   } else if (props.type === 'model') {
     return '模型'
+  } else if (props.type === 'environment') {
+    return '环境'
   }
 })
 

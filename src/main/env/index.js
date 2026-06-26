@@ -1,142 +1,175 @@
 /**
  * @file: 环境管理模块
- * @author: dabao
+ * @author: dabao / FreeRPA
  * @date: 2024-03-16
+ *
+ * 使用 fingerprint-chromium 替代 WebContentsView
+ * 环境编辑器预览改用独立窗口模式（不再内嵌）
  */
 
+import { BaseWindow } from 'electron'
 import { API_CONFIG } from '@/api/config'
 import { createEnvView, setUserAgent } from '@/common'
 
-// 存储当前活动的 WebContentsView
+// 存储当前活动的浏览器实例
 let activeView = null
+let activeWindow = null
 let isDestroyed = false
 const defaultUrl = API_CONFIG.BASE_URL + '/envGuide?system'
 
-// 获取当前 WebContentsView 的状态
+// 获取当前浏览器的状态
 export const getEnvironmentFromView = async () => {
-  // 从当前活动的 WebContentsView 获取状态
   let storage = null
   let cookies = null
-  if (activeView) {
-    const webContents = activeView.webContents
+  if (activeView?.puppeteerPage) {
+    const page = activeView.puppeteerPage
+    try {
+      // 获取存储数据
+      storage = await page.evaluate(() => {
+        return JSON.parse(JSON.stringify({
+          localStorage: Object.entries(localStorage).reduce((acc, [key, value]) => {
+            acc[key] = value
+            return acc
+          }, {}),
+          sessionStorage: Object.entries(sessionStorage).reduce((acc, [key, value]) => {
+            acc[key] = value
+            return acc
+          }, {})
+        }))
+      })
 
-    // 获取存储数据
-    storage = await webContents.executeJavaScript(`
-      JSON.parse(JSON.stringify({
-         localStorage: Object.entries(localStorage).reduce((acc, [key, value]) => {
-           acc[key] = value
-           return acc
-         }, {}),
-         sessionStorage: Object.entries(sessionStorage).reduce((acc, [key, value]) => {
-           acc[key] = value
-           return acc
-         }, {})
-      }))
-     `)
-
-    // 获取所有cookies
-    cookies = await webContents.session.cookies.get({})
+      // 获取所有cookies
+      cookies = await page.cookies()
+    } catch (e) {
+      console.warn('getEnvironmentFromView failed:', e.message)
+    }
   }
 
   return { storage, cookies }
 }
 
-// 创建 WebContentsView
+// 创建浏览器窗口（使用 fingerprint-chromium）
 export const createWebView = async ({ url, bounds, env }) => {
-  // 销毁已存在的 view
+  // 销毁已存在的实例
   if (activeView) {
     activeView.webContents.close()
     activeView = null
   }
-  //开始创建之前重置销毁状态
-  if (isDestroyed) {
-    isDestroyed = false
+  if (activeWindow) {
+    try { activeWindow.destroy() } catch (e) {}
+    activeWindow = null
   }
-  // 创建新的 view并设置chrome的UA
-  const view = await createEnvView(env, { type: 'env' })
-  // 如果在创建过程中被销毁，关闭新创建的view并返回
-  if (isDestroyed) {
-    view.webContents.close()
-    isDestroyed = false
+
+  // 重置销毁状态
+  isDestroyed = false
+
+  try {
+    // 使用 fingerprint-chromium 创建浏览器
+    const view = await createEnvView(env, { type: 'env' })
+
+    if (isDestroyed) {
+      view.webContents.close()
+      isDestroyed = false
+      return view.id
+    }
+
+    activeView = view
+
+    // 为浏览器创建独立窗口（不再内嵌到主窗口）
+    const window = new BaseWindow({
+      width: bounds?.width || 1280,
+      height: bounds?.height || 720,
+      title: env?.name || '环境预览',
+      show: true,
+      roundedCorners: false
+    })
+
+    window.on('close', () => {
+      activeView?.webContents.close()
+      activeView = null
+      activeWindow = null
+    })
+
+    activeWindow = window
+
+    // 加载URL
+    if (url) {
+      await view.webContents.loadURL(url).catch(() => {})
+    } else {
+      await view.webContents.loadURL(defaultUrl).catch(() => {})
+    }
+
     return view.id
+  } catch (error) {
+    console.error('createWebView failed:', error)
+    throw error
   }
-
-  // view.webContents.openDevTools()
-  activeView = view
-  // 添加到窗口
-  global.mainWindow.contentView.addChildView(view)
-
-  // 加载URL
-  await view.webContents.loadURL(url || defaultUrl).catch(() => { })
-
-  // 设置位置和大小
-  view.setBounds(bounds)
-  // 初始化缩放比例
-  view.webContents.setZoomFactor(0.8)
-  return view.id
 }
-// 更新 WebContentsView
+
+// 更新浏览器
 export const updateWebView = async ({ bounds, url, env }) => {
   if (!activeView) return
 
-  if (bounds) {
-    activeView.setBounds(bounds)
-  }
-
   // 设置userAgent
   const isSetUserAgent = setUserAgent(activeView, env)
-  if (url && (url !== activeView.webContents.getURL() || isSetUserAgent)) {
-    await activeView.webContents.loadURL(url).catch(() => { })
-  } else if (isSetUserAgent) {
-    activeView.webContents.reload()
+
+  if (url && activeView.puppeteerPage) {
+    const currentUrl = activeView.puppeteerPage.url()
+    if (url !== currentUrl || isSetUserAgent) {
+      await activeView.webContents.loadURL(url).catch(() => {})
+    }
   }
 }
 
-// 销毁 WebContentsView
+// 销毁浏览器
 export const destroyWebView = async () => {
   if (activeView) {
-    // 从窗口中移除
-    global.mainWindow.contentView.removeChildView(activeView)
     activeView.webContents.close()
+  }
+  if (activeWindow) {
+    try { activeWindow.destroy() } catch (e) {}
   }
   isDestroyed = true
   activeView = null
+  activeWindow = null
 }
 
 // 导航控制
 export const goBack = async () => {
-  await activeView?.webContents.navigationHistory.goBack()
+  try {
+    await activeView?.puppeteerPage?.goBack()
+  } catch (e) {}
 }
 
 export const goForward = async () => {
-  await activeView?.webContents.navigationHistory.goForward()
+  try {
+    await activeView?.puppeteerPage?.goForward()
+  } catch (e) {}
 }
 
 export const refresh = async () => {
-  await activeView?.webContents.reload()
+  try {
+    await activeView?.puppeteerPage?.reload()
+  } catch (e) {}
 }
 
 export const debug = async () => {
-  await activeView?.webContents.openDevTools()
+  console.warn('debug (openDevTools) not available for fingerprint-chromium')
 }
 
 export const clear = async () => {
-  await activeView?.webContents.session.clearCache()
-  await activeView?.webContents.session.clearData(
-    {
-      dataTypes: [
-        'cache',
-        'cookies',
-        'backgroundFetch',
-        'storage',
-        'fileSystems',
-        'indexedDB',
-        'localStorage',
-        'serviceWorkers',
-        'webSQL',
-        'downloads'
-      ]
+  if (activeView?.puppeteerPage) {
+    const page = activeView.puppeteerPage
+    try {
+      const client = await page.target().createCDPSession()
+      await client.send('Network.clearBrowserCache')
+      await client.send('Network.clearBrowserCookies')
+      await page.evaluate(() => {
+        localStorage.clear()
+        sessionStorage.clear()
+      })
+    } catch (e) {
+      console.warn('clear failed:', e.message)
     }
-  )
-  activeView.webContents.reloadIgnoringCache()
+  }
 }

@@ -282,6 +282,15 @@ app.whenReady().then(async () => {
 
   global.mainWindow = win
   global.mainView = view
+
+  // 注册应用退出清理
+  app.on('before-quit', async () => {
+    try {
+      const { closeAllBrowsers } = await import('./env/browserManager')
+      await closeAllBrowsers()
+    } catch (_) {}
+  })
+
   createBvm()
 
   // 注册工作流 IPC 处理

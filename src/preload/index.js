@@ -83,7 +83,39 @@ contextBridge.exposeInMainWorld('electronAPI', {
     refresh: () => ipcRenderer.invoke('env:refresh'),
     getEnvironmentFromView: () => ipcRenderer.invoke('env:getEnvironmentFromView'),
     debug: () => ipcRenderer.invoke('env:debug'),
-    clear: () => ipcRenderer.invoke('env:clear')
+    clear: () => ipcRenderer.invoke('env:clear'),
+    // 新增：打开/关闭浏览器
+    getKernelList: () => ipcRenderer.invoke('env:getKernelList'),
+    getMajorVersionList: () => ipcRenderer.invoke('env:getMajorVersionList'),
+    checkKernel: (params) => ipcRenderer.invoke('env:checkKernel', params),
+    downloadKernel: (kernel) => ipcRenderer.invoke('env:downloadKernel', kernel),
+    openBrowser: (params) => ipcRenderer.invoke('env:openBrowser', params),
+    closeBrowser: (params) => ipcRenderer.invoke('env:closeBrowser', params),
+    getBrowserStatus: (params) => ipcRenderer.invoke('env:getBrowserStatus', params),
+    getAllBrowserStatus: () => ipcRenderer.invoke('env:getAllBrowserStatus'),
+    resolveKernelVersion: (params) => ipcRenderer.invoke('env:resolveKernelVersion', params),
+    queryGeo: (params) => ipcRenderer.invoke('env:queryGeo', params),
+    // 事件监听
+    onDownloadKernelProgress: (callback) => {
+      const listener = (event, params) => callback(params)
+      ipcRenderer.on('env:downloadKernelProgress', listener)
+      return () => ipcRenderer.removeListener('env:downloadKernelProgress', listener)
+    },
+    onBrowserOpened: (callback) => {
+      const listener = (event, params) => callback(params)
+      ipcRenderer.on('env:browserOpened', listener)
+      return () => ipcRenderer.removeListener('env:browserOpened', listener)
+    },
+    onBrowserClosed: (callback) => {
+      const listener = (event, params) => callback(params)
+      ipcRenderer.on('env:browserClosed', listener)
+      return () => ipcRenderer.removeListener('env:browserClosed', listener)
+    },
+    onSaveSession: (callback) => {
+      const listener = (event, params) => callback(params)
+      ipcRenderer.on('env:saveSession', listener)
+      return () => ipcRenderer.removeListener('env:saveSession', listener)
+    }
   },
 
   // 检查器模块API
