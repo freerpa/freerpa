@@ -52,7 +52,7 @@
               <template #title>
                 <div class="env-header">
                   <div class="env-icon">
-                    <icon-computer />
+                    <ri-chrome-line />
                   </div>
                   <a-typography-text
                     :ellipsis="{ showTooltip: true }"
@@ -97,12 +97,11 @@
                     :loading="loadingMap[env.id]"
                     @click="handleOpenBrowser(env)"
                   >
-                    <template #icon><icon-play-arrow /></template>
+                    <template #icon><ri-chrome-line /></template>
                     打开浏览器
                   </a-button>
                   <a-button
                     v-else
-                    type="outline"
                     status="danger"
                     size="medium"
                     :loading="loadingMap[env.id]"
@@ -173,6 +172,7 @@ import {
   IconPlayArrow,
   IconStop
 } from '@arco-design/web-vue/es/icon'
+import {RiChromeLine} from '@remixicon/vue'
 import BrowserEditor from './components/BrowserEditor.vue'
 import BrowserOpenModal from './components/BrowserOpenModal.vue'
 import Category from '@/components/Category.vue'
@@ -581,6 +581,7 @@ onUnmounted(() => {
       }
       .env-content {
         display: flex;
+        flex: 1;
         flex-direction: column;
         gap: 12px;
         .description {

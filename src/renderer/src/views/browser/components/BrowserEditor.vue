@@ -4,21 +4,21 @@
       <!-- 分类 + 名称（合并为一行，参考工作流样式） -->
       <a-form-item
         field="name"
-        label="环境名称"
+        label="名称"
         :rules="[
-          { required: true, message: '请输入环境名称' },
-          { minLength: 2, message: '环境名称至少2个字符' },
-          { maxLength: 50, message: '环境名称最多50个字符' }
+          { required: true, message: '请输入浏览器名称' },
+          { minLength: 2, message: '浏览器名称至少2个字符' },
+          { maxLength: 50, message: '浏览器名称最多50个字符' }
         ]"
       >
         <a-input
           v-model="form.name"
-          placeholder="请输入环境名称"
+          placeholder="请输入浏览器名称"
           allow-clear
           @press-enter="handleBeforeOk"
         >
           <template #prepend>
-            <CategorySelect v-model="form.category" type="environment" />
+            <CategorySelect v-model="form.category" type="browser" />
           </template>
         </a-input>
       </a-form-item>
@@ -26,7 +26,7 @@
       <a-form-item field="description" label="描述">
         <a-textarea
           v-model="form.description"
-          placeholder="请输入环境描述"
+          placeholder="请输入浏览器描述"
           allow-clear
           :max-length="200"
           :auto-size="{ minRows: 2, maxRows: 4 }"
@@ -50,7 +50,7 @@
         </a-select>
       </a-form-item>
       <!-- 代理地址 -->
-      <a-form-item field="proxy_url" label="代理地址">
+      <a-form-item field="proxy_url" label="代理">
         <template #extra>
           <div
             v-if="proxyResult"
@@ -59,15 +59,15 @@
           >
             <template v-if="proxyResult.success">
               <icon-check-circle-fill /> 代理可用:
-              <br>
+              <br />
               IP: {{ proxyResult.ip }}
-              <br>
+              <br />
               时区: {{ proxyResult.timeZone }}
-              <br>
+              <br />
               语言: {{ proxyResult.language }}
-              <br>
+              <br />
               位置: {{ proxyResult.country }} {{ proxyResult.region }} {{ proxyResult.city }}
-              <br>
+              <br />
               ISP: {{ proxyResult.isp }}
             </template>
             <template v-else>
@@ -81,10 +81,10 @@
             style="width: 120px"
             @change="handleProtocolChange"
           >
+            <a-option value="direct">直连</a-option>
             <a-option value="http://">HTTP</a-option>
             <a-option value="https://">HTTPS</a-option>
             <a-option value="socks5://">SOCKS5</a-option>
-            <a-option value="direct">直连</a-option>
           </a-select>
           <a-input
             v-model="form.proxy_url"
@@ -171,7 +171,7 @@ const form = ref({
   description: '',
   category: '',
   major_version: '',
-  proxy_protocol: 'http://',
+  proxy_protocol: 'direct',
   proxy_url: ''
 })
 
@@ -225,8 +225,6 @@ const handleProtocolChange = () => {
     form.value.proxy_url = form.value.proxy_url.replace(/^(https?|socks[45]):\/\//, '')
   }
 }
-
-// 直连模式切换：开启时清理代理相关数据（已合入 handleProtocolChange）
 
 // 一键检测代理
 const handleProxyCheck = async () => {

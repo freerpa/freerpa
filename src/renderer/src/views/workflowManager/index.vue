@@ -64,7 +64,7 @@
               <template #title>
                 <div class="workflow-header">
                   <div class="workflow-icon">
-                    <icon-branch />
+                    <ri-flow-chart />
                   </div>
                   <a-typography-text
                     :ellipsis="{
@@ -118,7 +118,8 @@
                     {{ getWorkflowStatusText(workflow.id).text }}
                   </a-tag>
                   <a-button type="primary" @click="handleViewWorkflow(workflow)">
-                    <icon-branch /> 工作流
+                    <template #icon><ri-flow-chart /></template>
+                    打开工作流
                   </a-button>
                 </a-space>
               </div>
@@ -210,6 +211,7 @@ import {
   IconImport,
   IconSearch
 } from '@arco-design/web-vue/es/icon'
+import {RiFlowChart} from '@remixicon/vue'
 import WorkflowInfoEditor from './components/WorkflowInfoEditor.vue'
 import WorkflowDetail from '../home/components/WorkflowDetail.vue'
 import Category from '@/components/Category.vue'

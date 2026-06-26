@@ -50,7 +50,7 @@
             <template #title
               ><div class="model-header">
                 <div class="model-icon">
-                  <icon-storage />
+                  <ri-database2-line />
                 </div>
 
                 <a-typography-text
@@ -85,10 +85,13 @@
             <div class="model-info">
               <div class="model-stats">
                 <div class="stat-item"><icon-settings /> {{ model.field_stats.total }} 个字段</div>
-                <div class="stat-item"><icon-storage /> {{ model.data_count || 0 }} 条数据</div>
+                <div class="stat-item">
+                  <ri-database2-line /> {{ model.data_count || 0 }} 条数据
+                </div>
               </div>
               <a-button type="primary" @click="handleViewData(model)">
-                <icon-eye /> 查看数据
+                <template #icon><ri-database2-line /></template>
+                打开数据表
               </a-button>
             </div>
           </a-card>
@@ -123,6 +126,7 @@ import {
   IconCopy,
   IconImport
 } from '@arco-design/web-vue/es/icon'
+import { RiDatabase2Line } from '@remixicon/vue'
 import ModelEditor from './components/ModelEditor.vue'
 import LoadMoreState from '@/components/LoadMoreState.vue'
 import { debounce } from 'lodash-es'

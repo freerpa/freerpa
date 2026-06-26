@@ -7,24 +7,24 @@
       @menuItemClick="handleMenuClick"
     >
       <a-menu-item key="home">
-        <template #icon><icon-home /></template>
+        <template #icon><ri-home2-line /></template>
         <span>首页</span>
       </a-menu-item>
       <a-menu-item key="workflow">
-        <template #icon><icon-branch /></template>
+        <template #icon><ri-flow-chart /></template>
         <span>工作流</span>
       </a-menu-item>
-      <a-menu-item key="data">
-        <template #icon><icon-storage /></template>
-        <span>本地数据</span>
-      </a-menu-item>
       <a-menu-item key="browser">
-        <template #icon><icon-computer /></template>
-        <span>浏览器管理</span>
+        <template #icon><ri-chrome-line /></template>
+        <span>浏览器</span>
+      </a-menu-item>
+      <a-menu-item key="data">
+        <template #icon><ri-database2-line /></template>
+        <span>数据表</span>
       </a-menu-item>
       <a-menu-item key="user">
-        <template #icon><icon-user /></template>
-        <span>个人中心</span>
+        <template #icon><ri-settings2-line /></template>
+        <span>设置</span>
       </a-menu-item>
     </a-menu>
     <div class="collapse-btn" @click="toggleMenu">
@@ -46,7 +46,7 @@ import {
   IconComputer,
   IconUser
 } from '@arco-design/web-vue/es/icon'
-
+import {RiHome2Line,RiFlowChart,RiChromeLine,RiDatabase2Line,RiSettings2Line} from '@remixicon/vue';
 const isCollapse = ref(false)
 const router = useRouter()
 const route = useRoute()
