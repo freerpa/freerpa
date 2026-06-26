@@ -18,7 +18,7 @@
         <template #icon><icon-storage /></template>
         <span>本地数据</span>
       </a-menu-item>
-      <a-menu-item key="env">
+      <a-menu-item key="browser">
         <template #icon><icon-computer /></template>
         <span>浏览器管理</span>
       </a-menu-item>

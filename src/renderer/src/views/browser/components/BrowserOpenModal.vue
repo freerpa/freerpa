@@ -157,7 +157,7 @@ import {
   IconCloseCircleFill
 } from '@arco-design/web-vue/es/icon'
 import { API_CONFIG } from '@/api/config'
-import { getEnvironmentDetail } from '@/api/env'
+import { getEnvironmentDetail } from '@/api/browser'
 
 const props = defineProps({ env: { type: Object, required: true } })
 const emit = defineEmits(['success', 'cancel'])

@@ -117,7 +117,7 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { IconCheckCircleFill, IconCloseCircleFill } from '@arco-design/web-vue/es/icon'
 import { Message } from '@arco-design/web-vue'
 import CategorySelect from '@/components/CategorySelect.vue'
-import { getEnvironmentDetail, saveEnvironment } from '@/api/env'
+import { getEnvironmentDetail, saveEnvironment } from '@/api/browser'
 import { API_CONFIG } from '@/api/config'
 
 const countryLang = {

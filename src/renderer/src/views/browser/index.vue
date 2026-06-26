@@ -129,7 +129,7 @@
         width="600px"
         class="open-browser-modal"
       >
-        <EnvOpenModal
+        <BrowserOpenModal
           v-if="showOpenModal"
           :env="selectedEnvForOpen"
           @success="handleBrowserOpened"
@@ -147,7 +147,7 @@
         unmount-on-close
         width="600px"
       >
-        <EnvEditor
+        <BrowserEditor
           v-if="showCreateModal"
           :env-id="selectedEnv?.id"
           @success="handleEditorSuccess"
@@ -173,8 +173,8 @@ import {
   IconPlayArrow,
   IconStop
 } from '@arco-design/web-vue/es/icon'
-import EnvEditor from './components/EnvEditor.vue'
-import EnvOpenModal from './components/EnvOpenModal.vue'
+import BrowserEditor from './components/BrowserEditor.vue'
+import BrowserOpenModal from './components/BrowserOpenModal.vue'
 import Category from '@/components/Category.vue'
 import LoadMoreState from '@/components/LoadMoreState.vue'
 import {
@@ -182,7 +182,7 @@ import {
   deleteEnvironment,
   getEnvironmentDetail,
   saveEnvironment
-} from '@/api/env'
+} from '@/api/browser'
 import { useStore } from '@/store'
 import { debounce } from 'lodash-es'
 import { getAppVersion, compareVersion } from '@/utils/version'

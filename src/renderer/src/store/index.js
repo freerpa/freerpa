@@ -4,7 +4,7 @@ import { Modal } from '@arco-design/web-vue'
 import router from '@/router'
 import vipSvg from '../../../../resources/vip.svg?asset'
 import { getProfile, getUserLimits } from '@/api/user'
-import { getEnvironments } from '@/api/env'
+import { getEnvironments } from '@/api/browser'
 export const useStore = defineStore('store', () => {
   const clipboard = ref(null)
   const userInfo = ref(null)

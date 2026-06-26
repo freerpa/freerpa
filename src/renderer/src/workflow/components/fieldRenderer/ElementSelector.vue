@@ -123,7 +123,7 @@ import {
   IconCheckCircle,
   IconCopy
 } from '@arco-design/web-vue/es/icon'
-import { getEnvironmentDetail } from '@/api/env'
+import { getEnvironmentDetail } from '@/api/browser'
 import Browser from '@/components/Browser.vue'
 import { useStore } from '@/store'
 import { storeToRefs } from 'pinia'

@@ -3,7 +3,7 @@ import MainLayout from '../layout/MainLayout.vue'
 import Home from '../views/Home.vue'
 import Workflow from '../views/workflowManager/index.vue'
 import Data from '../views/data/index.vue'
-import Env from '../views/env/index.vue'
+import BrowserView from '../views/browser/index.vue'
 import Login from '../views/login/index.vue'
 import { getToken, removeToken } from '@/utils/token'
 
@@ -27,8 +27,8 @@ const routes = [
         component: Data
       },
       {
-        path: 'env',
-        component: Env
+        path: 'browser',
+        component: BrowserView
       }
     ],
     meta: {
