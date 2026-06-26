@@ -139,8 +139,8 @@
       </div>
       <div class="step-body" v-if="currentStep >= 3">
         <span v-if="step3Failed"> {{ openError }} </span>
-        <a-result v-else status="success" title="浏览器已打开">
-          <template #icon><icon-check-circle-fill style="color: #00b42a" /></template>
+        <a-result v-else status="info" title="打开中...">
+          <template #icon><icon-loading /></template>
         </a-result>
       </div>
     </div>

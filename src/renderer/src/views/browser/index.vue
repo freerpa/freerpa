@@ -1,7 +1,7 @@
 <template>
   <div class="env-container">
     <Category type="environment" @change="handleCategoryChange" />
-    <div class="env-content">
+    <div class="env-container-content">
       <!-- 顶部操作栏 -->
       <div class="operation-bar">
         <a-space>
