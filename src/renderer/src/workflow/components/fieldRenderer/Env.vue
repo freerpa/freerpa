@@ -53,7 +53,7 @@ const handleCheckAll = (checked) => {
 }
 
 const loadOptions = async (keyword = '') => {
-  // 通过网络api获取环境列表
+  // 通过网络api获取浏览器列表
   const result = await getEnvList(keyword)
   options.value = result.map((env) => ({
     label: env.name,

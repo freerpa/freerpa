@@ -1,18 +1,18 @@
 /**
- * @file: 浏览器管理IPC通信处理 — 只负责注册 IPC handler，所有逻辑委托给外部模块
+ * @file: 浏览器管理IPC通信处理
  * @author: dabao / FreeRPA
- * @date: 2024-03-16
  */
+
 import { ipcMain, app } from 'electron'
 import {
   createWebView, updateWebView, destroyWebView,
   goBack, goForward, refresh,
   getEnvironmentFromView, debug, clear
-} from './index'
-import { checkKernelExists, launchKernel, downloadKernel } from '@/common'
-import { fetchKernelList } from '../fpBrowser/kernelLauncher'
+} from './preview'
+import { checkKernelExists, launchKernel, downloadKernel } from './kernel'
+import { fetchKernelList } from './kernel'
 import { API_CONFIG } from '@/api/config'
-import { registerBrowser, killBrowserProcess, isBrowserOpen, getAllBrowserStatus } from './browserManager'
+import { registerBrowser, killBrowserProcess, isBrowserOpen, getAllBrowserStatus } from './manager'
 import path from 'path'
 
 const safeMsg = (e, fallback) => (e && typeof e.message === 'string') ? e.message : fallback
@@ -87,7 +87,6 @@ export const register = () => {
 
       registerBrowser(envId, instance, event.sender)
 
-      // fingerprint 持久化
       if (!existingFingerprint?.seed) {
         try { if (event.sender && !event.sender.isDestroyed()) event.sender.send('env:saveSession', { envId: String(envId), fingerprint }) } catch (_) { }
       }

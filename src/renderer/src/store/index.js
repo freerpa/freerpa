@@ -38,12 +38,12 @@ export const useStore = defineStore('store', () => {
 
   const isMacOS = computed(() => platform.value === 'darwin')
 
-  // 清空环境列表
+  // 清空浏览器列表
   const clearStoreEnvList = () => {
     envList.value = []
   }
 
-  // 获取环境列表
+  // 获取浏览器列表
   const getEnvList = async (keyword = '', force = false) => {
     if (envList.value.length > 0 && !force) {
       return envList.value.filter((env) => env.name.includes(keyword))

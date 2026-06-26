@@ -20,7 +20,7 @@
       </a-menu-item>
       <a-menu-item key="env">
         <template #icon><icon-computer /></template>
-        <span>环境管理</span>
+        <span>浏览器管理</span>
       </a-menu-item>
       <a-menu-item key="user">
         <template #icon><icon-user /></template>

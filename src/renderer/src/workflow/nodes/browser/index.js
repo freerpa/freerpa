@@ -16,7 +16,7 @@ export default {
           name: '浏览器',
           type: 'radio',
           default: 'automan',
-          description: '内置浏览器为常规非指纹浏览器，如果需要高安全性的环境隔离请选择比特指纹浏览器',
+          description: '内置浏览器为常规非指纹浏览器，如果需要高安全性的浏览器隔离请选择比特指纹浏览器',
           options: [
             {
               label: '内置浏览器',
@@ -77,7 +77,7 @@ export default {
           },
           remoteMethod: async (keyword = '') => {
             const { getEnvList } = useStore()
-            // 通过网络api获取环境列表
+            // 通过网络api获取浏览器列表
             const result = await getEnvList(keyword)
             return result.map((env) => ({
               label: env.name,

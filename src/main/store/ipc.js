@@ -1,5 +1,5 @@
 /**
- * @file: 环境管理IPC通信处理
+ * @file: 浏览器管理IPC通信处理
  * @author: dabao
  * @date: 2024-03-16
  */

@@ -4,7 +4,7 @@ import path from 'path'
 import fs from 'fs'
 import { register as workflowRegisterIPC } from './workflow/ipc'
 import { register as dataRegisterIPC } from './data/ipc'
-import { register as envRegisterIPC } from './env/ipc'
+import { register as envRegisterIPC } from './browser/ipc'
 import { register as storeRegisterIPC } from './store/ipc'
 import { register as apiRegisterIPC } from './api/ipc'
 import { register as registerIPC } from './ipc'
@@ -286,7 +286,7 @@ app.whenReady().then(async () => {
   // 注册应用退出清理
   app.on('before-quit', async () => {
     try {
-      const { closeAllBrowsers } = await import('./env/browserManager')
+      const { closeAllBrowsers } = await import('./browser/manager')
       await closeAllBrowsers()
     } catch (_) {}
   })
@@ -299,7 +299,7 @@ app.whenReady().then(async () => {
   // 注册数据管理IPC
   dataRegisterIPC()
 
-  // 注册环境管理IPC
+  // 注册浏览器管理IPC
   envRegisterIPC()
 
   // 注册应用配置存储IPC

@@ -77,5 +77,5 @@ export const getCorrectDirectorySync = (fs, targetPath) => {
 }
 
 export { getHandler } from '@renderer/workflow/dataHandlers/'
-export { createEnvView, setUserAgent } from './fpBrowser/index.js'
-export { launchKernel, downloadKernel, checkKernelExists, fetchKernelList, getRecommendedKernel } from './fpBrowser/kernelLauncher.js'
+export { createEnvView, setUserAgent } from './browser/index.js'
+export { launchKernel, downloadKernel, checkKernelExists, fetchKernelList, getRecommendedKernel } from './browser/index.js'

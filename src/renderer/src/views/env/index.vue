@@ -7,31 +7,31 @@
         <a-space>
           <a-button type="primary" @click="handleEdit({})">
             <template #icon><icon-plus /></template>
-            新建环境
+            新建浏览器
           </a-button>
           <a-button @click="handleImport">
             <template #icon><icon-import /></template>
-            导入环境
+            导入浏览器
           </a-button>
           <a-button @click="fetchEnvironments(true)" :loading="loading">
             <template #icon><icon-refresh /></template>
             刷新
           </a-button>
-          <a-input v-model="searchKeyword" placeholder="搜索环境" style="width: 300px" allow-clear>
+          <a-input v-model="searchKeyword" placeholder="搜索浏览器" style="width: 300px" allow-clear>
             <template #prefix><icon-search /></template>
           </a-input>
         </a-space>
       </div>
 
-      <!-- 环境列表 -->
+      <!-- 浏览器列表 -->
       <a-spin :loading="loading" tip="加载中..." class="env-list scrollbar" @scroll="handleScroll">
         <div v-if="environments.length === 0" class="empty-wrapper">
           <a-empty>
             <p class="empty-text">
               <template v-if="searchKeyword">
-                未找到"<span class="keyword">{{ searchKeyword }}</span>"相关的环境
+                未找到"<span class="keyword">{{ searchKeyword }}</span>"相关的浏览器
               </template>
-              <template v-else> 暂无环境 </template>
+              <template v-else> 暂无浏览器 </template>
             </p>
           </a-empty>
         </div>
@@ -137,10 +137,10 @@
         />
       </a-modal>
 
-      <!-- 创建/编辑环境弹窗 -->
+      <!-- 创建/编辑浏览器弹窗 -->
       <a-modal
         v-model:visible="showCreateModal"
-        :title="selectedEnv ? '编辑环境' : '新建环境'"
+        :title="selectedEnv ? '编辑浏览器' : '新建浏览器'"
         :mask-closable="false"
         :esc-to-close="false"
         :footer="false"
@@ -237,7 +237,7 @@ const fetchBrowserStatus = async () => {
 // 打开浏览器
 const handleOpenBrowser = async (env) => {
   try {
-    // 获取完整环境详情（含 proxy_url、kernel_id、proxy_direct）
+    // 获取完整浏览器详情（含 proxy_url、kernel_id、proxy_direct）
     const detail = await getEnvironmentDetail(env.id)
     if (detail) {
       selectedEnvForOpen.value = detail
@@ -293,7 +293,7 @@ const handleScroll = (e) => {
   }
 }
 
-// 获取环境列表
+// 获取浏览器列表
 const fetchEnvironments = async (refresh = false) => {
   if (refresh) {
     currentPage.value = 1
@@ -316,7 +316,7 @@ const fetchEnvironments = async (refresh = false) => {
       environments.value = [...environments.value, ...result.list]
     }
   } catch (error) {
-    Message.error('获取环境列表失败')
+    Message.error('获取浏览器列表失败')
   } finally {
     loading.value = false
   }
@@ -370,7 +370,7 @@ const handleDelete = (env, index) => {
   })
 }
 
-// 处理导出环境
+// 处理导出浏览器
 const handleExport = async (env) => {
   if (!isVip()) return
   try {
@@ -402,7 +402,7 @@ const handleExport = async (env) => {
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `${env.name} - 环境.ame`
+    link.download = `${env.name} - 浏览器.ame`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -413,7 +413,7 @@ const handleExport = async (env) => {
   }
 }
 
-// 处理导入环境
+// 处理导入浏览器
 const handleImport = () => {
   const input = document.createElement('input')
   input.type = 'file'
@@ -458,7 +458,7 @@ const handleImport = () => {
             envData.name = `【导入】${envData.name}`
           }
           await saveEnvironment(envData)
-          Message.success(`成功导入环境 "${envData.name}"`)
+          Message.success(`成功导入浏览器 "${envData.name}"`)
           fetchEnvironments(true)
           clearStoreEnvList()
         } catch (error) {

@@ -112,7 +112,7 @@ const handleLogin = async () => {
     localStorage.setItem('userId', result.userinfo.id)
     localStorage.setItem('phone', loginForm.value.phone)
     Message.success('登录成功')
-    // 清空环境列表缓存
+    // 清空浏览器列表缓存
     clearStoreEnvList()
     router.replace('/')
   } finally {

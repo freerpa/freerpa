@@ -91,7 +91,7 @@ export default {
           },
           remoteMethod: async (keyword = '') => {
             const { getEnvList } = useStore()
-            // 通过网络api获取环境列表
+            // 通过网络api获取浏览器列表
             const result = await getEnvList(keyword)
             return result.map((env) => ({
               label: env.name,

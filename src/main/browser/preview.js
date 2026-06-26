@@ -1,7 +1,6 @@
 /**
- * @file: 浏览器管理模块
+ * @file: 浏览器预览窗口管理
  * @author: dabao / FreeRPA
- * @date: 2024-03-16
  *
  * 使用 fingerprint-chromium 替代 WebContentsView
  * 浏览器编辑器预览改用独立窗口模式（不再内嵌）
@@ -9,7 +8,8 @@
 
 import { BaseWindow } from 'electron'
 import { API_CONFIG } from '@/api/config'
-import { createEnvView, setUserAgent } from '@/common'
+import { createEnvView } from './viewer'
+import { setUserAgent } from './ua'
 
 // 存储当前活动的浏览器实例
 let activeView = null
@@ -24,7 +24,6 @@ export const getEnvironmentFromView = async () => {
   if (activeView?.puppeteerPage) {
     const page = activeView.puppeteerPage
     try {
-      // 获取存储数据
       storage = await page.evaluate(() => {
         return JSON.parse(JSON.stringify({
           localStorage: Object.entries(localStorage).reduce((acc, [key, value]) => {
@@ -38,7 +37,6 @@ export const getEnvironmentFromView = async () => {
         }))
       })
 
-      // 获取所有cookies
       cookies = await page.cookies()
     } catch (e) {
       console.warn('getEnvironmentFromView failed:', e.message)
@@ -48,9 +46,8 @@ export const getEnvironmentFromView = async () => {
   return { storage, cookies }
 }
 
-// 创建浏览器窗口（使用 fingerprint-chromium）
+// 创建浏览器窗口
 export const createWebView = async ({ url, bounds, env }) => {
-  // 销毁已存在的实例
   if (activeView) {
     activeView.webContents.close()
     activeView = null
@@ -60,11 +57,9 @@ export const createWebView = async ({ url, bounds, env }) => {
     activeWindow = null
   }
 
-  // 重置销毁状态
   isDestroyed = false
 
   try {
-    // 使用 fingerprint-chromium 创建浏览器
     const view = await createEnvView(env, { type: 'env' })
 
     if (isDestroyed) {
@@ -75,7 +70,6 @@ export const createWebView = async ({ url, bounds, env }) => {
 
     activeView = view
 
-    // 为浏览器创建独立窗口（不再内嵌到主窗口）
     const window = new BaseWindow({
       width: bounds?.width || 1280,
       height: bounds?.height || 720,
@@ -92,7 +86,6 @@ export const createWebView = async ({ url, bounds, env }) => {
 
     activeWindow = window
 
-    // 加载URL
     if (url) {
       await view.webContents.loadURL(url).catch(() => {})
     } else {
@@ -110,7 +103,6 @@ export const createWebView = async ({ url, bounds, env }) => {
 export const updateWebView = async ({ bounds, url, env }) => {
   if (!activeView) return
 
-  // 设置userAgent
   const isSetUserAgent = setUserAgent(activeView, env)
 
   if (url && activeView.puppeteerPage) {

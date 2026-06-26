@@ -1,7 +1,6 @@
 /**
  * @file: 浏览器实例管理
  * @author: FreeRPA
- * @date: 2025
  *
  * 管理通过 env:openBrowser 打开的 fingerprint-chromium 进程
  * 负责实例跟踪、关闭、应用退出清理
@@ -11,7 +10,6 @@ import { execSync } from 'child_process'
 import { app } from 'electron'
 
 // 存储所有打开的浏览器实例
-// envId -> { instanceId, process, senderRef }
 const openBrowserInstances = new Map()
 
 /**
@@ -23,7 +21,6 @@ const safeSend = (sender, channel, data) => {
 
 /**
  * 关闭指定浏览器的浏览器进程
- * 先通知渲染进程，再杀进程
  */
 export const killBrowserProcess = async (envId) => {
   const entry = openBrowserInstances.get(envId)

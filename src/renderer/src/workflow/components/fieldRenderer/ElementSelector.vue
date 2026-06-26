@@ -42,7 +42,7 @@
         <div class="selector-content">
           <a-select
             size="medium"
-            placeholder="请选择环境"
+            placeholder="请选择浏览器"
             :model-value="currentEnv.id"
             @change="handleEnvChange"
             allow-search
@@ -148,7 +148,7 @@ const showBrowser = ref(false)
 // 打开选择器
 const handleSelectorOpen = async () => {
   showBrowser.value = true
-  // 获取环境列表
+  // 获取浏览器列表
   await getEnvList()
   // 获取节点连线
   const pageEdge = flowStore.vueFlowRef.getEdges.find(

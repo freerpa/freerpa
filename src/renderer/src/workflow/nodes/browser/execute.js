@@ -48,7 +48,7 @@ const automanBrowser = async (node, context) => {
     browser_height
   } = node.config
 
-  // 默认环境数据
+  // 默认浏览器数据
   let envData = {
     browser_width: browser_width || 1280,
     browser_height: browser_height || 720,
@@ -58,7 +58,7 @@ const automanBrowser = async (node, context) => {
     cookies: []
   }
 
-  // 如果环境ID存在，获取环境数据
+  // 如果浏览器ID存在，获取浏览器数据
   if (envId) {
     const env = await apis.getEnvironmentDetail(envId)
     if (env) {

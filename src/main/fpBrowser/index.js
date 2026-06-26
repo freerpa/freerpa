@@ -273,7 +273,7 @@ const setUserAgentOnPage = async (page, env) => {
     if (env.browser_type === 'mobile') {
       userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
     } else {
-      // 从当前环境获取或使用默认
+##      // 从当前浏览器获取或使用默认
       return
     }
   }
@@ -281,12 +281,12 @@ const setUserAgentOnPage = async (page, env) => {
 }
 
 /**
- * 创建指纹浏览器环境视图（替代原有的 WebContentsView）
+ * 创建指纹浏览器视图（替代原有的 WebContentsView）
  *
  * 兼容原有 API 签名：
  *   createEnvView(env, options)
  *
- * @param {object} env - 环境数据 { name, browser_type, browser_ua, storage, cookies, kernel_id, proxy_url }
+ * @param {object} env - 浏览器数据 { name, browser_type, browser_ua, storage, cookies, kernel_id, proxy_url }
  * @param {object} options - 选项
  * @param {boolean} options.offscreen - 无头模式
  * @param {boolean} options.backgroundThrottling
@@ -363,7 +363,7 @@ export const createEnvView = async (env = null, options = {}) => {
   const pages = await browser.pages()
   let page = pages[0] || await browser.newPage()
 
-  // 设置 UA（如果环境中有）
+  // 设置 UA（如果浏览器中有）
   if (env) {
     await setUserAgentOnPage(page, env)
   }

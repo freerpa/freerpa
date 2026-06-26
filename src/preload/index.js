@@ -73,7 +73,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
 
-  // 环境管理模块API
+  // 浏览器管理模块API
   env: {
     createWebView: (params) => ipcRenderer.invoke('env:createWebView', params),
     updateWebView: (params) => ipcRenderer.invoke('env:updateWebView', params),

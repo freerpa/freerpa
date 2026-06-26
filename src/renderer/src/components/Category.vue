@@ -90,7 +90,7 @@ const title = computed(() => {
   } else if (props.type === 'model') {
     return '模型'
   } else if (props.type === 'environment') {
-    return '环境'
+    return '浏览器'
   }
 })
 

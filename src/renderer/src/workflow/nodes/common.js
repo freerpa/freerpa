@@ -317,7 +317,7 @@ export const configFields = {
       { label: '颜色', value: 'color' },
       { label: '文件路径', value: 'file' },
       { label: '文件夹路径', value: 'folder' },
-      { label: '浏览器环境', value: 'env' },
+      { label: '浏览器', value: 'env' },
       { label: '数据表', value: 'model' },
       { label: '元素选择器', value: 'selector' }
     ],
