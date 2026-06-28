@@ -14,20 +14,31 @@ function sendToRenderer(channel, data = {}) {
 async function sendToRendererAsync(channel, data) {
   data.async = true
   return new Promise((resolve, reject) => {
+    const TIMEOUT_MS = 30000
+    const responseId = uuid()
+
+    let settled = false
+    const done = (err, result) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeout)
+      ipcMain.removeAllListeners(`${channel}:response:${responseId}`)
+      if (err) reject(err)
+      else resolve(result)
+    }
+
+    const timeout = setTimeout(() => {
+      done(new Error('Renderer response timeout'))
+    }, TIMEOUT_MS)
+
     try {
-      // const timeout = setTimeout(() => {
-      //   reject(new Error('Renderer response timeout'))
-      // }, 30000)
-      const responseId = uuid()
-      // 监听一次性响应
       ipcMain.once(`${channel}:response:${responseId}`, (event, response) => {
-        resolve(response)
+        done(null, response)
       })
       data.responseId = responseId
-      // 发送数据到渲染进程
       sendToRenderer(channel, data)
     } catch (error) {
-      reject(error)
+      done(error)
     }
   })
 }

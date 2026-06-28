@@ -8,7 +8,6 @@ import { is } from '@electron-toolkit/utils'
 import { VM } from 'vm2'
 import { safeInspectToJSON } from '../utils/safeInspectToJSON'
 
-EventEmitter.setMaxListeners(10000)
 class NodeExecutor extends EventEmitter {
   constructor(node, context) {
     super()
@@ -313,10 +312,10 @@ class NodeExecutor extends EventEmitter {
         if (outputs) {
           this.setOutputs(outputs)
         }
+        this.setState('success')
         if (isNext) {
           await this.next()
         }
-        this.setState('success')
       },
       // 发送消息到渲染进程
       sendNodeEvent: async (params) => {
@@ -392,28 +391,27 @@ class NodeExecutor extends EventEmitter {
 
   async cleanup() {
     try {
-      this.initialized = false //是否初始化
-      this.inputs = null //输入
-      this.executor = null //执行器
-      this.store = null // 用于存储节点状态
-      // 清空队列
+      this.initialized = false
+      this.inputs = null
+      this.executor = null
+      this.store = null
       this.queue = null
-      // 清空store
-      // 执行销毁前的回调
+
       await this.executeBeforeDestroy()
-      // 清空销毁回调列表
       this.beforeDestroyFns = null
-      // 清理所有监听器
+
       if (this.nodeEventCleanup) {
         this.nodeEventCleanup()
       }
-      // 发送状态变化事件
+
+      this.removeAllListeners()
+
       sendToRenderer(`flowEventBus:nodeStatus:${this.context.flowId}:${this.node.id}`, {
         state: 'stopped',
         error: null
       })
-      this.node = null //节点
-      this.context = null //上下文
+      this.node = null
+      this.context = null
     } catch (error) {
       console.error(`Error during cleanup for node ${this.node.id}:`, error)
     }

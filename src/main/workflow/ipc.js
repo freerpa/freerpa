@@ -32,8 +32,8 @@ export const register = () => {
   // 创建工作流
   ipcMain.handle('flowEventBus:createEngine', async (event, data) => {
     try {
-      const engine = await manager.createEngine(data)
-      return { success: true, engine }
+      await manager.createEngine(data)
+      return { success: true }
     } catch (error) {
       return { success: false, message: error.message }
     }
@@ -42,11 +42,11 @@ export const register = () => {
   // 执行工作流
   ipcMain.handle('flowEventBus:startFlow', async (event, flowId) => {
     try {
-      let engine = await manager.getEngine(flowId)
+      const engine = await manager.getEngine(flowId)
       engine.on('stateChange', (state, error) => {
         sendToRenderer(`flowEventBus:stateChange:${flowId}`, { state, error })
         if (state === 'completed' || state === 'stopped' || state === 'error') {
-          engine = null
+          engine.removeAllListeners()
           manager.removeEngine(flowId)
         }
       })

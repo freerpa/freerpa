@@ -23,10 +23,10 @@ class ExecutorManager {
   }
 
   // 清理执行器
-  cleanup() {
-    this.executors.forEach(async (executor) => {
-      await executor.cleanup()
-    })
+  async cleanup() {
+    await Promise.all(
+      Array.from(this.executors.values()).map((executor) => executor.cleanup())
+    )
     this.executors.clear()
   }
 }

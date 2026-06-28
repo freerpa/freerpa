@@ -1,4 +1,4 @@
-import WorkflowManager from './core/manger/WorkflowManager'
+import WorkflowManager from './core/manager/WorkflowManager'
 import WorkflowExecutor from './core/executor/WorkflowExecutor'
 import { register } from './ipc'
 
