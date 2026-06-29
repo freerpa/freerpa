@@ -89,7 +89,7 @@ const title = computed(() => {
   if (props.type === 'workflow') {
     return '工作流'
   } else if (props.type === 'model') {
-    return '模型'
+    return '数据表'
   } else if (props.type === 'environment') {
     return '浏览器'
   }
