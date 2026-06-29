@@ -61,7 +61,7 @@ export class WorkflowEngine {
     return flowData.nodes
       .filter(
         (node) =>
-          node.type !== 'startNode' && !node.id.includes('subFlow') && node.type !== 'comment'
+          node.type !== 'workflowStart' && !node.id.includes('subFlow') && node.type !== 'comment'
       )
       .filter(
         (node) =>
@@ -148,7 +148,7 @@ export class WorkflowEngine {
       //特殊处理子流程节点（配置和输入项），同级参数引用规则限制，需要父节点传给子流程开始节点
       if (node.subFlow) {
         const startNode = flowData.nodes.find(
-          (n) => n.parentNode === node.id + '-subFlow' && n.type === 'startNode'
+          (n) => n.parentNode === node.id + '-subFlow' && n.type === 'workflowStart'
         )
         node.config = Object.assign(node.config, startNode.config)
         startNode.config = []

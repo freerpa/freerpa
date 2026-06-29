@@ -6,7 +6,7 @@
 import { IconList } from '@arco-design/web-vue/es/icon'
 
 export default {
-  type: 'dataRead',
+  type: 'dataReadV3',
   name: '数据读取',
   icon: IconList,
   description: '从数据表中读取数据',
@@ -56,55 +56,64 @@ export default {
           description: '每次读取的数据条数',
           quickConfig: true
         },
-        autoPage: {
-          id: 'autoPage',
-          name: '自动翻页',
-          type: 'switch',
-          default: false,
-          description: '每次执行读取下一页数据',
-          quickConfig: true
-        },
         conditions: {
           id: 'conditions',
           name: '查询条件',
           type: 'array',
           description: '设置查询条件',
           fields: {
-            field: {
-              id: 'field',
-              name: '字段',
-              type: 'input',
-              required: true,
-              description: '要查询的字段名'
+            conditions: {
+              id: 'conditions',
+              name: '条件',
+              type: 'array',
+              description: '设置查询条件',
+              fields: {
+                field: {
+                  id: 'field',
+                  name: '字段名',
+                  type: 'input',
+                  description: '要查询的字段名'
+                },
+                operator: {
+                  id: 'operator',
+                  name: '操作符',
+                  type: 'select',
+                  options: [
+                    { label: '等于', value: 'eq' },
+                    { label: '不等于', value: 'ne' },
+                    { label: '大于', value: 'gt' },
+                    { label: '大于等于', value: 'gte' },
+                    { label: '小于', value: 'lt' },
+                    { label: '小于等于', value: 'lte' },
+                    { label: '包含', value: 'like' },
+                    { label: '不包含', value: 'notLike' },
+                    { label: '在范围内', value: 'in' },
+                    { label: '不在范围内', value: 'notIn' },
+                    { label: '为空', value: 'isNull' },
+                    { label: '不为空', value: 'isNotNull' }
+                  ],
+                  default: 'eq',
+                  description: '查询操作符'
+                },
+                value: {
+                  id: 'value',
+                  name: '匹配值',
+                  type: 'string',
+                  description: '查询的值',
+                  show: "!['isNull', 'isNotNull'].includes(${operator})"
+                }
+              }
             },
-            operator: {
-              id: 'operator',
-              name: '操作符',
+            logic: {
+              id: 'logic',
+              name: '逻辑',
               type: 'select',
               options: [
-                { label: '等于', value: 'eq' },
-                { label: '不等于', value: 'ne' },
-                { label: '大于', value: 'gt' },
-                { label: '大于等于', value: 'gte' },
-                { label: '小于', value: 'lt' },
-                { label: '小于等于', value: 'lte' },
-                { label: '包含', value: 'like' },
-                { label: '不包含', value: 'notLike' },
-                { label: '在范围内', value: 'in' },
-                { label: '不在范围内', value: 'notIn' },
-                { label: '为空', value: 'isNull' },
-                { label: '不为空', value: 'isNotNull' }
+                { label: '全部满足', value: 'and' },
+                { label: '任一满足', value: 'or' },
               ],
-              default: 'eq',
-              required: true,
-              description: '查询操作符'
-            },
-            value: {
-              id: 'value',
-              name: '值',
-              type: 'string',
-              description: '查询的值',
-              show: "!['isNull', 'isNotNull'].includes(${operator})"
+              default: 'and',
+              description: '查询逻辑'
             }
           }
         },
@@ -126,7 +135,6 @@ export default {
               id: 'field',
               name: '字段',
               type: 'string',
-              required: true,
               description: '排序字段'
             },
             order: {
@@ -152,7 +160,6 @@ export default {
               id: 'field',
               name: '字段',
               type: 'string',
-              required: true,
               description: '要读取的字段名'
             }
           }

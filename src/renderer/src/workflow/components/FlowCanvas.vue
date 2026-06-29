@@ -325,8 +325,8 @@ const onNodeDragStop = (data) => {
     .filter(
       (node) =>
         !['comment', 'subFlow'].includes(node.type) &&
-        node.data.type !== 'startNode' &&
-        node.data.type !== 'endNode' &&
+        node.data.type !== 'workflowStart' &&
+        node.data.type !== 'workflowEnd' &&
         node.parentNode !== parentNode
     )
     .forEach((node) => {
@@ -577,7 +577,7 @@ onMounted(async () => {
 })
 
 const addStartNode = (parentNode) => {
-  let startNodeData = getInitNodeData('startNode')
+  let startNodeData = getInitNodeData('workflowStart')
   if (startNodeData) {
     startNodeData = JSON.parse(startNodeData)
   }
@@ -607,10 +607,10 @@ const addNode = async (nodeData, position) => {
   }
 
   // 如果节点是结束节点,则需要查重
-  if (nodeData.type === 'endNode') {
+  if (nodeData.type === 'workflowEnd') {
     const endNode = vueFlowRef.value.getNodes
       .filter((node) => node.parentNode === nodeData.parentNode)
-      .find((node) => node.data.type === 'endNode')
+      .find((node) => node.data.type === 'workflowEnd')
     if (endNode) {
       locateNode(vueFlowRef.value, [endNode.id])
       Message.error('当前流程已存在结束节点,禁止重复添加')
@@ -815,7 +815,7 @@ const handleNodeDelete = (elements) => {
   elementsToDelete.forEach((el) => {
     if (el.id.startsWith('node-')) {
       // 开始节点不允许删除,清空配置
-      if (el.data.type === 'startNode') {
+      if (el.data.type === 'workflowStart') {
         el.data.config = {}
       } else {
         nodeIds.push(el.id)

@@ -107,9 +107,9 @@ export const handleNodePaste = (vueFlowRef, clipboard, isOverNodeLimit) => {
     const endNodes = []
     const flowNodes = []
     newElements.nodes.forEach((node) => {
-      if (node.data.type === 'startNode') {
+      if (node.data.type === 'workflowStart') {
         startNodes.push(node)
-      } else if (node.data.type === 'endNode') {
+      } else if (node.data.type === 'workflowEnd') {
         endNodes.push(node)
       } else {
         flowNodes.push(node)
@@ -117,7 +117,7 @@ export const handleNodePaste = (vueFlowRef, clipboard, isOverNodeLimit) => {
     })
     //添加开始节点
     startNodes.forEach((node) => {
-      const startNode = vueFlowRef.getNodes.find((n) => n.parentNode === node.parentNode && n.data.type === 'startNode')
+      const startNode = vueFlowRef.getNodes.find((n) => n.parentNode === node.parentNode && n.data.type === 'workflowStart')
       //判断当前层级是否有其他开始节点
       if (startNode) {
         //只复制配置
@@ -133,7 +133,7 @@ export const handleNodePaste = (vueFlowRef, clipboard, isOverNodeLimit) => {
     })
     //添加结束节点
     endNodes.forEach((node) => {
-      const endNode = vueFlowRef.getNodes.find((n) => n.parentNode === node.parentNode && n.data.type === 'endNode')
+      const endNode = vueFlowRef.getNodes.find((n) => n.parentNode === node.parentNode && n.data.type === 'workflowEnd')
       //判断当前层级是否有其他结束节点
       if (endNode) {
         //只复制配置

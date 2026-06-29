@@ -12,10 +12,10 @@ export const addNode = async (nodeData, position, vueFlowRef) => {
   }
 
   // 如果节点是结束节点,则需要查重
-  if (nodeData.type === 'endNode') {
+  if (nodeData.type === 'workflowEnd') {
     const endNode = vueFlowRef.value.getNodes
       .filter((node) => node.parentNode === nodeData.parentNode)
-      .find((node) => node.data.type === 'endNode')
+      .find((node) => node.data.type === 'workflowEnd')
     if (endNode) {
       locateNode(vueFlowRef.value, [endNode.id])
       Message.error('当前流程已存在结束节点,禁止重复添加')

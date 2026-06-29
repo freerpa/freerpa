@@ -77,7 +77,7 @@
                     :is="node.icon"
                     class="node-icon"
                     size="16"
-                    :style="[node.type == 'logicIf' ? 'transform: rotate(90deg)' : '']"
+                    :style="[node.type == 'workflowIf' ? 'transform: rotate(90deg)' : '']"
                   />
                 </a-tooltip>
                 <span class="node-name">{{ node.name }}</span>
@@ -117,7 +117,7 @@
                       :is="node.icon"
                       class="node-icon"
                       size="16"
-                      :style="[node.type == 'logicIf' ? 'transform: rotate(90deg)' : '']"
+                      :style="[node.type == 'workflowIf' ? 'transform: rotate(90deg)' : '']"
                     />
                   </a-tooltip>
                   <span class="node-name">{{ node.name }}</span>

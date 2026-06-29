@@ -2,6 +2,6 @@
 export const getValidNodesCount = (nodes) => {
   return nodes?.filter(
     (node) =>
-      !['startNode', 'endNode', 'comment', 'workFlow'].includes(node.data.type) && !node.id.includes('subFlow')
+      !['workflowStart', 'workflowEnd', 'comment', 'workFlow'].includes(node.data.type) && !node.id.includes('subFlow')
   ).length
 }

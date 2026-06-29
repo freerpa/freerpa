@@ -1,9 +1,13 @@
 <template>
-  <div class="trigger-view">
-    <a-typography-text class="description" :ellipsis="{ rows: 2, expandable: true }">
-      {{ node.description || '暂无描述' }}
-    </a-typography-text>
-
+  <div class="http-server-node-view">
+    <a-typography-paragraph
+      :copyable="nodeStatus === 'running'"
+      style="margin: 0px"
+      :copyText="serverUrl"
+      type="secondary"
+    >
+      地址：{{ nodeStatus === 'running' ? serverUrl : '未启动' }}
+    </a-typography-paragraph>
     <!-- 参数配置表单 -->
     <template v-if="configFields.length">
       <div class="configs-form">
@@ -17,16 +21,19 @@
 <script setup>
 import { ref, computed, inject, watch } from 'vue'
 import FormView from '@/workflow/components/nodes/FormView.vue'
-import { buildConfigFields } from '../common'
 import { useFlowStore } from '@/workflow/store'
+import { buildConfigFields } from '../common'
 // 工作流ID
 const workflowId = inject('workflowId')
 // 工作流store
 const flowStore = useFlowStore(workflowId)
-
 const props = defineProps({
   node: {
     type: Object,
+    required: true
+  },
+  nodeStatus: {
+    type: String,
     required: true
   }
 })
@@ -38,7 +45,6 @@ const configFields = computed(() => {
   const startNode = flowStore.vueFlowRef.getNodes.find(
     (node) => node.parentNode === props.node.id + '-subFlow' && node.data.type === 'workflowStart'
   )
-  if (!startNode) return []
   const fields = startNode.data.config.config?.map(buildConfigFields) || []
   fields.forEach((field) => {
     formData.value[field.id] = field.default
@@ -60,11 +66,19 @@ watch(
   },
   { deep: true }
 )
+// 处理节点事件
+const onNodeEvent = async (url) => {
+  serverUrl.value = url
+}
+const serverUrl = ref('')
+
+defineExpose({
+  onNodeEvent
+})
 </script>
 
-<style scoped lang="less">
-.description {
-  color: var(--color-text-3);
-  margin: 0px;
+<style lang="less" scoped>
+.http-server-node-view {
+  font-size: 12px;
 }
 </style>

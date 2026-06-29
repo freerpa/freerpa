@@ -43,7 +43,7 @@
             is_self_hover:
               props.id === pendingConnection?.nodeId && pendingConnection?.handleId === 'next',
             disabled: isExecuting,
-            'next-true-handle': node.type === 'logicIf',
+            'next-true-handle': node.type === 'workflowIf',
             'allow-drop': dragStartNode
           },
           getConnectionClass(
@@ -60,7 +60,7 @@
       />
       <!-- 后续节点连接点 -->
       <Handle
-        v-if="node.type === 'logicIf'"
+        v-if="node.type === 'workflowIf'"
         :connectable="!isExecuting"
         @click.stop="showQuickConnect($event, 'next-false')"
         @drop="handleDrop($event, 'next-false')"

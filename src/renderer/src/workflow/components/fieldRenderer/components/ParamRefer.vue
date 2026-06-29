@@ -177,7 +177,7 @@ const props = defineProps({
 
 const nodeData = flowStore.vueFlowRef.getNodes.find((node) => node.id === thisNodeId).data
 // 不可引用参数节点类型
-const noRefNodes = ['startNode', 'endNode']
+const noRefNodes = ['workflowStart', 'workflowEnd']
 const isAvailable = computed(() => {
   return (
     props.field?.paramRef !== false &&

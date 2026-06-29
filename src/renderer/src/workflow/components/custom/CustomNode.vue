@@ -15,7 +15,7 @@
       :style="[configVisible ? { display: 'block' } : {}]"
     >
       <div class="node-toolbar">
-        <a-tooltip v-if="nodeDefinition.type !== 'endNode'">
+        <a-tooltip v-if="nodeDefinition.type !== 'workflowEnd'">
           <template #content>
             设为全局：{{ data?.global ? '是' : '否' }} <br />
             全局节点：节点输出可被 <b>所有</b> 节点引用 <br />
@@ -25,8 +25,8 @@
             <icon-public />
           </IconSwitch>
         </a-tooltip>
-        <template v-if="nodeDefinition.type !== 'startNode'">
-          <template v-if="nodeDefinition.type !== 'endNode'">
+        <template v-if="nodeDefinition.type !== 'workflowStart'">
+          <template v-if="nodeDefinition.type !== 'workflowEnd'">
             <a-tooltip content="重命名：双击标题可快速编辑">
               <icon-edit @click="actionSelect('rename')" />
             </a-tooltip>
@@ -84,7 +84,7 @@
           title="点击查看节点详情"
           :is="nodeDefinition.icon"
           class="node-icon"
-          :style="[data.type == 'logicIf' ? 'transform: rotate(90deg)' : '']"
+          :style="[data.type == 'workflowIf' ? 'transform: rotate(90deg)' : '']"
         />
       </a-tooltip>
       <div class="node-title">
@@ -141,7 +141,7 @@
             v-if="
               !isExecuting &&
               !data?.deactivate &&
-              (nodeDefinition.type !== 'customNode' || nodeConfig.openSource || isMyNode) &&
+              (nodeDefinition.type !== 'workflowCustomNode' || nodeConfig.openSource || isMyNode) &&
               Object.keys(allConfigFieldsWithGroup).length > 0
             "
           >
@@ -503,7 +503,7 @@ const actionSelect = (key) => {
   } else if (key === 'copy') {
     emit('action', 'copy', props.id)
   } else if (key === 'rename') {
-    if (['startNode', 'endNode'].includes(props.data.type)) {
+    if (['workflowStart', 'workflowEnd'].includes(props.data.type)) {
       return
     }
     nodeName.value = props.data.name
@@ -549,7 +549,7 @@ const pendingConnection = inject('pendingConnection')
 const nodeDefinition = nodes[props.data.type]
 
 //添加其他节点的异常处理
-if (nodeDefinition.type !== 'startNode' && nodeDefinition.type !== 'endNode') {
+if (nodeDefinition.type !== 'workflowStart' && nodeDefinition.type !== 'workflowEnd') {
   //异常处理
   nodeDefinition.config.errorHandle = {
     name: '执行配置',
@@ -773,7 +773,7 @@ const nodeInputs = computed(() => {
   //如果是子流程，获取子流程的开始节点输入
   if (nodeDefinition.subFlow) {
     const startNode = flowStore.vueFlowRef.getNodes.find(
-      (node) => node.data.type === 'startNode' && node.parentNode == props.id + '-subFlow'
+      (node) => node.data.type === 'workflowStart' && node.parentNode == props.id + '-subFlow'
     )
     if (startNode) {
       startNodeOutputs = startNode.data.outputs.filter((output) => !output.isConfig)
@@ -799,7 +799,7 @@ const nodeOutputs = computed(() => {
     const outputs = nodeDefinition?.outputs.filter((output) => output.type !== 'dynamic')
 
     // 子流程的开始节点输出处理
-    if (props.data.type === 'startNode') {
+    if (props.data.type === 'workflowStart') {
       const node = flowStore.vueFlowRef.findNode(props.id)
       if (node.parentNode) {
         const parentNode = flowStore.vueFlowRef.findNode(node.parentNode.replace('-subFlow', ''))
@@ -842,7 +842,7 @@ const nodeOutputs = computed(() => {
     let endNodeInputs = []
     if (nodeDefinition.subFlow && nodeDefinition.subFlow.endOutputs !== false) {
       const endNode = flowStore.vueFlowRef.getNodes.find(
-        (node) => node.data.type === 'endNode' && node.parentNode == props.id + '-subFlow'
+        (node) => node.data.type === 'workflowEnd' && node.parentNode == props.id + '-subFlow'
       )
       if (endNode) {
         endNodeInputs = endNode.data.inputs

@@ -75,7 +75,7 @@ class WorkflowExecutor extends EventEmitter {
   async execute() {
     try {
       this.setState('running')
-      const startNode = this.nodes.find((node) => !node.parentNode && node.type === 'startNode')
+      const startNode = this.nodes.find((node) => !node.parentNode && node.type === 'workflowStart')
       if (!startNode) {
         throw new Error('没有找到起始节点')
       }
@@ -263,7 +263,7 @@ class WorkflowExecutor extends EventEmitter {
     })
 
     const startNode = this._findNode(nodeId)
-    if (startNode && startNode.type === 'startNode') {
+    if (startNode && startNode.type === 'workflowStart') {
       for (const key in this.startInputs) {
         inputValues[key] = this.startInputs[key]
       }
@@ -325,7 +325,7 @@ class WorkflowExecutor extends EventEmitter {
         if (state === 'completed' || state === 'stopped') {
           engine.removeAllListeners()
           this.subFlows.delete(subFlowNodeId)
-          const endNode = childNodes.find((n) => n.type === 'endNode')
+          const endNode = childNodes.find((n) => n.type === 'workflowEnd')
           if (endNode) {
             resolve(this.getOutputs(endNode.id))
           } else {
@@ -350,7 +350,7 @@ class WorkflowExecutor extends EventEmitter {
     )
 
     const node = this._findNode(nodeId)
-    if (node?.type === 'logicIf' && this.nodeOutputs[nodeId]?.result === false) {
+    if (node?.type === 'workflowIf' && this.nodeOutputs[nodeId]?.result === false) {
       nextEdges = this.edges.filter(
         (edge) => edge.source === nodeId && edge.sourceHandle === 'next-false'
       )

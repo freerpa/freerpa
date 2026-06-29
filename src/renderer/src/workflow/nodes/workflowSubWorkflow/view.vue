@@ -1,7 +1,7 @@
 <template>
   <div class="trigger-view">
     <a-typography-text class="description" :ellipsis="{ rows: 2, expandable: true }">
-      {{ node.description || '暂无描述' }}
+      使用开始、结束节点输入、输出数据。
     </a-typography-text>
 
     <!-- 参数配置表单 -->
@@ -17,8 +17,8 @@
 <script setup>
 import { ref, computed, inject, watch } from 'vue'
 import FormView from '@/workflow/components/nodes/FormView.vue'
-import { buildConfigFields } from '../common'
 import { useFlowStore } from '@/workflow/store'
+import { buildConfigFields } from '../common'
 // 工作流ID
 const workflowId = inject('workflowId')
 // 工作流store
@@ -38,8 +38,8 @@ const configFields = computed(() => {
   const startNode = flowStore.vueFlowRef.getNodes.find(
     (node) => node.parentNode === props.node.id + '-subFlow' && node.data.type === 'workflowStart'
   )
-  if (!startNode) return []
-  const fields = startNode.data.config.config?.map(buildConfigFields) || []
+  const fields =
+    startNode.data.config.config?.map(buildConfigFields) || []
   fields.forEach((field) => {
     formData.value[field.id] = field.default
   })
