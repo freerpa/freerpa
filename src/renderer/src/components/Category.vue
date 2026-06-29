@@ -67,7 +67,8 @@
 <script setup>
 import { computed, ref, onMounted, watch, nextTick } from 'vue'
 import { IconPlus, IconCheck, IconSettings } from '@arco-design/web-vue/es/icon'
-import { addCategory, getCategoryList, updateCategory, deleteCategory } from '@/api/category'
+
+const { category: categoryAPI } = window.electronAPI
 const props = defineProps({
   type: {
     type: String,
@@ -96,8 +97,13 @@ const title = computed(() => {
 
 const categoryList = ref([])
 const _getCategoryList = async () => {
-  const res = await getCategoryList(props.type)
-  categoryList.value = res
+  try {
+    const res = await categoryAPI.getCategories(props.type)
+    categoryList.value = res || []
+  } catch (e) {
+    console.error('[Category] getCategories failed:', e)
+    categoryList.value = []
+  }
 }
 
 onMounted(() => {
@@ -111,35 +117,41 @@ const categoryName = ref('')
 const categoryId = ref('')
 const loading = ref(false)
 const handleAddCategory = async () => {
-  if (!categoryName.value) {
-    return
-  }
+  if (!categoryName.value) return
   loading.value = true
-  if (categoryId.value) {
-    await updateCategory(categoryId.value, categoryName.value)
-  } else {
-    await addCategory(props.type, categoryName.value)
+  try {
+    if (categoryId.value) {
+      await categoryAPI.updateCategory(categoryId.value, categoryName.value)
+    } else {
+      await categoryAPI.addCategory(props.type, categoryName.value)
+    }
+    categoryName.value = ''
+    categoryId.value = ''
+    _getCategoryList()
+    addPopoverVisible.value = false
+    actionVisible.value = false
+  } catch (e) {
+    console.error('[Category] add/update failed:', e)
+  } finally {
+    loading.value = false
   }
-  categoryName.value = ''
-  categoryId.value = ''
-  _getCategoryList()
-  loading.value = false
-  addPopoverVisible.value = false
-  actionVisible.value = false
 }
 
 const handleDelete = async () => {
-  if (!categoryId.value) {
-    return
-  }
+  if (!categoryId.value) return
   loading.value = true
-  await deleteCategory(categoryId.value)
-  _getCategoryList()
-  if (selectedKeys.value[0] === categoryId.value) {
-    selectedKeys.value = ['all']
+  try {
+    await categoryAPI.deleteCategory(categoryId.value)
+    _getCategoryList()
+    if (selectedKeys.value[0] === categoryId.value) {
+      selectedKeys.value = ['all']
+    }
+    actionVisible.value = false
+  } catch (e) {
+    console.error('[Category] delete failed:', e)
+  } finally {
+    loading.value = false
   }
-  loading.value = false
-  actionVisible.value = false
 }
 
 watch(

@@ -140,8 +140,11 @@ request.interceptors.response.use(
     if (res.code === 200) {
       return res.data
     } else if (res.code === 401 || res.code === 403) {
-      router.replace('/login')
-      errMsg(res.message || '请重新登录')
+      // 仅对写操作弹出登录窗口，GET 请求静默处理
+      const method = response.config.method?.toLowerCase()
+      if (method !== 'get') {
+        window.dispatchEvent(new CustomEvent('show-login'))
+      }
       return Promise.reject(new Error(res.message || '请重新登录'))
     }
     errMsg(res.message || '请求失败')
@@ -149,8 +152,8 @@ request.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      router.replace('/login')
-      errMsg('请重新登录')
+      // 免登录模式：不自动跳转登录页
+      return Promise.reject(error)
     } else {
       errMsg(error.message || '网络错误')
     }

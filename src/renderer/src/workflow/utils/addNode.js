@@ -1,5 +1,5 @@
-import { getWorkflowDetail } from '@/api/workflow'
 import { getStoreWorkflowDetail } from '@/api/workflowStore'
+
 import { getNodeName } from './index'
 // 添加节点
 export const addNode = async (nodeData, position, vueFlowRef) => {
@@ -28,7 +28,20 @@ export const addNode = async (nodeData, position, vueFlowRef) => {
     if (nodeData.workflow.isStore) {
       workflow = await getStoreWorkflowDetail(nodeData.workflow.id)
     } else {
-      workflow = await getWorkflowDetail(nodeData.workflow.id)
+      const localWf = await window.electronAPI.workflow.getWorkflow(nodeData.workflow.id)
+      if (localWf) {
+        let graph = {}
+        try { graph = typeof localWf.graph === 'string' ? JSON.parse(localWf.graph) : (localWf.graph || {}) } catch (e) {}
+        workflow = {
+          id: localWf.id,
+          name: localWf.name,
+          description: localWf.description,
+          cover: '',
+          only_node: false,
+          elements: typeof localWf.graph === 'string' ? localWf.graph : JSON.stringify(localWf.graph || {}),
+          nodes_count: (graph.nodes || []).length
+        }
+      }
     }
   }
 
@@ -51,7 +64,7 @@ export const addNode = async (nodeData, position, vueFlowRef) => {
     // expandParent: !!nodeData.parentNode,
     // extent: { range: 'parent', padding: [20, 20, 20, 20] },
     data: {
-      user_id: nodeData.user_id || userInfo.id,
+      user_id: nodeData.user_id || userInfo?.id,
       type: nodeData.type,
       name: getNodeName(
         vueFlowRef.value.getNodes.filter((n) => n.parentNode === nodeData.parentNode),

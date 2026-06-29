@@ -18,7 +18,11 @@
           { maxLength: 50, message: '名称最多50个字符' }
         ]"
       >
-        <a-input v-model="modelForm.name" placeholder="请输入名称" allow-clear />
+        <a-input v-model="modelForm.name" placeholder="请输入名称" allow-clear>
+          <template #prepend>
+            <CategorySelect v-model="modelForm.category" type="model" />
+          </template>
+        </a-input>
       </a-form-item>
 
       <a-form-item field="description" label="描述">
@@ -153,6 +157,7 @@
 import { ref, nextTick } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { IconPlus, IconDelete, IconExclamationCircle } from '@arco-design/web-vue/es/icon'
+import CategorySelect from '@/components/CategorySelect.vue'
 import pinyin from 'pinyin'
 // 自动生成字段名
 const autoFieldName = (record) => {
@@ -178,6 +183,7 @@ const formRef = ref(null)
 const modelForm = ref({
   name: '',
   description: '',
+  category: '',
   type: 'string',
   fields: []
 })
@@ -209,6 +215,7 @@ const open = async () => {
     modelForm.value = {
       name: model.name,
       description: model.description,
+      category: model.category_id || '',
       type: model.type,
       fields: JSON.parse(model.fields)
     }
@@ -285,6 +292,8 @@ const handleBeforeOk = async () => {
       return false
     }
     const model = deepClone(modelForm.value)
+    model.category_id = model.category
+    delete model.category
     if (props.modelId) {
       await dataAPI.updateModel({
         id: props.modelId,
@@ -299,7 +308,8 @@ const handleBeforeOk = async () => {
     resetForm()
     return true
   } catch (error) {
-    return false
+    Message.error(error.message || '保存失败')
+    throw error
   }
 }
 
@@ -308,6 +318,7 @@ const resetForm = () => {
   modelForm.value = {
     name: '',
     description: '',
+    category: '',
     type: 'string',
     fields: []
   }

@@ -17,8 +17,9 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { getCategoryList } from '@/api/category'
 import { IconDown } from '@arco-design/web-vue/lib/icon'
+
+const { category: categoryAPI } = window.electronAPI
 const modelValue = defineModel({
   type: String,
   default: ''
@@ -40,8 +41,17 @@ const emits = defineEmits(['change'])
 
 const categoryList = ref([])
 const _getCategoryList = async () => {
-  const res = await getCategoryList(props.type)
-  categoryList.value = res
+  try {
+    if (!window.electronAPI?.category) {
+      console.error('[CategorySelect] electronAPI.category not available')
+      return
+    }
+    const res = await categoryAPI.getCategories(props.type)
+    categoryList.value = res || []
+  } catch (e) {
+    console.error('[CategorySelect] getCategories failed:', e)
+    categoryList.value = []
+  }
   isCategoryExist()
 }
 

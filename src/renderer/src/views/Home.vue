@@ -90,10 +90,6 @@
         </template>
         <template #extra>
           <a-space>
-            <a-button type="text" @click="showMyWorkflows = true">
-              <icon-user />
-              我的
-            </a-button>
             <a-button type="text" @click="showCustomerService">
               <icon-customer-service />
               客服
@@ -118,13 +114,6 @@
       </div>
     </a-modal>
 
-    <!-- 我的工作流弹窗 -->
-    <MyWorkflows
-      v-model:visible="showMyWorkflows"
-      @update:visible="showMyWorkflows = $event"
-      @service="showCustomerService"
-    />
-
     <!-- 客服弹窗 -->
     <a-modal v-model:visible="customerServiceVisible" title="客服" :footer="false">
       <div class="editor-content-view" v-html="customerService"></div>
@@ -136,11 +125,9 @@
 import { ref, onMounted } from 'vue'
 import {
   IconApps,
-  IconUser,
   IconCustomerService,
   IconNotification
 } from '@arco-design/web-vue/es/icon'
-import MyWorkflows from './home/components/MyWorkflows.vue'
 import WorkflowStore from './home/components/WorkflowStore.vue'
 import { getProfile } from '@/api/user'
 import { getCustomerService } from '@/api/login'
@@ -150,7 +137,11 @@ const store = useStore()
 const { setUserInfo } = store
 
 onMounted(async () => {
-  setUserInfo(await getProfile())
+  try {
+    setUserInfo(await getProfile())
+  } catch (e) {
+    // 免登录模式：获取用户信息失败时静默处理
+  }
 })
 
 const customerService = ref(null)
@@ -172,9 +163,6 @@ const noticeLoading = ref(false)
 const noticeTotal = ref(0)
 const noticePage = ref(1)
 const noticePageSize = ref(10)
-
-// 我的工作流状态
-const showMyWorkflows = ref(false)
 
 // 获取Banner列表
 const fetchBanners = async () => {

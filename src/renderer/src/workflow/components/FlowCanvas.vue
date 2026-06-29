@@ -131,7 +131,6 @@ import CustomEdge from './custom/CustomEdge.vue'
 import CustomConnectionLine from './custom/CustomConnectionLine.vue'
 import { v4 as uuidv4 } from 'uuid'
 import { storeToRefs } from 'pinia'
-import { getWorkflowDetail } from '@/api/workflow'
 import { getStoreWorkflowDetail } from '@/api/workflowStore'
 import nodes from '@nodes-path'
 import {
@@ -153,10 +152,11 @@ import {
 } from '../utils'
 // 工作流ID
 const workflowId = inject('workflowId')
+const { workflow: workflowAPI } = window.electronAPI
 // 工作流store
 const flowStore = useFlowStore(workflowId)
 // 用户store
-const { userInfo, userLimits, platform } = useStore()
+const { userInfo, platform } = useStore()
 // 剪贴板
 const { clipboard } = storeToRefs(useStore())
 // 工作流store的元素
@@ -545,10 +545,11 @@ onMounted(async () => {
   await nextTick()
   // 初始化工作流
   vueFlowRef.value.onPaneReady(async () => {
-    const result = await getWorkflowDetail(workflowId)
-    if (result.elements) {
-      const decryptedElements = await decryptedData(result.elements)
-      result.elements = JSON.parse(decryptedElements)
+    const result = await workflowAPI.getWorkflow(workflowId)
+    if (result && result.graph) {
+      let elements
+      try { elements = typeof result.graph === 'string' ? JSON.parse(result.graph) : result.graph } catch (e) { elements = result.graph }
+      result.elements = elements
     }
 
     const { off: offNodesInitialized } = vueFlowRef.value.onNodesInitialized(() => {
@@ -592,18 +593,8 @@ const addStartNode = (parentNode) => {
 }
 
 // 判断节点数量限制
-const isOverNodeLimit = (addNodeCount = 1) => {
-  const isOver =
-    getValidNodesCount(flowStore.vueFlowRef.getNodes) + addNodeCount > userLimits.node_limit
-  if (isOver) {
-    const message = `当前工作流节点数量超过限制[${userLimits.node_limit}]`
-    Message.warning({
-      id: 'workflow-node-limit',
-      content: message
-    })
-  }
-  return isOver
-}
+// 节点数量不再限制
+const isOverNodeLimit = (_addNodeCount = 1) => false
 
 // 添加节点
 const addNode = async (nodeData, position) => {
@@ -632,7 +623,20 @@ const addNode = async (nodeData, position) => {
     if (nodeData.workflow.isStore) {
       workflow = await getStoreWorkflowDetail(nodeData.workflow.id)
     } else {
-      workflow = await getWorkflowDetail(nodeData.workflow.id)
+      const localWf = await workflowAPI.getWorkflow(nodeData.workflow.id)
+      if (localWf) {
+        let graph = {}
+        try { graph = typeof localWf.graph === 'string' ? JSON.parse(localWf.graph) : (localWf.graph || {}) } catch (e) {}
+        workflow = {
+          id: localWf.id,
+          name: localWf.name,
+          description: localWf.description,
+          cover: '',
+          only_node: false,
+          elements: typeof localWf.graph === 'string' ? localWf.graph : JSON.stringify(localWf.graph || {}),
+          nodes_count: (graph.nodes || []).length
+        }
+      }
     }
   }
 
@@ -655,7 +659,7 @@ const addNode = async (nodeData, position) => {
     // expandParent: !!nodeData.parentNode,
     // extent: { range: 'parent', padding: [20, 20, 20, 20] },
     data: {
-      user_id: nodeData.user_id || userInfo.id,
+      user_id: nodeData.user_id || userInfo?.id,
       type: nodeData.type,
       name: getNodeName(
         vueFlowRef.value.getNodes.filter((n) => n.parentNode === nodeData.parentNode),
@@ -698,7 +702,7 @@ const addSubFlowNode = async (node, workFlow) => {
       y: 150
     },
     data: {
-      user_id: node.user_id || userInfo.id,
+      user_id: node.user_id || userInfo?.id,
       type: 'subFlow',
       name: node.data.type === 'workFlow' ? workFlow.name : '工作流',
       inputs: [],
@@ -711,8 +715,20 @@ const addSubFlowNode = async (node, workFlow) => {
   let elements = null
   // 如果子流程有工作流，则获取工作流节点并预计算子流程的宽度
   if (workFlow) {
-    const decryptedElements = await decryptedData(workFlow.elements)
-    elements = JSON.parse(decryptedElements)
+    let elementsData = workFlow.elements
+    // 本地工作流：elements 已是纯 JSON，远程工作流需要解密
+    if (typeof elementsData === 'string') {
+      try {
+        // 先尝试直接解析（本地模式）
+        elements = JSON.parse(elementsData)
+      } catch (e) {
+        // 解密后再解析（远程模式）
+        const decryptedElements = await decryptedData(elementsData)
+        elements = JSON.parse(decryptedElements)
+      }
+    } else if (typeof elementsData === 'object') {
+      elements = elementsData
+    }
     // 预计算子流程的宽度
     let minX = Infinity
     let maxX = -Infinity

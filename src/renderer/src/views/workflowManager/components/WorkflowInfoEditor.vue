@@ -47,7 +47,8 @@
 import { ref, inject } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import CategorySelect from '@/components/CategorySelect.vue'
-import { getWorkflowDetail, saveWorkflow } from '@/api/workflow'
+
+const { workflow: workflowAPI } = window.electronAPI
 
 const props = defineProps({
   modelId: [String, Number]
@@ -85,18 +86,23 @@ const handleBeforeOk = async (
 const handleSubmit = async () => {
   try {
     const workflow = {
-      id: props.modelId, // 如果是编辑模式会带上id
+      id: props.modelId,
       name: form.value.name,
-      category: form.value.category,
+      category_id: form.value.category,
       description: form.value.description
     }
-    // 保存工作流
-    await saveWorkflow(workflow)
+    if (props.modelId) {
+      await workflowAPI.updateWorkflow(workflow)
+    } else {
+      const newId = await workflowAPI.createWorkflow(workflow)
+      workflow.id = newId
+    }
 
     Message.success(props.modelId ? '更新成功' : '创建成功')
     emit('success', workflow)
     handleClose()
   } catch (error) {
+    Message.error(error.message || '保存失败')
     throw error
   }
 }
@@ -114,11 +120,11 @@ const handleClose = () => {
 // 获取工作流详情
 const fetchWorkflowDetail = async (id) => {
   try {
-    const result = await getWorkflowDetail(id)
+    const result = await workflowAPI.getWorkflow(id)
     if (result) {
       form.value = {
         name: result.name,
-        category: result.category,
+        category: result.category_id || result.category || '',
         description: result.description
       }
     }

@@ -4,7 +4,7 @@
  * @date: 2024-03-15
  */
 import { ipcMain } from 'electron'
-import { getModel, copyModel, getModels, createModel, updateModel, deleteModel, getModelData, createModelData, updateModelData, deleteModelData, clearModelData, batchCreateModelData, exportExcel ,importExcel} from './index'
+import { getModel, copyModel, getModels, createModel, updateModel, deleteModel, getModelData, createModelData, updateModelData, deleteModelData, clearModelData, batchCreateModelData, exportExcel ,importExcel, getTrashModels, restoreModel, permanentDeleteModel} from './index'
 
 export const register = () => {
   // 获取模型
@@ -76,4 +76,8 @@ export const register = () => {
   ipcMain.handle('data:importExcel', async (event, params) => {
     return await importExcel(params)
   })
+  // 回收站
+  ipcMain.handle('data:getTrash', async () => getTrashModels())
+  ipcMain.handle('data:restore', async (_e, id) => restoreModel(id))
+  ipcMain.handle('data:permanentDelete', async (_e, id) => permanentDeleteModel(id))
 }

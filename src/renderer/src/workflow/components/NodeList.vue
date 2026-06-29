@@ -257,9 +257,9 @@ import { storeToRefs } from 'pinia'
 import { getInitNodeData } from '../utils'
 import WorkflowStore from '@/views/home/components/WorkflowStore.vue'
 import CategorySelect from '@/components/CategorySelect.vue'
+const { workflow: workflowAPI } = window.electronAPI
 const workflowId = inject('workflowId')
 const { dragStartNode, activeNodeTab } = storeToRefs(useFlowStore(workflowId))
-import { getWorkflows } from '@/api/workflow'
 import { getMyPurchases, getStoreWorkflowCategories } from '@/api/workflowStore'
 import { getAppVersion, compareVersion } from '@/utils/version'
 const props = defineProps({
@@ -369,19 +369,17 @@ const fetchData = async (isSearch = false) => {
     if (!isMore.value) return
     page++
   }
-  const res = await getWorkflows({
+  const res = await workflowAPI.getWorkflows({
     page,
     pageSize: 10,
     keyword: workflowKeyword.value,
-    category: workflowCategory.value
+    category_id: workflowCategory.value
   })
   total = res.total
-  // 过滤掉当前工作流
-  // res.list = res.list.filter((item) => item.id != workflowId)
   if (page === 1) {
-    workflows.value = res.list
+    workflows.value = res.data
   } else {
-    workflows.value = [...workflows.value, ...res.list]
+    workflows.value = [...workflows.value, ...res.data]
   }
   if (workflows.value.length >= total) {
     isMore.value = false

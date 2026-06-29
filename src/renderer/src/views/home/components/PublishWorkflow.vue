@@ -319,7 +319,6 @@
 import { ref, watch, toRaw } from 'vue'
 import { Message, Modal } from '@arco-design/web-vue'
 import { IconPlus, IconInfoCircle } from '@arco-design/web-vue/es/icon'
-import { getWorkflows } from '@/api/workflow'
 import { getDeveloperAgreement } from '@/api/login'
 import { publishWorkflow, getStoreWorkflowCategories } from '@/api/workflowStore'
 import { getDependencies } from '@/api/workflow'
@@ -329,6 +328,7 @@ import AmWangEditor from './am-wangEditor/index.vue'
 import WorkflowDetail from './WorkflowDetail.vue'
 import CategorySelect from '@/components/CategorySelect.vue'
 
+const { workflow: workflowAPI } = window.electronAPI
 import { useStore } from '@/store'
 
 const {
@@ -421,14 +421,14 @@ const handleWorkflowPageChange = (page) => {
 const fetchWorkflows = async () => {
   loading.value = true
   try {
-    const result = await getWorkflows({
-      category: workflowCategory.value,
+    const result = await workflowAPI.getWorkflows({
+      category_id: workflowCategory.value,
       keyword: workflowKeyword.value,
       page: workFlowPage.value,
       pageSize: 10
     })
     workFlowTotal.value = result.total
-    workflows.value = result.list.map((item) => ({
+    workflows.value = result.data.map((item) => ({
       id: item.id,
       name: item.name,
       description: item.description

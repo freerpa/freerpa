@@ -29,40 +29,6 @@
         </a-space>
       </a-form-item>
       <!-- 会员 -->
-      <a-form-item field="vip">
-        <template #label>
-          <a-space :size="4">
-            <vipIcon />
-            会员
-          </a-space>
-        </template>
-        <a-space>
-          <a-tag
-            v-if="profileForm.vip == null || profileForm.vip == ''"
-            color="gray"
-            size="large"
-            class="user-item"
-          >
-            您还不是会员
-          </a-tag>
-          <div v-else>
-            <a-tag
-              v-if="new Date(profileForm.vip) >= new Date()"
-              color="green"
-              size="large"
-              class="user-item"
-            >
-              到期时间：{{ profileForm.vip }}
-            </a-tag>
-            <a-tag v-else color="red" size="large" class="user-item">
-              已过期：{{ profileForm.vip }}
-            </a-tag>
-          </div>
-          <a-button type="secondary" @click="showMembershipRenewal"> 立即开通 </a-button>
-          <a-button type="secondary" @click="showMembershipLog"> 会员记录 </a-button>
-        </a-space>
-      </a-form-item>
-
       <a-form-item label="头像" field="avatar" :rules="[{ required: true, message: '请上传头像' }]">
         <image-upload
           ref="imageUploadRef"
@@ -104,43 +70,7 @@
       <a-table :data="pointsLog" :columns="pointsColumns" />
     </a-modal>
 
-    <!-- 会员记录弹窗 -->
-    <a-modal v-model:visible="membershipVisible" title="会员记录" :footer="false" width="800px">
-      <a-table :data="membershipLog" :columns="membershipColumns" />
-    </a-modal>
-
-    <!-- 会员开通弹窗 -->
-    <a-modal v-model:visible="membershipRenewalVisible" title="会员开通" width="auto">
-      <a-space direction="vertical">
-        <a-radio-group v-model="checkedMembership">
-          <template v-for="item in membershipList" :key="item.id">
-            <a-radio :value="item.id">
-              <template #radio="{ checked }">
-                <a-card class="custom-radio-card" :class="{ 'custom-radio-card-checked': checked }">
-                  <a-space direction="vertical">
-                    <a-typography-text class="title">{{ item.name }}</a-typography-text>
-                    <a-typography-text class="price" type="danger">
-                      价格：{{ item.price }}积分
-                    </a-typography-text>
-                  </a-space>
-                </a-card>
-              </template>
-            </a-radio>
-          </template>
-        </a-radio-group>
-      </a-space>
-      <template #footer>
-        <a-space>
-          <a-popconfirm
-            type="info"
-            content="确定开通会员吗？开通后积分将扣除且无法退回"
-            @ok="handleMembershipRenewal"
-          >
-            <a-button type="primary">开通</a-button>
-          </a-popconfirm>
-        </a-space>
-      </template>
-    </a-modal>
+    <!-- 使用兑换码弹窗 -->
     <a-modal
       v-model:visible="useExchangeCodeVisible"
       title="使用兑换码"
@@ -159,9 +89,6 @@ import {
   updateProfile,
   getRechargeInfo,
   getPointsLog,
-  getMembershipLog,
-  getMembershipList,
-  renewMembership,
   useExchangeCode
 } from '@/api/user'
 import ImageUpload from '@/components/ImageUpload.vue'
@@ -170,7 +97,7 @@ const formRef = ref(null)
 const loading = ref(false)
 const imageUploadRef = ref(null)
 import { useStore } from '@/store'
-const { setUserInfo, userInfo, vipIcon } = useStore()
+const { setUserInfo, userInfo } = useStore()
 
 // 表单数据
 const profileForm = ref(userInfo || {})
@@ -185,7 +112,6 @@ const fetchProfile = async () => {
       avatar: data.avatar,
       signed: data.signed,
       points: data.points,
-      vip: data.vip,
       my_invite_code: data.my_invite_code
     }
     setUserInfo(data)
@@ -261,57 +187,6 @@ const pointsColumns = [
 const showPointsLog = () => {
   pointsVisible.value = true
   loadPointsLog()
-}
-
-const membershipVisible = ref(false)
-const membershipLog = ref([])
-// 加载VIP变动记录
-const loadMembershipLog = async () => {
-  const data = await getMembershipLog()
-  membershipLog.value = data
-}
-
-// VIP变动记录表格列
-const membershipColumns = [
-  { title: '变动天数', dataIndex: 'days' },
-  { title: '备注', dataIndex: 'remark' },
-  { title: '变动时间', dataIndex: 'created_at' }
-]
-
-const showMembershipLog = () => {
-  membershipVisible.value = true
-  loadMembershipLog()
-}
-
-const membershipRenewalVisible = ref(false)
-const membershipList = ref([])
-const checkedMembership = ref(null)
-// 加载VIP变动记录
-const loadMembershipRenewal = async () => {
-  const data = await getMembershipList()
-  membershipList.value = data
-}
-
-const showMembershipRenewal = () => {
-  membershipRenewalVisible.value = true
-  loadMembershipRenewal()
-}
-
-const handleMembershipRenewal = async () => {
-  if (!checkedMembership.value) {
-    Message.error('请选择开通会员时长')
-    return
-  }
-  try {
-    const data = await renewMembership({
-      id: checkedMembership.value
-    })
-    Message.success('开通成功')
-    fetchProfile()
-    membershipRenewalVisible.value = false
-  } catch (error) {
-    // Message.error("开通失败")
-  }
 }
 
 // 页面加载时获取数据

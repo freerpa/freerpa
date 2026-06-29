@@ -18,7 +18,7 @@
           @press-enter="handleBeforeOk"
         >
           <template #prepend>
-            <CategorySelect v-model="form.category" type="browser" />
+            <CategorySelect v-model="form.category" type="environment" />
           </template>
         </a-input>
       </a-form-item>
@@ -117,8 +117,9 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { IconCheckCircleFill, IconCloseCircleFill } from '@arco-design/web-vue/es/icon'
 import { Message } from '@arco-design/web-vue'
 import CategorySelect from '@/components/CategorySelect.vue'
-import { getEnvironmentDetail, saveEnvironment } from '@/api/browser'
 import { API_CONFIG } from '@/api/config'
+
+const { browserLocal: browserAPI } = window.electronAPI
 
 const countryLang = {
   CN: 'zh-CN',
@@ -298,12 +299,17 @@ const handleSubmit = async () => {
       id: props.envId,
       name: form.value.name,
       description: form.value.description,
-      category: form.value.category,
-      major_version: form.value.major_version,
-      proxy_direct: isDirect.value,
-      proxy_url: proxyUrl
+      category_id: form.value.category,
+      kernel_id: form.value.major_version,
+      proxy_url: proxyUrl,
+      config: { proxy_direct: isDirect.value }
     }
-    await saveEnvironment(env)
+    if (props.envId) {
+      await browserAPI.updateBrowser(env)
+    } else {
+      const newId = await browserAPI.createBrowser(env)
+      env.id = newId
+    }
     Message.success(props.envId ? '更新成功' : '创建成功')
     emit('success', env)
     handleCancel()
@@ -330,18 +336,20 @@ const handleCancel = () => {
 // 获取环境详情
 const fetchEnvironmentDetail = async (id) => {
   try {
-    const result = await getEnvironmentDetail(id)
+    const result = await browserAPI.getBrowser(id)
     if (result) {
-      const isDirectMode =
-        result.proxy_direct === true || result.proxy_direct === 1 || result.proxy_direct === 'true'
+      let config = {}
+      try { config = typeof result.config === 'string' ? JSON.parse(result.config) : (result.config || {}) } catch (e) {}
+      const proxyDirect = config.proxy_direct || false
+      const isDirectMode = proxyDirect === true || proxyDirect === 1 || proxyDirect === 'true'
 
       if (isDirectMode) {
         form.value = {
           id: result.id,
           name: result.name,
           description: result.description || '',
-          category: result.category || '',
-          major_version: result.major_version || '',
+          category: result.category_id || '',
+          major_version: result.kernel_id || '',
           proxy_protocol: 'direct',
           proxy_url: ''
         }
@@ -359,8 +367,8 @@ const fetchEnvironmentDetail = async (id) => {
           id: result.id,
           name: result.name,
           description: result.description || '',
-          category: result.category || '',
-          major_version: result.major_version || '',
+          category: result.category_id || '',
+          major_version: result.kernel_id || '',
           proxy_protocol: proxyProtocol,
           proxy_url: proxyUrl
         }

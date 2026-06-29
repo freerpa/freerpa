@@ -123,7 +123,6 @@ import {
   IconCheckCircle,
   IconCopy
 } from '@arco-design/web-vue/es/icon'
-import { getEnvironmentDetail } from '@/api/browser'
 import Browser from '@/components/Browser.vue'
 import { useStore } from '@/store'
 import { storeToRefs } from 'pinia'
@@ -187,7 +186,7 @@ const handleSelectorClose = () => {
 
 const browserRef = ref(null)
 const handleEnvChange = async (value) => {
-  const res = await getEnvironmentDetail(value)
+  const res = await window.electronAPI.browserLocal.getBrowser(value)
   currentEnv.value = res
   await new Promise((resolve) => setTimeout(resolve, 10))
   await browserRef.value.reInit()

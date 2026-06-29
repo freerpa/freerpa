@@ -22,7 +22,11 @@
         <template #icon><ri-database2-line /></template>
         <span>数据表</span>
       </a-menu-item>
-      <a-menu-item key="user">
+      <a-menu-item key="my">
+        <template #icon><ri-user-3-line /></template>
+        <span>我的</span>
+      </a-menu-item>
+      <a-menu-item key="settings">
         <template #icon><ri-settings2-line /></template>
         <span>设置</span>
       </a-menu-item>
@@ -46,16 +50,28 @@ import {
   IconComputer,
   IconUser
 } from '@arco-design/web-vue/es/icon'
-import {RiHome2Line,RiFlowChart,RiChromeLine,RiDatabase2Line,RiSettings2Line} from '@remixicon/vue';
+import {RiHome2Line,RiFlowChart,RiChromeLine,RiDatabase2Line,RiSettings2Line,RiUser3Line} from '@remixicon/vue';
+import { useStore } from '@/store'
+
+const store = useStore()
 const isCollapse = ref(false)
 const router = useRouter()
 const route = useRoute()
 
-const emit = defineEmits(['userCenter'])
+const emit = defineEmits(['myCenter', 'settingsCenter'])
 
 const handleMenuClick = (key) => {
-  if (key === 'user') {
-    emit('userCenter')
+  if (key === 'my') {
+    // 未登录：弹出登录窗口
+    if (!store.userInfo) {
+      store.showLogin()
+      return
+    }
+    emit('myCenter')
+    return
+  }
+  if (key === 'settings') {
+    emit('settingsCenter')
     return
   }
   router.push(`/${key}`)

@@ -2,9 +2,10 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { createWorkflowEngine } from '../engine'
-import { saveWorkflow as saveWorkflowAPI } from '@/api/workflow'
-import { adjustParentSize, encryptedData, History } from '../utils'
+import { adjustParentSize, History } from '../utils'
 import { debounce } from 'lodash-es'
+
+const { workflow: workflowAPI } = window.electronAPI
 export const useFlowStore = (id) =>
   defineStore(`flow_${id}`, () => {
     const vueFlowRef = ref(null)
@@ -94,8 +95,9 @@ export const useFlowStore = (id) =>
       })
     }
 
-    const savedHistoryId = ref(null)
-    const nowHistoryId = ref(null)
+    const savedHistoryId = ref(0)
+    const nowHistoryId = ref(0)
+    const isSaved = computed(() => savedHistoryId.value === nowHistoryId.value)
     const saveHistory = debounce(() => {
       if (!initialized.value) {
         return
@@ -132,9 +134,6 @@ export const useFlowStore = (id) =>
       historyIngDebounce()
     }
 
-    const isSaved = computed(() => {
-      return savedHistoryId.value === nowHistoryId.value
-    })
     const saveIng = ref(false)
     // 保存工作流
     const saveWorkflow = async () => {
@@ -142,11 +141,11 @@ export const useFlowStore = (id) =>
         return
       }
       saveIng.value = true
-      const elements = JSON.stringify(vueFlowRef.value.toObject())
+      const elements = vueFlowRef.value.toObject()
       try {
-        await saveWorkflowAPI({
+        await workflowAPI.updateWorkflow({
           id: id,
-          elements: await encryptedData(elements)
+          graph: elements
         })
         savedHistoryId.value = nowHistoryId.value
         Message.success('保存成功')

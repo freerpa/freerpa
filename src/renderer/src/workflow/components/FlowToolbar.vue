@@ -110,11 +110,6 @@
     </a-space>
     <a-divider direction="vertical" />
     <a-space>
-      <a-tooltip content="节点数量：工作流、插件、插件依赖的节点数总和">
-        <a-tag style="height: 28px" :color="nodeCount >= userLimits.node_limit ? 'red' : ''">
-          {{ nodeCount }}/{{ userLimits.node_limit }}
-        </a-tag>
-      </a-tooltip>
 
       <a-popover trigger="click" :duration="100" position="top">
         <template #title>
@@ -231,7 +226,6 @@ const { isExecuting, isSaved, saveIng, debug, noticeNum, notices, playAudio } =
   storeToRefs(flowStore)
 import { debounce } from 'lodash'
 const store = useStore()
-const { userLimits } = storeToRefs(store)
 const showStoreWorkflows = ref(null)
 // 节点数量
 const nodeCount = computed(() => {

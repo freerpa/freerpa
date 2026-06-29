@@ -36,26 +36,6 @@ export const getPointsLog = (page, pageSize) => {
   return request.get(`/app/user/points/log`, { params: { page, pageSize } })
 }
 
-// 获取用户VIP变动记录
-export const getMembershipLog = () => {
-  return request.get(`/app/user/membership/log`)
-}
-
-// 获取用户VIP列表
-export const getMembershipList = () => {
-  return request.get(`/app/user/membership/list`)
-}
-
-// 续费VIP
-export const renewMembership = (data) => {
-  return request.post(`/app/user/membership/renew`, data)
-}
-
-// 获取用户限制
-export const getUserLimits = () => {
-  return request.get(`/app/user/limits`)
-}
-
 // 使用兑换码
 export const useExchangeCode = (data) => {
   return request.post(`/app/user/code/use`, data)

@@ -95,7 +95,7 @@
 
       <a-avatar
         v-if="routePath !== '/login'"
-        @click="userCenter"
+        @click="myCenter"
         class="avatar"
         :size="24"
         :image-url="avatar"
@@ -241,14 +241,14 @@ const routePath = computed(() => {
   return route.path
 })
 
-const emit = defineEmits(['userCenter'])
+const emit = defineEmits(['myCenter'])
 
 const avatar = computed(() => {
   return userInfo?.value?.avatar || ''
 })
 
-const userCenter = () => {
-  emit('userCenter')
+const myCenter = () => {
+  emit('myCenter')
 }
 
 const minimizeWindow = () => {

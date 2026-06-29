@@ -32,24 +32,14 @@
             <template #icon><icon-search /></template>
             条件查询
           </a-button>
-          <a-badge>
-            <template #content>
-              <vipIcon />
-            </template>
-            <a-button @click="handleImport">
+          <a-button @click="handleImport">
               <template #icon><icon-import /></template>
               导入Excel
             </a-button>
-          </a-badge>
-          <a-badge>
-            <template #content>
-              <vipIcon />
-            </template>
-            <a-button @click="handleExport">
+          <a-button @click="handleExport">
               <template #icon><icon-export /></template>
               导出Excel
             </a-button>
-          </a-badge>
         </a-space>
       </div>
 
@@ -537,7 +527,7 @@ import {
 } from '@arco-design/web-vue/es/icon'
 import { deepClone } from '@/workflow/utils'
 import { useStore } from '@/store'
-const { isVip, vipIcon } = useStore()
+const {} = useStore()
 
 const props = defineProps({
   model: {
@@ -862,7 +852,6 @@ const progress = ref({
 })
 // 处理导出数据
 const handleExport = async (type) => {
-  if (!isVip()) return
   try {
     const pathResult = await window.electronAPI.dialog.savePath({
       title: '选择保存目录',
@@ -904,7 +893,6 @@ const handleExport = async (type) => {
 const importing = ref(false)
 // 处理导入数据
 const handleImport = async () => {
-  if (!isVip()) return
   // 创建文件选择器
   const result = await window.electronAPI.dialog.openPath({
     title: '选择要导入的Excel文件',

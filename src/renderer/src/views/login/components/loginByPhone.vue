@@ -80,6 +80,8 @@ import { setToken } from '@/utils/token'
 import { useStore } from '@/store'
 const { clearStoreEnvList } = useStore()
 
+const emit = defineEmits(['success'])
+
 const loading = ref(false)
 const countdown = ref(0)
 
@@ -115,6 +117,7 @@ const handleLogin = async () => {
     // 清空浏览器列表缓存
     clearStoreEnvList()
     router.replace('/')
+    emit('success')
   } finally {
     loading.value = false
   }

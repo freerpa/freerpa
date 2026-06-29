@@ -30,17 +30,11 @@ const routes = [
         path: 'browser',
         component: BrowserView
       }
-    ],
-    meta: {
-      requiresAuth: true
-    }
+    ]
   },
   {
     path: '/login',
-    component: Login,
-    meta: {
-      requiresAuth: false
-    }
+    component: Login
   }
 ]
 
@@ -54,18 +48,14 @@ if (firstLoad) {
   window.electronAPI.window.maximize(true)
   firstLoad = false
 }
-// 路由守卫
+// 路由守卫：免登录模式，仅处理登录页面的清理工作
 router.beforeEach((to, from, next) => {
-  const token = getToken()
-  if (to.meta.requiresAuth && !token) {
-    window.electronAPI.window.size(800, 600)
-    next('/login')
-  } else if (to.path === '/login') {
+  if (to.path === '/login') {
     removeToken()
     window.electronAPI.emitFlowEvent('cleanup')
     window.electronAPI.window.size(800, 600)
     next()
-  } else if (from.path === '/login' && token) {
+  } else if (from.path === '/login') {
     window.electronAPI.window.maximize()
     next()
   } else {

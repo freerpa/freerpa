@@ -418,7 +418,7 @@ import DebugInfo from './components/debugInfo.vue'
 import { ConnectionRules, parseConfigExpression } from '../../utils'
 import { useStore } from '@/store'
 const { userInfo } = useStore()
-const isMyNode = computed(() => props.data.user_id === userInfo.id)
+const isMyNode = computed(() => props.data.user_id === userInfo?.id)
 import {
   deepClone,
   getTypeColor,

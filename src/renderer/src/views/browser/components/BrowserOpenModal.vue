@@ -157,7 +157,8 @@ import {
   IconCloseCircleFill
 } from '@arco-design/web-vue/es/icon'
 import { API_CONFIG } from '@/api/config'
-import { getEnvironmentDetail } from '@/api/browser'
+
+const { browserLocal: browserAPI } = window.electronAPI
 
 const props = defineProps({ env: { type: Object, required: true } })
 const emit = defineEmits(['success', 'cancel'])
@@ -242,11 +243,11 @@ const getPlatform = () => {
 
 const fetchKernel = async () => {
   checkAborted()
-  let majorVersion = props.env?.major_version
+  let majorVersion = props.env?.major_version || props.env?.kernel_id
   if (!majorVersion && props.env?.id) {
     try {
-      const d = await getEnvironmentDetail(props.env.id)
-      if (d?.major_version) majorVersion = d.major_version
+      const d = await browserAPI.getBrowser(props.env.id)
+      if (d?.kernel_id) majorVersion = d.kernel_id
     } catch (_) {}
   }
   if (!majorVersion) throw new Error('未配置内核版本，请在环境编辑中选择 Chrome 大版本')

@@ -70,7 +70,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('data:importExcelProgress', (event, progress) => {
         callback(progress)
       })
-    }
+    },
+    getTrash: () => ipcRenderer.invoke('data:getTrash'),
+    restore: (id) => ipcRenderer.invoke('data:restore', id),
+    permanentDelete: (id) => ipcRenderer.invoke('data:permanentDelete', id)
   },
 
   // 浏览器管理模块API
@@ -141,11 +144,45 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 工作流管理模块API
   workflow: {
+    // 工作流执行
     getAllNodes: () => ipcRenderer.invoke('workflow:getAllNodes'),
     getAllNodeCategories: () => ipcRenderer.invoke('workflow:getAllNodeCategories'),
     encryptData: (data) => ipcRenderer.invoke('workflow:encryptData', data),
     decryptData: (data) => ipcRenderer.invoke('workflow:decryptData', data),
-    verifyData: (data) => ipcRenderer.invoke('workflow:verifyData', data)
+    verifyData: (data) => ipcRenderer.invoke('workflow:verifyData', data),
+    // 工作流本地 CRUD
+    getWorkflows: (params) => ipcRenderer.invoke('workflow:getWorkflows', params),
+    getWorkflow: (id) => ipcRenderer.invoke('workflow:getWorkflow', id),
+    createWorkflow: (params) => ipcRenderer.invoke('workflow:createWorkflow', params),
+    updateWorkflow: (params) => ipcRenderer.invoke('workflow:updateWorkflow', params),
+    deleteWorkflow: (id) => ipcRenderer.invoke('workflow:deleteWorkflow', id),
+    importWorkflow: (params) => ipcRenderer.invoke('workflow:importWorkflow', params),
+    exportWorkflow: (id) => ipcRenderer.invoke('workflow:exportWorkflow', id),
+    getTrash: () => ipcRenderer.invoke('workflow:getTrash'),
+    restore: (id) => ipcRenderer.invoke('workflow:restore', id),
+    permanentDelete: (id) => ipcRenderer.invoke('workflow:permanentDelete', id)
+  },
+
+  // 浏览器本地 CRUD
+  browserLocal: {
+    getBrowsers: (params) => ipcRenderer.invoke('browser:getBrowsers', params),
+    getBrowser: (id) => ipcRenderer.invoke('browser:getBrowser', id),
+    createBrowser: (params) => ipcRenderer.invoke('browser:createBrowser', params),
+    updateBrowser: (params) => ipcRenderer.invoke('browser:updateBrowser', params),
+    deleteBrowser: (id) => ipcRenderer.invoke('browser:deleteBrowser', id),
+    importBrowser: (params) => ipcRenderer.invoke('browser:importBrowser', params),
+    exportBrowser: (id) => ipcRenderer.invoke('browser:exportBrowser', id),
+    getTrash: () => ipcRenderer.invoke('browser:getTrash'),
+    restore: (id) => ipcRenderer.invoke('browser:restore', id),
+    permanentDelete: (id) => ipcRenderer.invoke('browser:permanentDelete', id)
+  },
+
+  // 分类模块 API
+  category: {
+    getCategories: (type) => ipcRenderer.invoke('category:getCategories', type),
+    addCategory: (type, name) => ipcRenderer.invoke('category:addCategory', type, name),
+    updateCategory: (id, name) => ipcRenderer.invoke('category:updateCategory', id, name),
+    deleteCategory: (id) => ipcRenderer.invoke('category:deleteCategory', id)
   },
 
   // 加密解密API
