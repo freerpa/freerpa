@@ -1,22 +1,22 @@
 /**
- * @file: 指纹浏览器视图创建
+ * @file: 打开指纹浏览器
  * @author: FreeRPA
  *
- * createEnvView — 启动 fingerprint-chromium 内核 + Puppeteer 连接
+ * openBrowser — 启动 fingerprint-chromium 内核 + Puppeteer 连接
  */
 
 import puppeteer from 'puppeteer-core'
 import { launchKernel, fetchKernelList, checkKernelExists, downloadKernel } from './kernel'
 
 /**
- * 创建指纹浏览器实例
+ * 打开指纹浏览器实例
  *
  * @param {object} env - 浏览器数据（可选，用于 storage/cookies 恢复）
- * @param {object} options - { offscreen, proxy }
+ * @param {object} options - { headless, proxy }
  * @returns {Promise<{ page: object, browser: object, close: function }>}
  */
-export const createEnvView = async (env = null, options = {}) => {
-  const { offscreen = false, proxy = '' } = options
+export const openBrowser = async (env = null, options = {}) => {
+  const { headless = false, proxy = '' } = options
 
   const baseUrl = process.env.NODE_ENV === 'development'
     ? process.env.VITE_DEV_URL || 'http://127.0.0.1:8787'
@@ -42,7 +42,7 @@ export const createEnvView = async (env = null, options = {}) => {
     version: kernel.version,
     proxy,
     fingerprintSeed: Math.floor(Math.random() * 100000),
-    offscreen,
+    headless,
     timezone: env?.timezone || '',
     lang: 'en-US'
   })

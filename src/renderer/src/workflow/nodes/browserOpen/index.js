@@ -16,30 +16,20 @@ export default {
           name: '浏览器',
           type: 'radio',
           default: 'automan',
-          description: '支持内置浏览器、比特浏览器和CDP连接',
+          description: '支持内置浏览器和CDP连接',
           options: [
-            {
-              label: '内置',
-              value: 'automan'
-            },
-            {
-              label: '比特',
-              value: 'bit'
-            },
-            {
-              label: 'CDP',
-              value: 'cdp'
-            }
+            { label: '内置', value: 'automan' },
+            { label: 'CDP', value: 'cdp' }
           ],
           quickConfig: true
         },
-        offscreen: {
-          id: 'offscreen',
+        headless: {
+          id: 'headless',
           name: '无头模式',
           type: 'switch',
           default: false,
           description: '无头模式可以有效提升性能，但操作受限。',
-          show: "['automan', 'bit'].includes(${browser})",
+          show: "['automan'].includes(${browser})",
           quickConfig: true
         },
         cdpUrl: {
@@ -60,22 +50,10 @@ export default {
           default: ['mute'],
           show: '${browser} === "automan"',
           options: [
-            {
-              label: '静音运行',
-              value: 'mute'
-            },
-            {
-              label: '禁止图片',
-              value: 'no_image'
-            },
-            {
-              label: '拦截广告',
-              value: 'ad_block'
-            },
-            {
-              label: '允许新页面',
-              value: 'new_page'
-            }
+            { label: '静音运行', value: 'mute' },
+            { label: '禁止图片', value: 'no_image' },
+            { label: '拦截广告', value: 'ad_block' },
+            { label: '允许新页面', value: 'new_page' }
           ]
         },
         envId: {
@@ -86,83 +64,15 @@ export default {
           quickConfig: true,
           show: '${browser} === "automan"',
           remote: true,
-          props: {
-            allowClear: true
-          },
+          props: { allowClear: true },
           remoteMethod: async (keyword = '') => {
             const { getEnvList } = useStore()
-            // 通过网络api获取浏览器列表
             const result = await getEnvList(keyword)
             return result.map((env) => ({
               label: env.name,
               value: env.id
             }))
           }
-        },
-        browser_type: {
-          id: 'browser_type',
-          name: '设备类型',
-          type: 'radio',
-          default: 'pc',
-          description: '浏览器的模拟设备',
-          show: '!${envId} && ${browser} === "automan"',
-          options: [
-            {
-              label: '电脑',
-              value: 'pc'
-            },
-            {
-              label: '手机',
-              value: 'mobile'
-            },
-            {
-              label: '自定义',
-              value: 'diy'
-            }
-          ],
-          onChange: (val, formData) => {
-            if (val === 'pc') {
-              formData.value.browser_width = 1280
-              formData.value.browser_height = 720
-            } else if (val === 'mobile') {
-              formData.value.browser_width = 345
-              formData.value.browser_height = 700
-            } else if (val === 'diy') {
-              formData.value.browser_width = 1280
-              formData.value.browser_height = 720
-              formData.value.browser_ua = ''
-            }
-          },
-          quickConfig: true
-        },
-        browser_width: {
-          id: 'browser_width',
-          name: '宽度',
-          type: 'number',
-          default: 1280,
-          description: '浏览器宽度',
-          min: 0,
-          show: '${browser_type} === "diy"',
-          quickConfig: true
-        },
-        browser_height: {
-          id: 'browser_height',
-          name: '高度',
-          type: 'number',
-          default: 720,
-          description: '浏览器高度',
-          min: 0,
-          show: '${browser_type} === "diy"',
-          quickConfig: true
-        },
-        browser_ua: {
-          id: 'browser_ua',
-          name: '标识',
-          type: 'text',
-          description: '浏览器UA',
-          show: '${browser_type} === "diy"',
-          quickConfig: true,
-          required: true
         },
         proxyUrl: {
           id: 'proxyUrl',
@@ -171,54 +81,6 @@ export default {
           show: '${browser} === "automan"',
           description: '协议://用户名:密码@地址:端口',
           quickConfig: true
-        },
-        port: {
-          id: 'port',
-          name: '服务端口',
-          type: 'number',
-          default: 54345,
-          description: '比特浏览器 Local API 端口号',
-          min: 0,
-          max: 65535,
-          show: '${browser} === "bit"',
-          quickConfig: true
-        },
-        bitWindow: {
-          id: 'bitWindow',
-          name: '运行环境',
-          type: 'select',
-          description: '选择比特浏览器窗口',
-          quickConfig: true,
-          show: '${browser} === "bit"',
-          remote: true,
-          required: true,
-          props: {
-            allowClear: true
-          },
-          remoteMethod: async (keyword = '', formData) => {
-            let options = []
-            try {
-              const res = await fetch(`http://127.0.0.1:${formData.value.port}/browser/list`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  "page": 0,
-                  "pageSize": 100
-                })
-              })
-              const data = await res.json()
-              options = data?.data?.list.map((env) => ({
-                label: env.name,
-                value: env.id
-              })).filter((item) => item.label.includes(keyword))
-            } catch (error) {
-              options = []
-              formData.value.bitWindow = ''
-            }
-            return options
-          }
         },
         script: {
           id: 'script',
@@ -232,11 +94,6 @@ export default {
   },
   inputs: [],
   outputs: [
-    {
-      id: 'page',
-      name: '浏览器',
-      type: 'page',
-      description: '浏览器'
-    }
+    { id: 'page', name: '浏览器', type: 'page', description: '浏览器' }
   ]
 }

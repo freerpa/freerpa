@@ -54,7 +54,7 @@ export const launchKernel = async (options = {}) => {
     version,
     proxy = '',
     fingerprintSeed = Math.floor(Math.random() * 100000),
-    offscreen = false,
+    headless = false,
     userDataDir = path.join(app.getPath('userData'), 'sessions', uuidv4()),
     lang = 'en-US',
     extraArgs = [],
@@ -78,7 +78,7 @@ export const launchKernel = async (options = {}) => {
     ...extraArgs,
   ]
 
-  if (offscreen) args.push('--headless=new')
+  if (headless) args.push('--headless=new')
 
   if (proxy) {
     args.push(`--proxy-server=${proxy.replace(/\/\/.+:.+@/, '//')}`, '--disable-non-proxied-udp')

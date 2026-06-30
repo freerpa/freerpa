@@ -2,7 +2,6 @@ import http from 'http'
 import https from 'https'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 import { SocksProxyAgent } from 'socks-proxy-agent'
-import { getIpInfo } from './ip'
 
 /**
  * 从标准代理地址中提取 IPv4 地址
@@ -89,11 +88,6 @@ export async function validateProxy(proxyUrl, options = {}) {
       })
     })
 
-    const ip = extractIpFromProxy(proxyUrl)
-    const ipInfo = await getIpInfo(ip)
-    if (ipInfo) {
-      result.ipInfo = ipInfo
-    }
     return result
   } catch (error) {
     return {
