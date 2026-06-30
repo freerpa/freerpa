@@ -13,7 +13,7 @@
 </template>
 
 <script setup>
-import { ref, watch, inject } from 'vue'
+import { useFieldWatch } from './composables/useFieldValue'
 
 const props = defineProps({
   field: {
@@ -22,13 +22,6 @@ const props = defineProps({
   }
 })
 
-const formData = inject('formData')
 const value = defineModel()
-
-// 值变化时触发onChange
-watch(value, (newVal) => {
-  if(props.field.onChange) {
-    props.field.onChange(newVal, formData)
-  }
-})
+useFieldWatch(props, value)
 </script> 

@@ -10,6 +10,7 @@
 
 <script setup>
 import { ref, watch, inject } from 'vue'
+import { useFieldWatch } from './composables/useFieldValue'
 
 const props = defineProps({
   field: {
@@ -18,10 +19,10 @@ const props = defineProps({
   }
 })
 
-const formData = inject('formData')
 const isQuickConfig = inject('isQuickConfig')
 
 const value = defineModel()
+useFieldWatch(props, value)
 const options = ref(props.field.options || [])
 
 // 远程加载选项
@@ -44,13 +45,6 @@ watch(
     options.value = newVal || []
   }
 )
-
-// 值变化时触发onChange
-watch(value, (newVal) => {
-  if (props.field.onChange) {
-    props.field.onChange(newVal, formData)
-  }
-})
 </script>
 
 <style scoped lang="less">

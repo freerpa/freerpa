@@ -10,13 +10,13 @@
     model-event="input"
     allow-clear
     @blur="handleBlur"
-    @change="handleChange"
   />
 </template>
 
 <script setup>
 import { inject } from 'vue'
 import { unDoReDoInterceptor } from '@/workflow/utils'
+import { useFieldWatch } from './composables/useFieldValue'
 
 const props = defineProps({
   field: {
@@ -25,9 +25,9 @@ const props = defineProps({
   }
 })
 
-const formData = inject('formData')
 const value = defineModel()
-// 验证值是否有效
+useFieldWatch(props, value)
+
 const isValueValid = (value) => {
   if (value === null || value === undefined || value === '') {
     return false
@@ -38,11 +38,6 @@ const isValueValid = (value) => {
 const handleBlur = () => {
   if (!isValueValid(value.value)) {
     value.value = props.field.min || 0
-  }
-}
-const handleChange = (nowValue) => {
-  if (props.field.onChange) {
-    props.field.onChange(value.value, formData)
   }
 }
 </script>

@@ -332,11 +332,10 @@ const handleSelectorInputValue = (value) => {
 
 // 修复回显问题
 watch(
-  () => props.modelValue,
+  () => value.value,
   (newVal) => {
     if (newVal) {
       handleSelectorInputValue(newVal)
-      // 验证选择器
       validateSelector()
     } else {
       selectorInput.value = ''

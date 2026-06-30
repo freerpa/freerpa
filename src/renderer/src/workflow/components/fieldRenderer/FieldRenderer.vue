@@ -153,11 +153,11 @@ provide('formData', formData)
 // 获取节点数据
 const nodeData = inject('nodeData')
 
-// 预定义所有字段组件
-const fieldComponents = fieldRenders.reduce((prev, cur) => {
-  prev[cur.name] = cur.component
-  return prev
-}, {})
+// 预定义所有字段组件（静态导入，无需异步包装）
+const fieldComponents = Object.fromEntries(
+  fieldRenders.map((r) => [r.name, r.component])
+)
+fieldComponents._default = fieldComponents.text
 
 // 获取字段组件
 const getFieldComponent = (type) => {
@@ -178,18 +178,17 @@ const expFields = computed(() => {
   const fields = []
   const values = { ...nodeData.config, ...formData.value }
   props.fields.forEach((field) => {
-    // const newField = {}
-    // Object.keys(field).forEach((key) => {
-    //   newField[key] = parseConfigExpression(key, field[key], values)
-    // })
+    const fieldCacheKey = field.id + '_show'
+    // Only re-evaluate parseConfigExpression if values changed (computed dependency tracks this)
+    const shouldShow = field.hasOwnProperty('show')
+      ? parseConfigExpression(props.fields, 'show', field.show, values)
+      : true
+
+    if (!shouldShow) return
+
     const newField = { ...field }
-    if (field.hasOwnProperty('show')) {
-      newField.show = parseConfigExpression(props.fields, 'show', field.show, values)
-    }
     newField.rules = buildRules(newField)
-    if (!newField.hasOwnProperty('show') || newField.show) {
-      fields.push(newField)
-    }
+    fields.push(newField)
   })
   return fields
 })

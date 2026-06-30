@@ -7,7 +7,8 @@
 </template>
 
 <script setup>
-import { ref, watch, inject } from 'vue'
+import { ref, watch } from 'vue'
+import { useFieldWatch } from './composables/useFieldValue'
 
 const props = defineProps({
   field: {
@@ -16,8 +17,8 @@ const props = defineProps({
   }
 })
 
-const formData = inject('formData')
 const value = defineModel()
+useFieldWatch(props, value)
 const options = ref(props.field.options || [])
 
 // 远程加载选项
@@ -36,13 +37,6 @@ if(props.field.remote) {
 // 监听选项变化
 watch(() => props.field.options, (newVal) => {
   options.value = newVal || []
-})
-
-// 值变化时触发onChange
-watch(value, (newVal) => {
-  if(props.field.onChange) {
-    props.field.onChange(newVal, formData)
-  }
 })
 </script>
 <style scoped>

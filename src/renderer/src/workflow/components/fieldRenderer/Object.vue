@@ -47,6 +47,7 @@ import { ref, computed, watch, inject } from 'vue'
 import { IconPlus } from '@arco-design/web-vue/es/icon'
 import FieldRenderer from './FieldRenderer.vue'
 import { getDefaultFieldValue } from '../../utils'
+import { useFieldWatch } from './composables/useFieldValue'
 
 const props = defineProps({
   field: {
@@ -107,12 +108,7 @@ const handleAddField = () => {
 }
 
 const isQuickConfig = inject('isQuickConfig')
-const formData = inject('formData')
-watch(objectData, (value) => {
-  if (props.field.hasOwnProperty('onChange')) {
-    props.field.onChange(value, formData)
-  }
-})
+useFieldWatch(props, objectData)
 </script>
 
 <style lang="less" scoped>

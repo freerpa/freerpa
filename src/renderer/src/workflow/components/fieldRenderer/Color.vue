@@ -17,7 +17,8 @@
 </template>
 
 <script setup>
-import { ref, watch, inject } from 'vue'
+import { inject } from 'vue'
+import { useFieldWatch } from './composables/useFieldValue'
 import { IconClose } from '@arco-design/web-vue/es/icon'
 
 const props = defineProps({
@@ -27,20 +28,13 @@ const props = defineProps({
   }
 })
 
-const formData = inject('formData')
 const isExecuting = inject('isExecuting')
 const value = defineModel()
+useFieldWatch(props, value)
 
 const clear = () => {
   value.value = '#00000000'
 }
-
-// 值变化时触发onChange
-watch(value, (newVal) => {
-  if (props.field.onChange) {
-    props.field.onChange(newVal, formData)
-  }
-})
 </script>
 <style lang="less" scoped>
 .color-picker {

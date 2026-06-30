@@ -113,10 +113,9 @@ import { json } from '@codemirror/lang-json'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { EditorState, EditorSelection } from '@codemirror/state'
 import { EditorView, lineNumbers } from '@codemirror/view'
-// import { historyKeymap } from '@codemirror/commands'
 import ParamRefer from './components/ParamRefer.vue'
 import { unDoReDoInterceptor, paramReferRegex } from '@/workflow/utils'
-import { debounce } from 'lodash-es'
+import { useFieldWatch } from './composables/useFieldValue'
 
 const editorVisible = ref(false)
 // 注入是否获取焦点
@@ -134,8 +133,8 @@ const props = defineProps({
   }
 })
 
-const formData = inject('formData')
 const value = defineModel()
+useFieldWatch(props, value)
 
 const handleOk = () => {
   value.value = editorView.state.doc.toString()
@@ -163,17 +162,6 @@ const extensions = ref([languageExtension(), EditorView.lineWrapping])
 if (props.field.theme === 'dark') {
   extensions.value.push(oneDark)
 }
-
-// 值变化时触发onChange
-watch(value, (newVal) => {
-  if (props.field.onChange) {
-    props.field.onChange(newVal, formData)
-  }
-})
-
-const handleEditorChange = debounce((newVal) => {
-  value.value = newVal
-}, 300)
 
 let editorView = null
 // 编辑器初始化完成

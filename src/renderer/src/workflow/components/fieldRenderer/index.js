@@ -1,104 +1,43 @@
-import { defineAsyncComponent } from 'vue'
+import Text from './Text.vue'
+import Number from './Number.vue'
+import Select from './Select.vue'
+import Switch from './Switch.vue'
+import Radio from './Radio.vue'
+import Checkbox from './Checkbox.vue'
+import Date from './Date.vue'
+import Time from './Time.vue'
+import DateTime from './DateTime.vue'
+import Slider from './Slider.vue'
+import Color from './Color.vue'
+import Code from './CodeEditor.vue'
+import Selector from './ElementSelector.vue'
+import Array from './Array.vue'
+import Object from './Object.vue'
+import Path from './Path.vue'
+import Alert from './Alert.vue'
+import Position from './Position.vue'
+import Model from './Model.vue'
+import Env from './Env.vue'
 
 export default [
-  {
-    name: 'text',
-    component: defineAsyncComponent(() => import('./Text.vue')),
-    dataType: 'string'
-  },
-  {
-    name: 'number',
-    component: defineAsyncComponent(() => import('./Number.vue')),
-    dataType: 'number'
-  },
-  {
-    name: 'select',
-    component: defineAsyncComponent(() => import('./Select.vue')),
-    dataType: 'string'
-  },
-  {
-    name: 'switch',
-    component: defineAsyncComponent(() => import('./Switch.vue')),
-    dataType: 'boolean'
-  },
-  {
-    name: 'radio',
-    component: defineAsyncComponent(() => import('./Radio.vue')),
-    dataType: 'string'
-  },
-  {
-    name: 'checkbox',
-    component: defineAsyncComponent(() => import('./Checkbox.vue')),
-    dataType: 'array'
-  },
-  {
-    name: 'date',
-    component: defineAsyncComponent(() => import('./Date.vue')),
-    dataType: 'string'
-  },
-  {
-    name: 'time',
-    component: defineAsyncComponent(() => import('./Time.vue')),
-    dataType: 'string'
-  },
-  {
-    name: 'datetime',
-    component: defineAsyncComponent(() => import('./DateTime.vue')),
-    dataType: 'string'
-  },
-  {
-    name: 'slider',
-    component: defineAsyncComponent(() => import('./Slider.vue')),
-    dataType: 'number'
-  },
-  {
-    name: 'color',
-    component: defineAsyncComponent(() => import('./Color.vue')),
-    dataType: 'string'
-  },
-  {
-    name: 'code',
-    component: defineAsyncComponent(() => import('./CodeEditor.vue')),
-    dataType: 'string'
-  },
-  {
-    name: 'selector',
-    component: defineAsyncComponent(() => import('./ElementSelector.vue')),
-    dataType: 'string'
-  },
-  {
-    name: 'array',
-    component: defineAsyncComponent(() => import('./Array.vue')),
-    dataType: 'array'
-  },
-  {
-    name: 'object',
-    component: defineAsyncComponent(() => import('./Object.vue')),
-    dataType: 'object'
-  },
-  {
-    name: 'path',
-    component: defineAsyncComponent(() => import('./Path.vue')),
-    dataType: 'string'
-  },
-  {
-    name: 'alert',
-    component: defineAsyncComponent(() => import('./Alert.vue')),
-    dataType: 'string'
-  }, 
-  {
-    name: 'position',
-    component: defineAsyncComponent(() => import('./Position.vue')),
-    dataType: 'object'
-  },
-  {
-    name: 'model',
-    component: defineAsyncComponent(() => import('./Model.vue')),
-    dataType: 'string'
-  },
-  {
-    name: 'env',
-    component: defineAsyncComponent(() => import('./Env.vue')),
-    dataType: 'string'
-  },
+  { name: 'text',      component: Text,      dataType: 'string' },
+  { name: 'number',    component: Number,    dataType: 'number' },
+  { name: 'select',    component: Select,    dataType: 'string' },
+  { name: 'switch',    component: Switch,    dataType: 'boolean' },
+  { name: 'radio',     component: Radio,     dataType: 'string' },
+  { name: 'checkbox',  component: Checkbox,  dataType: 'array' },
+  { name: 'date',      component: Date,      dataType: 'string' },
+  { name: 'time',      component: Time,      dataType: 'string' },
+  { name: 'datetime',  component: DateTime,  dataType: 'string' },
+  { name: 'slider',    component: Slider,    dataType: 'number' },
+  { name: 'color',     component: Color,     dataType: 'string' },
+  { name: 'code',      component: Code,      dataType: 'string' },
+  { name: 'selector',  component: Selector,  dataType: 'string' },
+  { name: 'array',     component: Array,     dataType: 'array' },
+  { name: 'object',    component: Object,    dataType: 'object' },
+  { name: 'path',      component: Path,      dataType: 'string' },
+  { name: 'alert',     component: Alert,     dataType: 'string' },
+  { name: 'position',  component: Position,  dataType: 'object' },
+  { name: 'model',     component: Model,     dataType: 'string' },
+  { name: 'env',       component: Env,       dataType: 'string' },
 ]

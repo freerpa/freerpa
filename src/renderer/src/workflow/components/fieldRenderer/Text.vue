@@ -35,6 +35,7 @@
 import { watch, inject, ref, computed, useSlots } from 'vue'
 import ParamRefer from './components/ParamRefer.vue'
 import { unDoReDoInterceptor, paramReferRegex } from '@/workflow/utils'
+import { useFieldWatch } from './composables/useFieldValue'
 
 const props = defineProps({
   field: {
@@ -64,10 +65,10 @@ const interceptor = (e) => {
 const slots = useSlots()
 const hasSuffix = computed(() => slots.suffix?.() || null)
 const hasPrefix = computed(() => slots.prefix?.() || null)
-const formData = inject('formData')
 const value = defineModel({
   default: ''
 })
+useFieldWatch(props, value)
 const ParamReferRef = ref(null)
 const inputRef = ref(null)
 // 获取真实的textarea元素
@@ -225,13 +226,6 @@ function handleSelect(paramText) {
   document.execCommand('insertText', false, paramText)
   ParamReferRef.value.show(false)
 }
-
-// 值变化时触发onChange
-watch(value, (newVal) => {
-  if (props.field.onChange) {
-    props.field.onChange(newVal, formData)
-  }
-})
 </script>
 
 <style scoped lang="less">

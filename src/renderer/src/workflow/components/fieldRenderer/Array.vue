@@ -2,7 +2,7 @@
   <div class="array-field">
     <!-- 数组项列表 -->
     <VueDraggable class="array-items" v-model="arrayData" handle=".sort-handle">
-      <div v-for="(item, index) in arrayData" :key="Math.random()" class="array-item">
+      <div v-for="(item, index) in arrayData" :key="item._key || index" class="array-item">
         <!-- 操作按钮 -->
         <div class="array-item-actions">
           <div class="sort-handle">
@@ -92,6 +92,7 @@ import { json } from '@codemirror/lang-json'
 import { EditorView } from '@codemirror/view'
 import { getDefaultFieldValue, unDoReDoInterceptor } from '@/workflow/utils'
 import { VueDraggable } from 'vue-draggable-plus'
+import { useFieldWatch } from './composables/useFieldValue'
 
 const props = defineProps({
   field: {
@@ -158,12 +159,7 @@ const itemFields = computed(() => {
   return Object.keys(props.field.fields || {}).map((key) => props.field.fields[key])
 })
 const isQuickConfig = inject('isQuickConfig')
-const formData = inject('formData')
-watch(arrayData, (value) => {
-  if (props.field.hasOwnProperty('onChange')) {
-    props.field.onChange(value, formData)
-  }
-})
+useFieldWatch(props, arrayData)
 
 // 清空
 const clear = () => {
@@ -172,7 +168,7 @@ const clear = () => {
 
 // 添加项
 const addItem = () => {
-  const defaultValue = {}
+  const defaultValue = { _key: Date.now() + '_' + Math.random().toString(36).slice(2, 8) }
   itemFields.value.forEach((field) => {
     defaultValue[field.id] = getDefaultFieldValue(field)
   })

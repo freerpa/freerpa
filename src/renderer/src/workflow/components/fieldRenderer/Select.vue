@@ -28,6 +28,7 @@
 import { ref, watch, inject } from 'vue'
 import { debounce } from 'lodash-es'
 import { unDoReDoInterceptor } from '@/workflow/utils'
+import { useFieldWatch } from './composables/useFieldValue'
 
 const props = defineProps({
   field: {
@@ -38,6 +39,7 @@ const props = defineProps({
 
 const formData = inject('formData')
 const value = defineModel()
+useFieldWatch(props, value)
 const loading = ref(false)
 const options = ref(props.field.options || [])
 
@@ -79,11 +81,10 @@ const valueValid = debounce(() => {
 
 // 监听选项变化
 watch(
-  () => options,
+  () => options.value,
   () => {
     valueValid()
-  },
-  { deep: true }
+  }
 )
 
 // 监听选项方法变化
@@ -109,10 +110,4 @@ const handleSearch = debounce(async (searchValue) => {
   valueValid()
 }, 300)
 
-// 值变化时触发onChange
-watch(value, (newVal) => {
-  if (props.field.onChange) {
-    props.field.onChange(newVal, formData)
-  }
-})
 </script>

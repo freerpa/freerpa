@@ -8,7 +8,7 @@
         <template #prefix> y </template>
       </a-input-number>
     </a-input-group>
-    <a-button draggable="true" @click="startGetMousePos">
+    <a-button @mousedown="startGetMousePos" @mouseup="stopGetMousePos" @mouseleave="stopGetMousePos">
       <svg class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
         <path
           d="M862.08 480A350.08 350.08 0 0 0 544 161.92V64h-64v97.92A350.08 350.08 0 0 0 161.92 480H64v64h97.92a350.08 350.08 0 0 0 318.08 318.08V960h64v-97.92a350.08 350.08 0 0 0 318.08-318.08H960v-64h-97.92zM480 798.08A287.232 287.232 0 0 1 225.92 544H480v254.08z m0-318.08H225.92A287.232 287.232 0 0 1 480 225.92V480z m64-254.08c133.76 14.72 239.36 120.32 254.08 254.08H544V225.92z m0 572.16V544h254.08a287.232 287.232 0 0 1-254.08 254.08z"
@@ -19,7 +19,7 @@
   </div>
 </template>
 <script setup>
-import { ref, watch, inject } from 'vue'
+import { useFieldWatch } from './composables/useFieldValue'
 
 const props = defineProps({
   field: {
@@ -28,38 +28,24 @@ const props = defineProps({
   }
 })
 
-const formData = inject('formData')
 const value = defineModel()
+useFieldWatch(props, value)
 
 let interval = null
 
 const startGetMousePos = () => {
   window.electronAPI.system.screenshot()
-}
-
-const stopGetMousePos = () => {
-  window.electronAPI.system.stopGetMousePos()
-}
-
-const dragStart = (event) => {
   interval = setInterval(async () => {
     const pos = await window.electronAPI.app.getMousePos()
     value.value.x = pos.x
     value.value.y = pos.y
   }, 10)
-  console.log('interval', interval)
 }
 
-const dragEnd = (event) => {
+const stopGetMousePos = () => {
   clearInterval(interval)
+  window.electronAPI.system.stopGetMousePos()
 }
-
-// 值变化时触发onChange
-watch(value, (newVal) => {
-  if (props.field.onChange) {
-    props.field.onChange(newVal, formData)
-  }
-})
 </script>
 
 <style lang="less" scoped>
