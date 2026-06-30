@@ -31,11 +31,18 @@ export const typeText = {
   timer: '计时器'
 }
 
+// 类型颜色缓存：key = type 数组 join 结果
+const typeColorCache = new Map()
+
 // 获取类型颜色
 export const getTypeColor = (type) => {
   if (typeof type === 'string') {
     type = [type]
   }
+  const cacheKey = type.join(',')
+  const cached = typeColorCache.get(cacheKey)
+  if (cached) return cached
+
   const path = []
   for (let i = 0; i < type.length; i++) {
     path.push({
@@ -44,38 +51,52 @@ export const getTypeColor = (type) => {
       text: typeText[type[i]]
     })
   }
-  return (
-    path || [
-      {
-        d: calculateSectorPath(0, 1),
-        fill: '#b1b1b7'
-      }
-    ]
-  )
+  const result = path.length > 0
+    ? path
+    : [
+        {
+          d: calculateSectorPath(0, 1),
+          fill: '#b1b1b7'
+        }
+      ]
+
+  typeColorCache.set(cacheKey, result)
+  return result
 }
+
+// 扇形路径缓存：key = `${index}|${total}` → SVG path
+const sectorPathCache = new Map()
 
 // 动态计算扇形路径的函数
 function calculateSectorPath(index, total, radius = 50, centerX = 50, centerY = 50) {
+  const cacheKey = `${index}|${total}`
+  const cached = sectorPathCache.get(cacheKey)
+  if (cached) return cached
+
+  let path
   // 特殊处理只有一个扇形的情况
   if (total === 1) {
-    return `M${centerX},${centerY}
+    path = `M${centerX},${centerY}
             m 0,-${radius}
             a ${radius},${radius} 0 1 1 0,${radius * 2}
             a ${radius},${radius} 0 1 1 0,-${radius * 2}
             z`
+  } else {
+    const startAngle = (index * 2 * Math.PI) / total
+    const endAngle = ((index + 1) * 2 * Math.PI) / total
+
+    const startX = centerX + radius * Math.sin(startAngle)
+    const startY = centerY - radius * Math.cos(startAngle)
+    const endX = centerX + radius * Math.sin(endAngle)
+    const endY = centerY - radius * Math.cos(endAngle)
+
+    const largeArcFlag = endAngle - startAngle > Math.PI ? 1 : 0
+
+    path = `M${centerX},${centerY} L${startX},${startY} A${radius},${radius} 0 ${largeArcFlag},1 ${endX},${endY} Z`
   }
 
-  const startAngle = (index * 2 * Math.PI) / total
-  const endAngle = ((index + 1) * 2 * Math.PI) / total
-
-  const startX = centerX + radius * Math.sin(startAngle)
-  const startY = centerY - radius * Math.cos(startAngle)
-  const endX = centerX + radius * Math.sin(endAngle)
-  const endY = centerY - radius * Math.cos(endAngle)
-
-  const largeArcFlag = endAngle - startAngle > Math.PI ? 1 : 0
-
-  return `M${centerX},${centerY} L${startX},${startY} A${radius},${radius} 0 ${largeArcFlag},1 ${endX},${endY} Z`
+  sectorPathCache.set(cacheKey, path)
+  return path
 }
 
 export default typeColor

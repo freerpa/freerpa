@@ -49,6 +49,23 @@ export const useFlowStore = (id) =>
       }
     })
 
+    // rAF 节流：合并同一帧内多次 adjustParentSize 调用
+    let adjustParentSizePending = null
+    const scheduleAdjustParentSize = (nodes, vueFlowRef) => {
+      if (adjustParentSizePending) {
+        // 合并节点：将新节点加入待处理列表
+        adjustParentSizePending.nodes = [...adjustParentSizePending.nodes, ...nodes]
+      } else {
+        adjustParentSizePending = { nodes: [...nodes], vueFlowRef }
+        requestAnimationFrame(() => {
+          if (adjustParentSizePending) {
+            adjustParentSize(adjustParentSizePending.nodes, adjustParentSizePending.vueFlowRef)
+            adjustParentSizePending = null
+          }
+        })
+      }
+    }
+
     const onNodesChange = (e) => {
       // console.log('onNodesChange', e)
       if (e.length === 0) {
@@ -58,10 +75,9 @@ export const useFlowStore = (id) =>
         setEdgeSelected(e)
         return
       }
-      // 更新父节点区域
+      // 更新父节点区域（rAF 节流，拖拽时每帧最多调用一次）
       if (!isCtrl.value) {
-        // console.log('adjustParentSize',e, vueFlowRef.value);
-        adjustParentSize(
+        scheduleAdjustParentSize(
           e.filter((node) => node.dragging || node.resizing === false),
           vueFlowRef.value
         )
@@ -111,7 +127,7 @@ export const useFlowStore = (id) =>
       if (historyId) {
         nowHistoryId.value = historyId
       }
-    }, 100)
+    }, 300)
 
     //解除历史中状态
     const historyIngDebounce = debounce(() => {

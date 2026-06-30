@@ -154,7 +154,6 @@ const isLoopback = computed(() => {
     props.sourceX > props.targetX + props.targetNode.dimensions.width
   )
 })
-console.log('isLoopback:', isLoopback.value)
 // 获取贝塞尔路径
 const path = computed(() => {
   if (isLoopback.value) {
