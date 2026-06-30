@@ -8,20 +8,9 @@ export { checkKernelExists, downloadKernel, launchKernel, fetchKernelList, getRe
 
 // Viewer
 export { createEnvView } from './viewer'
-export { createViewWrapper, isNonStandardProtocol } from './wrapper'
-
-// UA
-export { setUserAgent, setUserAgentOnPage } from './ua'
 
 // Manager
 export { registerBrowser, killBrowserProcess, isBrowserOpen, getAllBrowserStatus, closeAllBrowsers } from './manager'
-
-// Preview
-export {
-  createWebView, updateWebView, destroyWebView,
-  goBack, goForward, refresh, debug, clear,
-  getEnvironmentFromView
-} from './preview'
 
 // IPC
 export { register } from './ipc'

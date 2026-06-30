@@ -109,8 +109,7 @@ export default defineConfig({
     build: {
       rollupOptions: {
         input: {
-          index: resolve('src/preload/index.js'),
-          inspector: resolve('src/preload/inspector.js')
+          index: resolve('src/preload/index.js')
         }
       }
     }

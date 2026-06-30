@@ -4,13 +4,7 @@
  */
 
 import { ipcMain, app } from 'electron'
-import {
-  createWebView, updateWebView, destroyWebView,
-  goBack, goForward, refresh,
-  getEnvironmentFromView, debug, clear
-} from './preview'
-import { checkKernelExists, launchKernel, downloadKernel } from './kernel'
-import { fetchKernelList } from './kernel'
+import { checkKernelExists, launchKernel, downloadKernel, fetchKernelList } from './kernel'
 import { API_CONFIG } from '@/api/config'
 import { registerBrowser, killBrowserProcess, isBrowserOpen, getAllBrowserStatus } from './manager'
 import path from 'path'
@@ -18,21 +12,6 @@ import path from 'path'
 const safeMsg = (e, fallback) => (e && typeof e.message === 'string') ? e.message : fallback
 
 export const register = () => {
-  // ========== WebContentsView 兼容 ==========
-  for (const [name, fn] of Object.entries({
-    createWebView: p => createWebView(p),
-    updateWebView: p => updateWebView(p),
-    destroyWebView: () => destroyWebView(),
-    goBack: () => goBack(),
-    goForward: () => goForward(),
-    refresh: () => refresh(),
-    getEnvironmentFromView: () => getEnvironmentFromView(),
-    debug: () => debug(),
-    clear: () => clear(),
-  })) {
-    ipcMain.handle(`env:${name}`, async (_, p) => fn(p))
-  }
-
   // ========== 内核查询 ==========
 
   ipcMain.handle('env:getKernelList', async () => {
@@ -67,7 +46,7 @@ export const register = () => {
     }
   })
 
-  // ========== 打开浏览器 ==========
+  // ========== 打开/关闭浏览器 ==========
 
   ipcMain.handle('env:openBrowser', async (event, { envId, kernel, proxy, fingerprint: existingFingerprint }) => {
     try {
@@ -96,8 +75,6 @@ export const register = () => {
       return { code: 400, message: safeMsg(e, '打开浏览器失败') }
     }
   })
-
-  // ========== 关闭浏览器 ==========
 
   ipcMain.handle('env:closeBrowser', async (_, { envId }) => {
     try { await killBrowserProcess(envId); return { code: 200, message: '浏览器已关闭' } }

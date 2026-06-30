@@ -78,16 +78,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 浏览器管理模块API
   env: {
-    createWebView: (params) => ipcRenderer.invoke('env:createWebView', params),
-    updateWebView: (params) => ipcRenderer.invoke('env:updateWebView', params),
-    destroyWebView: () => ipcRenderer.invoke('env:destroyWebView'),
-    goBack: () => ipcRenderer.invoke('env:goBack'),
-    goForward: () => ipcRenderer.invoke('env:goForward'),
-    refresh: () => ipcRenderer.invoke('env:refresh'),
-    getEnvironmentFromView: () => ipcRenderer.invoke('env:getEnvironmentFromView'),
-    debug: () => ipcRenderer.invoke('env:debug'),
-    clear: () => ipcRenderer.invoke('env:clear'),
-    // 新增：打开/关闭浏览器
+    // 内核管理
     getKernelList: () => ipcRenderer.invoke('env:getKernelList'),
     getMajorVersionList: () => ipcRenderer.invoke('env:getMajorVersionList'),
     checkKernel: (params) => ipcRenderer.invoke('env:checkKernel', params),
@@ -118,27 +109,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
       const listener = (event, params) => callback(params)
       ipcRenderer.on('env:saveSession', listener)
       return () => ipcRenderer.removeListener('env:saveSession', listener)
-    }
-  },
-
-  // 检查器模块API
-  inspector: {
-    createWebView: (params) => ipcRenderer.invoke('inspector:createWebView', params),
-    updateWebView: (params) => ipcRenderer.invoke('inspector:updateWebView', params),
-    destroyWebView: () => ipcRenderer.invoke('inspector:destroyWebView'),
-    goBack: () => ipcRenderer.invoke('inspector:goBack'),
-    goForward: () => ipcRenderer.invoke('inspector:goForward'),
-    refresh: () => ipcRenderer.invoke('inspector:refresh'),
-    debug: () => ipcRenderer.invoke('inspector:debug'),
-    clear: () => ipcRenderer.invoke('inspector:clear'),
-    onInspector: (callback) => {
-      const listener = (event, params) => {
-        callback(params)
-      }
-      ipcRenderer.on('env:inspector', listener)
-      return () => {
-        ipcRenderer.off('env:inspector', listener)
-      }
     }
   },
 
@@ -227,19 +197,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('system:showNotification:on:' + options.id, (event, params) => {
         eventCallback(params)
       })
-    }
-  },
-  webview: {
-    on: (event, callback) => {
-      const listener = (event, params) => {
-        console.log(event, params)
-        callback(params)
-      }
-      console.log(event, listener)
-      ipcRenderer.on(`webview:${event}`, listener)
-      return () => {
-        ipcRenderer.off(`webview:${event}`, listener)
-      }
     }
   }
 })
