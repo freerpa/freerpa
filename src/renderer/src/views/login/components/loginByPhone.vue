@@ -77,8 +77,6 @@ import router from '@/router'
 import { IconMobile, IconSafe, IconUserGroup } from '@arco-design/web-vue/es/icon'
 import { getCaptcha, getPhoneCode, login } from '@/api/login'
 import { setToken } from '@/utils/token'
-import { useStore } from '@/store'
-const { clearStoreEnvList } = useStore()
 
 const emit = defineEmits(['success'])
 
@@ -114,8 +112,6 @@ const handleLogin = async () => {
     localStorage.setItem('userId', result.userinfo.id)
     localStorage.setItem('phone', loginForm.value.phone)
     Message.success('登录成功')
-    // 清空浏览器列表缓存
-    clearStoreEnvList()
     router.replace('/')
     emit('success')
   } finally {

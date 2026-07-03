@@ -36,7 +36,7 @@
     "context.onBeforeDestroy方法用于注册节点销毁前的回调函数，接收回调函数作为参数",
     "context.stopWorkflow方法用于停止整个工作流，可选择性接收输出数据作为参数",
     "context.runCode方法用于运行代码，接收代码字符串和可选的上下文对象作为参数，在安全的沙箱环境中执行",
-    "context.apis对象包含可用的API接口，如getEnvironmentDetail（获取环境详情）等",
+    "context.apis对象包含可用的API接口，如getBrowserDetail（获取浏览器详情）等",
     "节点执行器必须使用try-catch处理错误，通过throw error抛出异常，通过context.complete方法返回执行结果",
     "节点执行器应支持异步操作，对于耗时操作应使用async/await或Promise处理",
     "节点执行器应避免直接导入fs模块，应使用context提供的fs实例context.fs",

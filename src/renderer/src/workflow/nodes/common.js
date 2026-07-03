@@ -249,7 +249,7 @@ const filters = {
       'config',
       'conf',
       'ini',
-      'env',
+      'browser',
       'properties',
       'htaccess',
       'lock',
@@ -317,7 +317,7 @@ export const configFields = {
       { label: '颜色', value: 'color' },
       { label: '文件路径', value: 'file' },
       { label: '文件夹路径', value: 'folder' },
-      { label: '浏览器', value: 'env' },
+      { label: '浏览器', value: 'browser' },
       { label: '数据表', value: 'model' },
       { label: '元素选择器', value: 'selector' }
     ],
@@ -331,7 +331,7 @@ export const configFields = {
           'folder',
           'color',
           'selector',
-          'env',
+          'browser',
           'model'
         ].includes(value)
       ) {
@@ -418,7 +418,7 @@ export const configFields = {
   multiple: {
     id: 'multiple',
     name: '是否多选',
-    show: "['select', 'file', 'folder', 'env', 'model'].includes(${type})",
+    show: "['select', 'file', 'folder', 'browser', 'model'].includes(${type})",
     type: 'switch',
     paramRef: false,
     default: false,
@@ -579,8 +579,8 @@ export const configFields = {
     show: false,
     default: ''
   },
-  envValue: {
-    id: 'envValue',
+  browserValue: {
+    id: 'browserValue',
     name: '配置值',
     type: 'selector',
     show: false,

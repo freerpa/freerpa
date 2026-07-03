@@ -18,7 +18,7 @@
           @press-enter="handleBeforeOk"
         >
           <template #prepend>
-            <CategorySelect v-model="form.category" type="environment" />
+            <CategorySelect v-model="form.category" type="browser" />
           </template>
         </a-input>
       </a-form-item>
@@ -334,7 +334,7 @@ const handleCancel = () => {
 }
 
 // 获取环境详情
-const fetchEnvironmentDetail = async (id) => {
+const fetchBrowserDetail = async (id) => {
   try {
     const result = await browserAPI.getBrowser(id)
     if (result) {
@@ -383,7 +383,7 @@ onMounted(async () => {
   await nextTick()
   await fetchKernelList()
   if (props.envId) {
-    await fetchEnvironmentDetail(props.envId)
+    await fetchBrowserDetail(props.envId)
   }
 })
 </script>

@@ -321,7 +321,6 @@ import { Message, Modal } from '@arco-design/web-vue'
 import { IconPlus, IconInfoCircle } from '@arco-design/web-vue/es/icon'
 import { getDeveloperAgreement } from '@/api/login'
 import { publishWorkflow, getStoreWorkflowCategories } from '@/api/workflowStore'
-import { getDependencies } from '@/api/workflow'
 import { debounce } from 'lodash-es'
 import ImageUpload from '@/components/ImageUpload.vue'
 import AmWangEditor from './am-wangEditor/index.vue'
@@ -507,10 +506,8 @@ const handleWorkflowSelectOk = () => {
   if (selectedWorkflow) {
     form.value.workflow = selectedWorkflow
     form.value.description = selectedWorkflow.description || ''
-    getDependencies(selectedWorkflow.id).then((data) => {
-      form.value.dependencies = data
-      form.value.dependencies_price = data.reduce((acc, num) => acc + num.price, 0)
-    })
+    form.value.dependencies = []
+    form.value.dependencies_price = 0
   }
   showWorkflowSelect.value = false
 }

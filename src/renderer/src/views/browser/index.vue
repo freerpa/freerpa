@@ -1,16 +1,16 @@
 <template>
   <ResourceList
-    type="environment"
+    type="browser"
     create-label="新建浏览器"
     search-placeholder="搜索浏览器"
     empty-text="暂无浏览器"
     v-model:search-keyword="searchKeyword"
-    :items="environments"
+    :items="browsers"
     :loading="loading"
     :has-more="hasMore"
     @create="handleEdit({})"
     @import="handleImport"
-    @refresh="fetchEnvironments(true)"
+    @refresh="fetchBrowsers(true)"
     @edit="handleEdit"
     @category-change="onCategoryChange"
     @scroll="loadMore"
@@ -55,7 +55,7 @@
   <a-modal v-model:visible="showCreateModal" :title="selectedEnv?.id ? '编辑浏览器' : '新建浏览器'" :footer="false" :mask-closable="false" width="600px" unmount-on-close>
     <BrowserEditor v-if="showCreateModal" :env-id="selectedEnv?.id" @success="handleEditorSuccess" @cancel="showCreateModal=false" />
   </a-modal>
-  <RecycleBin v-model:visible="showTrash" :api="browserAPI" :on-restored="() => fetchEnvironments(true)" />
+  <RecycleBin v-model:visible="showTrash" :api="browserAPI" :on-restored="() => fetchBrowsers(true)" />
 </template>
 
 <script setup>
@@ -67,15 +67,13 @@ import ResourceList from '@/components/ResourceList.vue'
 import BrowserEditor from './components/BrowserEditor.vue'
 import RecycleBin from '@/components/RecycleBin.vue'
 import BrowserOpenModal from './components/BrowserOpenModal.vue'
-import { useStore } from '@/store'
 import { debounce } from 'lodash-es'
 import { getAppVersion, compareVersion } from '@/utils/version'
 
 const { browserLocal: browserAPI } = window.electronAPI
 const showTrash = ref(false)
-const { clearStoreEnvList } = useStore()
 
-const environments = ref([])
+const browsers = ref([])
 const searchKeyword = ref('')
 const showCreateModal = ref(false)
 const selectedEnv = ref(null)
@@ -89,28 +87,28 @@ const loadingMap = reactive({})
 const showOpenModal = ref(false)
 const selectedEnvForOpen = ref(null)
 
-const onCategoryChange = (val) => { categoryId.value = val; fetchEnvironments(true) }
-const loadMore = () => { currentPage.value++; fetchEnvironments() }
+const onCategoryChange = (val) => { categoryId.value = val; fetchBrowsers(true) }
+const loadMore = () => { currentPage.value++; fetchBrowsers() }
 
-const fetchEnvironments = async (refresh = false) => {
+const fetchBrowsers = async (refresh = false) => {
   if (refresh) { currentPage.value = 1; hasMore.value = true }
   loading.value = true
   try {
     const result = await browserAPI.getBrowsers({ page: currentPage.value, pageSize, keyword: searchKeyword.value, category_id: categoryId.value })
     if (result.data.length < pageSize) hasMore.value = false
-    environments.value = currentPage.value === 1 ? result.data : [...environments.value, ...result.data]
+    browsers.value = currentPage.value === 1 ? result.data : [...browsers.value, ...result.data]
   } catch (e) { Message.error('获取浏览器列表失败') } finally { loading.value = false }
 }
 
 const handleEdit = (env) => { selectedEnv.value = env; showCreateModal.value = true }
-const handleEditorSuccess = (env) => { showCreateModal.value = false; clearStoreEnvList(); fetchEnvironments(true) }
+const handleEditorSuccess = (env) => { showCreateModal.value = false; fetchBrowsers(true) }
 
 const handleDelete = (env, index) => {
   Modal.confirm({
     title: '删除确认', content: `确认删除"${env.name}"吗？`, okText: '删除',
     okButtonProps: { status: 'danger', type: 'primary', style: { width: '160px' } },
     cancelButtonProps: { style: { width: '160px' } },
-    onOk: async () => { await browserAPI.deleteBrowser(env.id); environments.value.splice(index, 1); clearStoreEnvList() }
+    onOk: async () => { await browserAPI.deleteBrowser(env.id); browsers.value.splice(index, 1) }
   })
 }
 
@@ -132,7 +130,7 @@ const handleCloseBrowser = async (env) => {
 const handleExport = async (env) => {
   try {
     const envData = await browserAPI.getBrowser(env.id)
-    const exportData = { app_version: getAppVersion(), exportTime: new Date().toISOString(), environment: { name: envData.name, description: envData.description, category_id: envData.category_id, kernel_id: envData.kernel_id, proxy_url: envData.proxy_url } }
+    const exportData = { app_version: getAppVersion(), exportTime: new Date().toISOString(), browser: { name: envData.name, description: envData.description, category_id: envData.category_id, kernel_id: envData.kernel_id, proxy_url: envData.proxy_url } }
     const header = new Uint8Array([0x41, 0x4d, 0x45, 0x00])
     const { deflate } = await import('pako')
     const compressed = deflate(new TextEncoder().encode(JSON.stringify(exportData)))
@@ -153,14 +151,14 @@ const handleImport = () => {
         if (fileData[0] !== 0x41 || fileData[1] !== 0x4d || fileData[2] !== 0x45 || fileData[3] !== 0x00) throw new Error('无效的文件格式')
         const { inflate } = await import('pako')
         const importData = JSON.parse(new TextDecoder().decode(inflate(fileData.slice(4))))
-        if (!importData.app_version || !importData.environment) throw new Error('无效的文件内容')
+        if (!importData.app_version || !importData.browser) throw new Error('无效的文件内容')
         if (compareVersion(getAppVersion(), importData.app_version) < 0) throw new Error('软件版本不匹配')
-        const envData = { name: importData.environment.name, description: importData.environment.description, category_id: importData.environment.category_id || '', kernel_id: importData.environment.kernel_id || '', proxy_url: importData.environment.proxy_url || '' }
+        const envData = { name: importData.browser.name, description: importData.browser.description, category_id: importData.browser.category_id || '', kernel_id: importData.browser.kernel_id || '', proxy_url: importData.browser.proxy_url || '' }
         const existing = await browserAPI.getBrowsers({ page: 1, pageSize: 999999, keyword: envData.name })
         if (existing.data.some(e => e.name === envData.name)) envData.name = `【导入】${envData.name}`
         await browserAPI.createBrowser(envData)
         Message.success(`成功导入浏览器 "${envData.name}"`)
-        fetchEnvironments(true); clearStoreEnvList()
+        fetchBrowsers(true)
       } catch (e) { Message.error('导入失败: ' + e.message) }
     }
     reader.readAsArrayBuffer(file)
@@ -186,8 +184,8 @@ onMounted(() => {
 })
 onUnmounted(() => { remove1?.(); remove2?.(); remove3?.() })
 
-watch(searchKeyword, debounce(() => { currentPage.value = 1; fetchEnvironments(true) }, 300))
-onActivated(() => { fetchEnvironments(true); fetchBrowserStatus() })
+watch(searchKeyword, debounce(() => { currentPage.value = 1; fetchBrowsers(true) }, 300))
+onActivated(() => { fetchBrowsers(true); fetchBrowserStatus() })
 </script>
 
 <style lang="less" scoped>

@@ -1,7 +1,7 @@
 <template>
   <a-cascader
     v-model="pathValue"
-    :placeholder="field.description || '选择数据模型'"
+    :placeholder="field.description || '选择浏览器'"
     :loading="loading"
     :disabled="field.disabled"
     :options="treeOptions"
@@ -16,7 +16,7 @@
 import { ref, watch, onMounted } from 'vue'
 import { useFieldWatch } from './composables/useFieldValue'
 
-const { data: dataAPI, category } = window.electronAPI
+const { browserLocal, category } = window.electronAPI
 
 const props = defineProps({
   field: { type: Object, required: true }
@@ -33,43 +33,46 @@ const loadData = async () => {
   loading.value = true
   try {
     const [cats, res] = await Promise.all([
-      category.getCategories('model').catch(() => []),
-      dataAPI.getModels({ page: 1, pageSize: 1000 })
+      category.getCategories('browser').catch(() => []),
+      browserLocal.getBrowsers({ page: 1, pageSize: 1000 })
     ])
-    const models = (res && res.data) || []
+    const browsers = (res && res.data) || []
 
     const tree = []
 
+    // 有分类：按分类分组
     if (cats && cats.length) {
       const matchedIds = new Set()
       for (const c of cats) {
-        const children = models
-          .filter((m) => m.category_id === c.id)
-          .map((m) => { matchedIds.add(m.id); return { label: m.name, value: m.id } })
+        const children = browsers
+          .filter((b) => b.category_id === c.id)
+          .map((b) => { matchedIds.add(b.id); return { label: b.name, value: b.id } })
         if (children.length) {
           tree.push({ label: c.name, value: c.id, children })
         }
       }
 
-      const uncategorized = models.filter((m) => !m.category_id || !matchedIds.has(m.id))
+      // 未分类的归入「全部」
+      const uncategorized = browsers.filter((b) => !b.category_id || !matchedIds.has(b.id))
       if (uncategorized.length) {
         tree.push({
           label: '全部',
           value: '_all',
-          children: uncategorized.map((m) => ({ label: m.name, value: m.id }))
+          children: uncategorized.map((b) => ({ label: b.name, value: b.id }))
         })
       }
     } else {
+      // 无分类：全部
       tree.push({
         label: '全部',
         value: '_all',
-        children: models.map((m) => ({ label: m.name, value: m.id }))
+        children: browsers.map((b) => ({ label: b.name, value: b.id }))
       })
     }
 
     treeOptions.value = tree
   } catch (err) {
-    console.error('Model loadData failed:', err)
+    console.error('Browser loadData failed:', err)
   } finally {
     loading.value = false
   }
@@ -81,10 +84,12 @@ const onCascaderChange = (val) => {
   value.value = val || ''
 }
 
+// 回显：value 变化时同步到 pathValue
 watch(() => value.value, (val) => {
   pathValue.value = val || ''
 })
 
+// 数据加载后回显
 watch(treeOptions, (opts) => {
   if (value.value && opts.length) {
     pathValue.value = value.value

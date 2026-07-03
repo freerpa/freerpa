@@ -142,14 +142,24 @@ export const downloadKernel = async (kernel, onProgress = () => {}) => {
 
     await fs.ensureDir(tempDir)
 
-    const fileName = path.basename(new URL(download_url).pathname)
+    // 确保 download_url 是绝对 URL
+    let absoluteUrl = download_url
+    try { new URL(download_url) } catch {
+      // 相对路径，拼接 API 基础地址
+      const { API_CONFIG } = await import('@/api/config')
+      absoluteUrl = API_CONFIG.BASE_URL.replace(/\/+$/, '') + '/' + download_url.replace(/^\/+/, '')
+    }
+
+    const fileName = (() => {
+      try { return path.basename(new URL(absoluteUrl).pathname) } catch { return 'kernel-download' }
+    })()
     const downloadPath = path.join(tempDir, fileName)
 
     onProgress(0, '准备下载...')
 
     await new Promise((resolve, reject) => {
-      const protocol = download_url.startsWith('https') ? https : http
-      const req = protocol.get(download_url, (response) => {
+      const protocol = absoluteUrl.startsWith('https') ? https : http
+      const req = protocol.get(absoluteUrl, (response) => {
         if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
           const redirectUrl = response.headers.location
           const redirectProtocol = redirectUrl.startsWith('https') ? https : http

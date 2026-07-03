@@ -17,7 +17,7 @@ import Path from './Path.vue'
 import Alert from './Alert.vue'
 import Position from './Position.vue'
 import Model from './Model.vue'
-import Env from './Env.vue'
+import Browser from './Browser.vue'
 
 export default [
   { name: 'text',      component: Text,      dataType: 'string' },
@@ -39,5 +39,5 @@ export default [
   { name: 'alert',     component: Alert,     dataType: 'string' },
   { name: 'position',  component: Position,  dataType: 'object' },
   { name: 'model',     component: Model,     dataType: 'string' },
-  { name: 'env',       component: Env,       dataType: 'string' },
+  { name: 'browser',  component: Browser,  dataType: 'string' },
 ]

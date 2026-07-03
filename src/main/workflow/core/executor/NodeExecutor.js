@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import { sendToRenderer, sendToRendererAsync, onFromRenderer } from '../utils/rendererUtils'
 import afs from '../utils/afs'
-import { getEnvironmentDetail } from '@/api/env.js'
+import { getBrowserDetail } from '@/api/browserDetail.js'
 import fs from 'fs'
 import path from 'path'
 import { is } from '@electron-toolkit/utils'
@@ -372,7 +372,7 @@ class NodeExecutor extends EventEmitter {
         return vm.run(`data = JSON.parse(data);${code}`)
       },
       apis: {
-        getEnvironmentDetail
+        getBrowserDetail
       }, sendToRenderer
     }
   }

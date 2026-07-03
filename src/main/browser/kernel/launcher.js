@@ -124,3 +124,20 @@ export const getRecommendedKernel = async (baseUrl) => {
   }
   return null
 }
+
+/**
+ * 通过主版本号解析完整内核版本
+ */
+export const resolveKernelVersion = async (baseUrl, majorVersion, platform) => {
+  try {
+    const response = await fetch(`${baseUrl}/kernel/resolveVersion?major_version=${majorVersion}&platform=${platform}`)
+    const data = await response.json()
+    if (data.code === 200 && data.data) {
+      return data.data  // { platform, version, download_url }
+    }
+    return null
+  } catch (e) {
+    console.error('解析内核版本失败:', e)
+    return null
+  }
+}

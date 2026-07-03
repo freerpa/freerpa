@@ -125,11 +125,9 @@ import {
 } from '@arco-design/web-vue/es/icon'
 import Browser from '@/components/Browser.vue'
 import { useStore } from '@/store'
-import { storeToRefs } from 'pinia'
 import { useFlowStore } from '@/workflow/store'
 import { paramReferRegex } from '@/workflow/utils'
-const { getEnvList, isMacOS } = useStore()
-const { currentEnv, envList } = storeToRefs(useStore())
+const { isMacOS } = useStore()
 
 const props = defineProps({
   field: {
@@ -138,6 +136,15 @@ const props = defineProps({
   }
 })
 
+const { browserLocal } = window.electronAPI
+
+const envList = ref([])
+const currentEnv = ref({ id: '', url: '', storage: {}, cookies: [] })
+
+const loadEnvList = async () => {
+  const res = await browserLocal.getBrowsers({ page: 1, pageSize: 1000 })
+  envList.value = res.data || []
+}
 const nodeId = inject('nodeId')
 // 工作流ID
 const workflowId = inject('workflowId')
@@ -148,7 +155,7 @@ const showBrowser = ref(false)
 const handleSelectorOpen = async () => {
   showBrowser.value = true
   // 获取浏览器列表
-  await getEnvList()
+  await loadEnvList()
   // 获取节点连线
   const pageEdge = flowStore.vueFlowRef.getEdges.find(
     (edge) => edge.target === nodeId && edge.sourceHandle === 'page'

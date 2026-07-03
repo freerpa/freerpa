@@ -84,7 +84,7 @@ const props = defineProps({
 const emit = defineEmits(['create', 'import', 'refresh', 'edit', 'categoryChange', 'scroll', 'update:searchKeyword'])
 
 const typeLabel = computed(() => {
-  const map = { workflow: '工作流', model: '数据表', environment: '浏览器' }
+  const map = { workflow: '工作流', model: '数据表', browser: '浏览器' }
   return map[props.type] || ''
 })
 

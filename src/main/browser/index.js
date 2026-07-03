@@ -4,7 +4,7 @@
  */
 
 // Kernel
-export { checkKernelExists, downloadKernel, launchKernel, fetchKernelList, getRecommendedKernel, getPlatform, KERNEL_DIR } from './kernel'
+export { checkKernelExists, downloadKernel, launchKernel, fetchKernelList, getPlatform } from './kernel'
 
 // Viewer
 export { openBrowser } from './viewer'
@@ -16,4 +16,4 @@ export { registerBrowser, killBrowserProcess, isBrowserOpen, getAllBrowserStatus
 export { register } from './ipc'
 
 // Utils
-export { extractIpFromProxy, validateProxy, uuidTo10Decimal, getLanguageByCountryCode } from './utils/proxy'
+export { queryGeoInfo } from './utils/proxy'

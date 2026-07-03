@@ -78,4 +78,4 @@ export const getCorrectDirectorySync = (fs, targetPath) => {
 
 export { getHandler } from '@renderer/workflow/dataHandlers/'
 export { openBrowser } from './browser/index.js'
-export { launchKernel, downloadKernel, checkKernelExists, fetchKernelList, getRecommendedKernel } from './browser/index.js'
+export { launchKernel, downloadKernel, checkKernelExists, fetchKernelList } from './browser/index.js'

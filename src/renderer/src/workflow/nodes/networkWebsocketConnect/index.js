@@ -34,7 +34,6 @@ export default {
           type: 'text',
           default: '',
           description: '为空不使用代理，格式:http://user:pass@host:port',
-          show: '${environment} == "node"'
         },
         headers: {
           id: 'headers',

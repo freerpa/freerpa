@@ -1,2 +1,2 @@
-export { checkKernelExists, downloadKernel, getKernelPath, getKernelBinaryPath, getKernelBinaryName, getPlatform, KERNEL_DIR } from './downloader'
-export { launchKernel, fetchKernelList, getRecommendedKernel } from './launcher'
+export { checkKernelExists, downloadKernel, getPlatform } from './downloader'
+export { launchKernel, fetchKernelList, resolveKernelVersion } from './launcher'
