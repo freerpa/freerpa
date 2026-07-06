@@ -10,7 +10,7 @@ export { checkKernelExists, downloadKernel, launchKernel, fetchKernelList, getPl
 export { openBrowser } from './viewer'
 
 // Manager
-export { registerBrowser, killBrowserProcess, isBrowserOpen, getAllBrowserStatus, closeAllBrowsers } from './manager'
+export { registerBrowser, killBrowserProcess, isBrowserOpen, getBrowserInstance, incrementRef, decrementRef, getAllBrowserStatus, closeAllBrowsers } from './manager'
 
 // IPC
 export { register } from './ipc'

@@ -6,7 +6,7 @@
 import { ipcMain, app } from 'electron'
 import { checkKernelExists, launchKernel, downloadKernel, fetchKernelList } from './kernel'
 import { API_CONFIG } from '@/api/config'
-import { registerBrowser, killBrowserProcess, isBrowserOpen, getAllBrowserStatus } from './manager'
+import { registerBrowser, killBrowserProcess, isBrowserOpen, getAllBrowserStatus, getBrowserInstance, incrementRef, decrementRef } from './manager'
 import path from 'path'
 
 const safeMsg = (e, fallback) => (e && typeof e.message === 'string') ? e.message : fallback
@@ -50,7 +50,13 @@ export const register = () => {
 
   ipcMain.handle('env:openBrowser', async (event, { envId, kernel, proxy, fingerprint: existingFingerprint }) => {
     try {
-      if (isBrowserOpen(envId)) await killBrowserProcess(envId)
+      // 如果已打开则复用（工作流可能已启动同一环境）
+      if (isBrowserOpen(envId)) {
+        const existing = getBrowserInstance(envId)
+        if (existing) {
+          return { code: 200, message: '浏览器已打开（复用）', data: { instanceId: existing.instanceId, port: existing.port, wsEndpoint: existing.wsEndpoint } }
+        }
+      }
       if (!kernel?.platform || !kernel?.version) return { code: 400, message: '内核参数不完整' }
       if (!checkKernelExists(kernel.platform, kernel.version)) return { code: 400, message: 'KERNEL_NEED_DOWNLOAD' }
 
@@ -65,6 +71,7 @@ export const register = () => {
       })
 
       registerBrowser(envId, instance, event.sender)
+      incrementRef(envId)
 
       if (!existingFingerprint?.seed) {
         try { if (event.sender && !event.sender.isDestroyed()) event.sender.send('env:saveSession', { envId: String(envId), fingerprint }) } catch (_) { }
@@ -77,7 +84,7 @@ export const register = () => {
   })
 
   ipcMain.handle('env:closeBrowser', async (_, { envId }) => {
-    try { await killBrowserProcess(envId); return { code: 200, message: '浏览器已关闭' } }
+    try { await decrementRef(envId); return { code: 200, message: '浏览器已关闭' } }
     catch (e) { return { code: 400, message: safeMsg(e, '关闭失败') } }
   })
 

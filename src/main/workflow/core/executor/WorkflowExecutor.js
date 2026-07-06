@@ -356,11 +356,11 @@ class WorkflowExecutor extends EventEmitter {
       )
     }
 
-    for (const edge of nextEdges) {
+    nextEdges.forEach((edge) => {
       const targetNode = this._findNode(edge.target)
-      if (!targetNode || targetNode.deactivate) continue
-      await this.executeNode(targetNode.id, nodeId)
-    }
+      if (!targetNode || targetNode.deactivate) return
+      this.executeNode(targetNode.id, nodeId)
+    })
   }
 
   async retryFlow() {

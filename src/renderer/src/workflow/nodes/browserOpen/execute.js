@@ -38,7 +38,7 @@ const automanBrowser = async (node, context) => {
   }
   const headless = launchOptions.includes('--headless=new')
   try {
-    const { page } = await openBrowser(env, {
+    const { page, close: closeBrowser } = await openBrowser(env, {
       headless,
       proxy: proxyUrl,
       extraArgs: [...extraArgs, ...launchOptions.filter(arg => arg !== '--custom-arg')]
@@ -57,7 +57,7 @@ const automanBrowser = async (node, context) => {
     next({ page })
 
     onBeforeDestroy(async () => {
-      try { await page.browser().close() } catch (_) { }
+      try { await closeBrowser() } catch (_) { }
     })
   } catch (error) {
     throw error

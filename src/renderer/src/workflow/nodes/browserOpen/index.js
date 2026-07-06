@@ -80,7 +80,7 @@ export default {
         extraArgs: {
           id: 'extraArgs',
           name: '启动参数',
-          show: '${launchOptions}.includes("--custom-arg")',
+          show: '${launchOptions}.includes("--custom-arg") && ${browser} === "automan"',
           type: 'array',
           default: [],
           fields: [
