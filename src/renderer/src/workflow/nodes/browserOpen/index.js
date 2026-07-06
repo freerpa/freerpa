@@ -24,12 +24,13 @@ export default {
         },
         cdpUrl: {
           id: 'cdpUrl',
-          name: 'CDP地址',
+          name: '地址',
           type: 'input',
           default: '',
           description: 'CDP连接地址',
           show: '${browser} === "cdp"',
-          quickConfig: true
+          quickConfig: true,
+          required: true
         },
         envId: {
           id: 'envId',
