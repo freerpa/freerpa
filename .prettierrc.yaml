@@ -1,4 +1,34 @@
+# 基础打印宽度，控制何时自动换行
+printWidth: 120
+# 缩进空格数
+tabWidth: 2
+# 使用空格缩进，不使用 tab
+useTabs: false
+# 语句末尾加分号
+semi: true
+# 字符串统一单引号
 singleQuote: true
-semi: false
-printWidth: 100
-trailingComma: none
+# JSX/模板属性统一单引号
+jsxSingleQuote: true
+# 对象、数组末尾加逗号
+trailingComma: es5
+# 对象大括号内侧空格
+bracketSpacing: true
+# Vue/HTML 多行标签闭合括号是否换行
+bracketSameLine: false
+# 箭头函数参数始终带括号
+arrowParens: always
+# HTML 换行规则核心配置，解决按钮、图标错乱问题
+htmlWhitespaceSensitivity: ignore
+# 模板缩进
+vueIndentScriptAndStyle: true
+# 换行格式统一 lf
+endOfLine: lf
+# 禁止 Prettier 格式化 script/style，交给 ESLint
+embeddedLanguageFormatting: auto
+# 多行 HTML 属性强制每行一个
+singleAttributePerLine: false
+# 关闭模板内强制折行挤压标签
+htmlWrapAttributesThreshold: 2
+# 自闭合标签统一格式（<icon-delete /> 保持一致）
+selfClosingTag: always
