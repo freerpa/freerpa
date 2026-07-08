@@ -92,6 +92,8 @@ const title = computed(() => {
     return '数据表'
   } else if (props.type === 'browser') {
     return '浏览器'
+  } else if (props.type === 'elementSet') {
+    return '元素集'
   }
 })
 

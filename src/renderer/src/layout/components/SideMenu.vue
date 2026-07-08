@@ -22,6 +22,10 @@
         <template #icon><ri-database2-line /></template>
         <span>数据表</span>
       </a-menu-item>
+      <a-menu-item key="elementSet">
+        <template #icon><ri-stack-line /></template>
+        <span>元素集</span>
+      </a-menu-item>
       <a-menu-item key="my">
         <template #icon><ri-user-3-line /></template>
         <span>我的</span>
@@ -39,75 +43,83 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import {
-  IconHome,
-  IconBranch,
-  IconMenuFold,
-  IconMenuUnfold,
-  IconStorage,
-  IconComputer,
-  IconUser
-} from '@arco-design/web-vue/es/icon'
-import {RiHome2Line,RiFlowChart,RiChromeLine,RiDatabase2Line,RiSettings2Line,RiUser3Line} from '@remixicon/vue';
-import { useStore } from '@/store'
+  import { ref } from 'vue';
+  import { useRouter, useRoute } from 'vue-router';
+  import {
+    IconHome,
+    IconBranch,
+    IconMenuFold,
+    IconMenuUnfold,
+    IconStorage,
+    IconComputer,
+    IconUser,
+  } from '@arco-design/web-vue/es/icon';
+  import {
+    RiHome2Line,
+    RiFlowChart,
+    RiChromeLine,
+    RiDatabase2Line,
+    RiSettings2Line,
+    RiUser3Line,
+    RiStackLine,
+  } from '@remixicon/vue';
+  import { useStore } from '@/store';
 
-const store = useStore()
-const isCollapse = ref(false)
-const router = useRouter()
-const route = useRoute()
+  const store = useStore();
+  const isCollapse = ref(false);
+  const router = useRouter();
+  const route = useRoute();
 
-const emit = defineEmits(['myCenter', 'settingsCenter'])
+  const emit = defineEmits(['myCenter', 'settingsCenter']);
 
-const handleMenuClick = (key) => {
-  if (key === 'my') {
-    // 未登录：弹出登录窗口
-    if (!store.userInfo) {
-      store.showLogin()
-      return
+  const handleMenuClick = (key) => {
+    if (key === 'my') {
+      // 未登录：弹出登录窗口
+      if (!store.userInfo) {
+        store.showLogin();
+        return;
+      }
+      emit('myCenter');
+      return;
     }
-    emit('myCenter')
-    return
-  }
-  if (key === 'settings') {
-    emit('settingsCenter')
-    return
-  }
-  router.push(`/${key}`)
-}
+    if (key === 'settings') {
+      emit('settingsCenter');
+      return;
+    }
+    router.push(`/${key}`);
+  };
 
-const toggleMenu = () => {
-  isCollapse.value = !isCollapse.value
-}
+  const toggleMenu = () => {
+    isCollapse.value = !isCollapse.value;
+  };
 
-// 如果访问根路径，重定向到home
-if (route.path === '/') {
-  router.push('/home')
-}
+  // 如果访问根路径，重定向到home
+  if (route.path === '/') {
+    router.push('/home');
+  }
 </script>
 
 <style lang="less" scoped>
-.side-menu-container {
-  position: relative;
-  height: 100%;
-
-  .side-menu {
+  .side-menu-container {
+    position: relative;
     height: 100%;
-    border-right: solid 1px var(--color-border);
 
-    &:not(.arco-menu-collapsed) {
-      width: 200px;
+    .side-menu {
+      height: 100%;
+      border-right: solid 1px var(--color-border);
+
+      &:not(.arco-menu-collapsed) {
+        width: 200px;
+      }
+    }
+    .arco-menu-item {
+      padding: 0 16px;
+    }
+    .collapse-btn {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      cursor: pointer;
     }
   }
-  .arco-menu-item {
-    padding: 0 16px;
-  }
-  .collapse-btn {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    cursor: pointer;
-  }
-}
 </style>

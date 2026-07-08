@@ -4,6 +4,7 @@ import Home from '../views/Home.vue'
 import Workflow from '../views/workflowManager/index.vue'
 import Data from '../views/data/index.vue'
 import BrowserView from '../views/browser/index.vue'
+import ElementSet from '../views/elementSet/index.vue'
 import Login from '../views/login/index.vue'
 import { getToken, removeToken } from '@/utils/token'
 
@@ -29,6 +30,10 @@ const routes = [
       {
         path: 'browser',
         component: BrowserView
+      },
+      {
+        path: 'elementSet',
+        component: ElementSet
       }
     ]
   },

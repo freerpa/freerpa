@@ -174,7 +174,7 @@ watch(
     flex: 0;
   }
   .select-btn {
-    // width: 32px;
+    width: 38px;
     min-height: 24px;
     height: 100%;
     flex: 0;

@@ -1,6 +1,6 @@
 /**
  * @file: 数据管理模块 — 统一入口
- * 聚合 models / workflows / browsers / categories 四个子模块
+ * 聚合 models / workflows / browsers / categories / elementSets 子模块
  */
 
 export { initDatabase } from './db.js'
@@ -29,15 +29,23 @@ export {
   getCategories, addCategory, updateCategory, deleteCategory
 } from './categories/index.js'
 
+// Re-export elementSets
+export {
+  getElementSets, getElementSet, createElementSet, updateElementSet,
+  deleteElementSet
+} from './elementSets/index.js'
+
 // 统一 IPC 注册
 import { register as registerModels } from './models/ipc.js'
 import { register as registerWorkflows } from './workflows/ipc.js'
 import { register as registerBrowsers } from './browsers/ipc.js'
 import { register as registerCategories } from './categories/ipc.js'
+import { register as registerElementSets } from './elementSets/ipc.js'
 
 export const register = () => {
   registerModels()
   registerWorkflows()
   registerBrowsers()
   registerCategories()
+  registerElementSets()
 }

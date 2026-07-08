@@ -147,6 +147,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     permanentDelete: (id) => ipcRenderer.invoke('browser:permanentDelete', id)
   },
 
+  // 元素集模块 API
+  elementSet: {
+    getElementSets: (params) => ipcRenderer.invoke('elementSet:getElementSets', params),
+    getElementSet: (id) => ipcRenderer.invoke('elementSet:getElementSet', id),
+    createElementSet: (params) => ipcRenderer.invoke('elementSet:createElementSet', params),
+    updateElementSet: (params) => ipcRenderer.invoke('elementSet:updateElementSet', params),
+    deleteElementSet: (id) => ipcRenderer.invoke('elementSet:deleteElementSet', id),
+    getTrash: () => ipcRenderer.invoke('elementSet:getTrash'),
+    restore: (id) => ipcRenderer.invoke('elementSet:restore', id),
+    permanentDelete: (id) => ipcRenderer.invoke('elementSet:permanentDelete', id)
+  },
+
   // 分类模块 API
   category: {
     getCategories: (type) => ipcRenderer.invoke('category:getCategories', type),
