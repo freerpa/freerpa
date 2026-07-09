@@ -8,7 +8,7 @@
 
 import { execSync } from 'child_process'
 import { app } from 'electron'
-import puppeteer from 'puppeteer-core'
+import puppeteer from './puppeteer.js'
 
 // 存储所有打开的浏览器实例
 const openBrowserInstances = new Map()

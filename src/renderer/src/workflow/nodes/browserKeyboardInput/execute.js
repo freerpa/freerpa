@@ -30,14 +30,14 @@ const execute = async (node, context) => {
       try {
         if (keyboardMode === 'input') {
           // 等待元素出现
-          await page.waitForSelector(inputSelector)
+          // await page.waitForSelector(inputSelector)
           // 查找元素
-          const element = await page.$(inputSelector)
+          const element = await page.find(inputSelector)
           if (!element) {
             throw new Error(`未找到元素: ${inputSelector}`)
           }
           // 聚焦元素
-          await element.focus()
+          // await element.focus()
           //移动光标到最后
           // await page.keyboard.down('Control') // 全选
           // await page.keyboard.press('End') // 全选

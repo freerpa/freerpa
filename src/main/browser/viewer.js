@@ -7,7 +7,7 @@
 
 import { app } from 'electron'
 import path from 'path'
-import puppeteer from 'puppeteer-core'
+import puppeteer from './puppeteer.js'
 import { launchKernel, checkKernelExists, downloadKernel, resolveKernelVersion, getPlatform } from './kernel'
 import { queryGeoInfo } from './utils/proxy'
 import { getBrowserInstance, registerBrowser, incrementRef, decrementRef } from './manager'

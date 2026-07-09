@@ -53,7 +53,7 @@
     "pako": "^2.1.0",
     "pinia": "^3.0.4",
     "pinyin": "^4.0.0",
-    "puppeteer-core": "^24.18.0",
+    "puppeteer-core": "^25.3.0",
     "socks-proxy-agent": "^10.1.0",
     "sqlite": "^5.1.1",
     "sqlite3": "^6.0.1",

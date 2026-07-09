@@ -68,7 +68,7 @@ export const createWindow = () => {
     globalShortcut.register('F1', () => view.webContents.openDevTools())
     globalShortcut.register('F2', () => view.webContents.reload())
   } else {
-    view.webContents.loadFile(path.join(__dirname, '../../renderer/index.html'))
+    view.webContents.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
 
   view.webContents.on('dom-ready', () => {

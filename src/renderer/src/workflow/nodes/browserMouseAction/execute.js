@@ -37,7 +37,7 @@ const execute = async (node, context) => {
 
     try {
       // 等待元素出现
-      await page.waitForSelector(selector, { visible: true })
+      // await page.waitForSelector(selector, { visible: true })
 
       if (clickAll && ['click', 'dblclick', 'rightClick'].includes(action)) {
         // 获取所有匹配的元素
@@ -73,7 +73,8 @@ const execute = async (node, context) => {
           }
         }
       } else {
-        const element = await page.$(selector)
+        const element = await page.find(selector)
+        console.log('element', element)
         if (!element) {
           throw new Error(`未找到元素: ${selector}`)
         }

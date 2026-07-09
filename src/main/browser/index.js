@@ -17,3 +17,9 @@ export { register } from './ipc'
 
 // Utils
 export { queryGeoInfo } from './utils/proxy'
+
+// Selector
+export { find, findAll, mountFinder, matchTemplate } from './selector/index.js'
+
+// Puppeteer proxy
+export { default as puppeteer } from './puppeteer.js'

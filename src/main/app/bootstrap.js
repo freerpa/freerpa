@@ -1,5 +1,5 @@
 import { app, BaseWindow } from 'electron'
-import puppeteer from 'puppeteer-core'
+import puppeteer from '../browser/puppeteer.js'
 import { is } from '@electron-toolkit/utils'
 import '../menu'
 import pkg from '../../../package.json'
