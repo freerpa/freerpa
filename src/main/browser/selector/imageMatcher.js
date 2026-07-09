@@ -1,138 +1,94 @@
 /**
- * @file: 图片模板匹配 — 纯 JS 实现（零依赖）
- *
- * 输入：截图 base64 / 模板 base64
- * 输出：匹配区域 { x, y, width, height } 或 null
+ * @file: 图片模板匹配 — sharp 解码 + 稀疏像素搜索
  */
 
-import { inflateSync } from 'zlib'
+import sharp from 'sharp'
 
-// ─── PNG 解码 — 返回 { width, height, pixels: Buffer (RGBA) } ──
+// ─── base64 → sharp raw RGBA ────────────────────────────
 
-const SIG = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
-
-function parsePNG(buf) {
-  if (!buf.slice(0, 8).equals(SIG)) throw new Error('Not a PNG')
-
-  let offset = 8
-  let width = 0, height = 0
-  const idatChunks = []
-
-  while (offset < buf.length) {
-    const len = buf.readUInt32BE(offset)
-    const type = buf.slice(offset + 4, offset + 8).toString('ascii')
-    const data = buf.slice(offset + 8, offset + 8 + len)
-    offset += 12 + len
-
-    if (type === 'IHDR') {
-      width = data.readUInt32BE(0)
-      height = data.readUInt32BE(4)
-    } else if (type === 'IDAT') {
-      idatChunks.push(data)
-    } else if (type === 'IEND') {
-      break
-    }
-  }
-
-  if (!width || !height) throw new Error('Invalid PNG: no IHDR')
-
-  const compressed = Buffer.concat(idatChunks)
-  const raw = inflateSync(compressed)
-
-  // 重建 RGBA 像素（处理 PNG filter byte + 行）
-  const bpp = 4 // RGBA
-  const stride = width * bpp
-  const pixels = Buffer.alloc(stride * height)
-
-  let srcIdx = 0
-  for (let y = 0; y < height; y++) {
-    const filterType = raw[srcIdx++]
-    const rowStart = y * stride
-
-    for (let x = 0; x < stride; x++) {
-      const byte = raw[srcIdx++]
-      const a = x >= bpp ? pixels[rowStart + x - bpp] : 0
-      const b = y > 0 ? pixels[rowStart - stride + x] : 0
-      const c = (y > 0 && x >= bpp) ? pixels[rowStart - stride + x - bpp] : 0
-
-      let val
-      switch (filterType) {
-        case 0: val = byte; break                        // None
-        case 1: val = byte + a; break                     // Sub
-        case 2: val = byte + b; break                     // Up
-        case 3: val = byte + ((a + b) >>> 1); break       // Average
-        case 4: val = byte + paeth(a, b, c); break        // Paeth
-        default: val = byte
-      }
-      pixels[rowStart + x] = val & 0xff
-    }
-  }
-
-  return { width, height, pixels }
-}
-
-function paeth(a, b, c) {
-  const p = a + b - c
-  const pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c)
-  if (pa <= pb && pa <= pc) return a
-  if (pb <= pc) return b
-  return c
-}
-
-// ─── base64 → PNG 解码后的像素 ──────────────────────────
-
-function base64ToPixels(base64) {
+async function toRawRGBA(base64) {
   const buf = Buffer.from(base64.replace(/^data:image\/\w+;base64,/, ''), 'base64')
-  return parsePNG(buf)
+  const { data, info } = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  return { w: info.width, h: info.height, rgba: data }
 }
 
-// ─── 模板匹配（SAD 滑动窗口） ────────────────────────────
+// ─── 提取关键采样点 ────────────────────────────────────
 
-/**
- * 在大图（截图）中查找小图（模板）的位置
- * @param {string} screenBase64 - 页面截图 base64
- * @param {string} tmplBase64   - 模板图片 base64
- * @returns {{ x: number, y: number, width: number, height: number } | null}
- */
-export function matchTemplate(screenBase64, tmplBase64) {
+function sample(w, h, rgba) {
+  const pts = [], s = w * 4
+
+  const pick = (x, y) => {
+    const i = y * s + x * 4
+    return { x, y, r: rgba[i], g: rgba[i + 1], b: rgba[i + 2] }
+  }
+
+  // 九宫格（3x3）+ 中心
+  const gx = [0, w >> 1, w - 1], gy = [0, h >> 1, h - 1]
+  for (const y of gy)
+    for (const x of gx)
+      pts.push(pick(x, y))
+
+  // 随机补充到 20 个
+  while (pts.length < 20) {
+    const x = (Math.random() * (w - 1)) | 0, y = (Math.random() * (h - 1)) | 0
+    pts.push(pick(x, y))
+  }
+
+  return pts
+}
+
+// ─── 主入口 ────────────────────────────────────────────
+
+export async function matchTemplate(screenBase64, tmplBase64) {
   try {
-    const screen = base64ToPixels(screenBase64)
-    const tmpl = base64ToPixels(tmplBase64)
+    const scr = await toRawRGBA(screenBase64)
+    const tpl = await toRawRGBA(tmplBase64)
+    const { w: sw, h: sh, rgba: sp } = scr
+    const { w: tw, h: th, rgba: tp } = tpl
 
-    if (tmpl.width > screen.width || tmpl.height > screen.height) return null
+    if (tw > sw || th > sh) return null
 
-    const { width: sw, height: sh, pixels: sp } = screen
-    const { width: tw, height: th, pixels: tp } = tmpl
+    const TOL = 40
+    const pts = sample(tw, th, tp)
+    const first = pts[0], rest = pts.slice(1)
+    const ss = sw * 4
 
-    let bestScore = Infinity
-    let bestX = 0, bestY = 0
-
-    // 滑动窗口
     for (let y = 0; y <= sh - th; y++) {
+      const sy = y * ss
       for (let x = 0; x <= sw - tw; x++) {
-        let diff = 0
-        for (let ty = 0; ty < th && diff < bestScore; ty++) {
-          const sRow = (y + ty) * sw * 4 + x * 4
-          const tRow = ty * tw * 4
-          for (let tx = 0; tx < tw * 4; tx++) {
-            diff += Math.abs(sp[sRow + tx] - tp[tRow + tx])
+        const si = sy + x * 4
+        if (Math.abs(sp[si] - first.r) > TOL ||
+            Math.abs(sp[si + 1] - first.g) > TOL ||
+            Math.abs(sp[si + 2] - first.b) > TOL)
+          continue
+
+        // 验证其余采样点
+        let ok = true
+        for (const p of rest) {
+          const pi = (y + p.y) * ss + (x + p.x) * 4
+          if (Math.abs(sp[pi] - p.r) > TOL ||
+              Math.abs(sp[pi + 1] - p.g) > TOL ||
+              Math.abs(sp[pi + 2] - p.b) > TOL) { ok = false; break }
+        }
+        if (!ok) continue
+
+        // 局部 SAD 校验
+        let diff = 0, n = 0
+        for (let ty = 0; ty < th && diff < 2000 * n; ty += 3) {
+          const tRow = ty * tw * 4, sRow = (y + ty) * ss + x * 4
+          for (let tx = 0; tx < tw * 4; tx += 12) {
+            diff += Math.abs(sp[sRow + tx] - tp[tRow + tx]); n++
           }
         }
-        if (diff < bestScore) {
-          bestScore = diff
-          bestX = x
-          bestY = y
-        }
+        if (diff / n > 25) continue
+
+        return { x, y, width: tw, height: th }
       }
     }
 
-    // 阈值：每像素平均差异 < 60 认为匹配
-    const avgDiff = bestScore / (tw * th * 4)
-    if (avgDiff > 60) return null
-
-    return { x: bestX, y: bestY, width: tw, height: th }
+    return null
   } catch (e) {
-    console.error('[imageMatcher] match failed:', e.message)
+    console.error('[imageMatcher]', e.message)
     return null
   }
 }

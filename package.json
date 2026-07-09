@@ -54,6 +54,7 @@
     "pinia": "^3.0.4",
     "pinyin": "^4.0.0",
     "puppeteer-core": "^25.3.0",
+    "sharp": "^0.35.3",
     "socks-proxy-agent": "^10.1.0",
     "sqlite": "^5.1.1",
     "sqlite3": "^6.0.1",

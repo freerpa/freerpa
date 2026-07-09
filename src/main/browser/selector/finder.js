@@ -56,10 +56,15 @@ async function findByPoint(page, expr) {
 
 async function findByImage(page, expression) {
   try {
-    const raw = await page.screenshot({ encoding: 'base64', type: 'png' })
-    const m = matchTemplate(`data:image/png;base64,${raw}`, expression)
+    const [raw, dpr] = await Promise.all([
+      page.screenshot({ encoding: 'base64', type: 'png' }),
+      page.evaluate(() => window.devicePixelRatio || 1)
+    ])
+    const m = await matchTemplate(`data:image/png;base64,${raw}`, expression)
     if (!m) return []
-    return findByPoint(page, `${m.x + (m.width >> 1)},${m.y + (m.height >> 1)}`)
+    const cx = Math.round((m.x + (m.width >> 1)) / dpr)
+    const cy = Math.round((m.y + (m.height >> 1)) / dpr)
+    return findByPoint(page, `${cx},${cy}`)
   } catch { return [] }
 }
 
