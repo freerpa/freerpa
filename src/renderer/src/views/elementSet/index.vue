@@ -68,7 +68,7 @@ import ResourceList from '@/components/ResourceList.vue'
 import RecycleBin from '@/components/RecycleBin.vue'
 import ElementSetEditor from './components/ElementSetEditor.vue'
 import { debounce } from 'lodash-es'
-import { getAppVersion } from '@/utils/version'
+import { exportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
 
 const { elementSet: elementSetAPI } = window.electronAPI
 const showTrash = ref(false)
@@ -128,73 +128,28 @@ const handleDelete = (es, index) => {
 }
 
 const handleExport = async (es) => {
-  try {
-    const full = await elementSetAPI.getElementSet(es.id)
-    const exportData = {
-      app_version: getAppVersion(),
-      exportTime: new Date().toISOString(),
-      elementSet: {
-        title: full.title,
-        description: full.description,
-        category_id: full.category_id,
-        elements: (full.elements || []).map((el) => ({
-          name: el.name,
-          match_condition: el.match_condition,
-          selectors: (el.selectors || []).map((sel) => ({
-            type: sel.type,
-            text_subtype: sel.text_subtype,
-            expression: sel.expression
-          }))
+  const full = await elementSetAPI.getElementSet(es.id)
+  await exportToFile(
+    async () => ({
+      title: full.title,
+      description: full.description,
+      category_id: full.category_id,
+      elements: (full.elements || []).map((el) => ({
+        name: el.name,
+        match_condition: el.match_condition,
+        selectors: (el.selectors || []).map((sel) => ({
+          type: sel.type,
+          text_subtype: sel.text_subtype,
+          expression: sel.expression
         }))
-      }
-    }
-    const header = new Uint8Array([0x41, 0x4d, 0x45, 0x53]) // AMES
-    const { deflate } = await import('pako')
-    const compressed = deflate(new TextEncoder().encode(JSON.stringify(exportData)))
-    const fileData = new Uint8Array(header.length + compressed.length)
-    fileData.set(header)
-    fileData.set(compressed, header.length)
-    const blob = new Blob([fileData])
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${full.title} - 元素集.ames`
-    a.click()
-    URL.revokeObjectURL(url)
-  } catch (e) { Message.error('导出失败: ' + e.message) }
+      }))
+    }),
+    MODULE_CONFIG.elementSet
+  )
 }
 
 const handleImport = () => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = '.ames'
-  input.onchange = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = async (event) => {
-      try {
-        const fileData = new Uint8Array(event.target.result)
-        if (fileData[0] !== 0x41 || fileData[1] !== 0x4d || fileData[2] !== 0x45 || fileData[3] !== 0x53) {
-          throw new Error('无效的文件格式')
-        }
-        const { inflate } = await import('pako')
-        const importData = JSON.parse(new TextDecoder().decode(inflate(fileData.slice(4))))
-        if (!importData.elementSet) throw new Error('无效的文件内容')
-        const es = importData.elementSet
-        await elementSetAPI.createElementSet({
-          title: es.title,
-          description: es.description,
-          category_id: es.category_id,
-          elements: es.elements || []
-        })
-        Message.success(`成功导入 "${es.title}"`)
-        fetchElementSets(true)
-      } catch (e) { Message.error('导入失败: ' + e.message) }
-    }
-    reader.readAsArrayBuffer(file)
-  }
-  input.click()
+  importFromFile(() => fetchElementSets(true))
 }
 
 watch(searchKeyword, debounce(() => { currentPage.value = 1; fetchElementSets(true) }, 300))

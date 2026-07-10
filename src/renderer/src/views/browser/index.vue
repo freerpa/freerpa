@@ -68,7 +68,7 @@ import BrowserEditor from './components/BrowserEditor.vue'
 import RecycleBin from '@/components/RecycleBin.vue'
 import BrowserOpenModal from './components/BrowserOpenModal.vue'
 import { debounce } from 'lodash-es'
-import { getAppVersion, compareVersion } from '@/utils/version'
+import { exportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
 
 const { browserLocal: browserAPI } = window.electronAPI
 const showTrash = ref(false)
@@ -128,42 +128,15 @@ const handleCloseBrowser = async (env) => {
 }
 
 const handleExport = async (env) => {
-  try {
-    const envData = await browserAPI.getBrowser(env.id)
-    const exportData = { app_version: getAppVersion(), exportTime: new Date().toISOString(), browser: { name: envData.name, description: envData.description, category_id: envData.category_id, kernel_id: envData.kernel_id, proxy_url: envData.proxy_url } }
-    const header = new Uint8Array([0x41, 0x4d, 0x45, 0x00])
-    const { deflate } = await import('pako')
-    const compressed = deflate(new TextEncoder().encode(JSON.stringify(exportData)))
-    const fileData = new Uint8Array(header.length + compressed.length); fileData.set(header); fileData.set(compressed, header.length)
-    const blob = new Blob([fileData]); const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url; a.download = `${env.name} - 浏览器.ame`; a.click(); URL.revokeObjectURL(url)
-  } catch (e) { Message.error('导出失败: ' + e.message) }
+  const envData = await browserAPI.getBrowser(env.id)
+  await exportToFile(
+    async () => ({ name: envData.name, description: envData.description, category_id: envData.category_id, kernel_id: envData.kernel_id, proxy_url: envData.proxy_url }),
+    MODULE_CONFIG.browser
+  )
 }
 
 const handleImport = () => {
-  const input = document.createElement('input'); input.type = 'file'; input.accept = '.ame'
-  input.onchange = async (e) => {
-    const file = e.target.files?.[0]; if (!file) return
-    const reader = new FileReader()
-    reader.onload = async (event) => {
-      try {
-        const fileData = new Uint8Array(event.target.result)
-        if (fileData[0] !== 0x41 || fileData[1] !== 0x4d || fileData[2] !== 0x45 || fileData[3] !== 0x00) throw new Error('无效的文件格式')
-        const { inflate } = await import('pako')
-        const importData = JSON.parse(new TextDecoder().decode(inflate(fileData.slice(4))))
-        if (!importData.app_version || !importData.browser) throw new Error('无效的文件内容')
-        if (compareVersion(getAppVersion(), importData.app_version) < 0) throw new Error('软件版本不匹配')
-        const envData = { name: importData.browser.name, description: importData.browser.description, category_id: importData.browser.category_id || '', kernel_id: importData.browser.kernel_id || '', proxy_url: importData.browser.proxy_url || '' }
-        const existing = await browserAPI.getBrowsers({ page: 1, pageSize: 999999, keyword: envData.name })
-        if (existing.data.some(e => e.name === envData.name)) envData.name = `【导入】${envData.name}`
-        await browserAPI.createBrowser(envData)
-        Message.success(`成功导入浏览器 "${envData.name}"`)
-        fetchBrowsers(true)
-      } catch (e) { Message.error('导入失败: ' + e.message) }
-    }
-    reader.readAsArrayBuffer(file)
-  }
-  input.click()
+  importFromFile(() => fetchBrowsers(true))
 }
 
 const fetchBrowserStatus = async () => {

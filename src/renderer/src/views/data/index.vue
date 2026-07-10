@@ -74,7 +74,7 @@ import ModelEditor from './components/ModelEditor.vue'
 import RecycleBin from '@/components/RecycleBin.vue'
 import { useStore } from '@/store'
 import { storeToRefs } from 'pinia'
-import { getAppVersion, compareVersion } from '@/utils/version'
+import { exportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
 import { debounce } from 'lodash-es'
 
 const store = useStore()
@@ -137,47 +137,16 @@ const handleCopy = async (model) => {
 }
 
 const handleExport = async (model) => {
-  try {
-    const modelData = await dataAPI.getModel(model.id)
-    const exportData = { app_version: getAppVersion(), exportTime: new Date().toISOString(), model: { name: model.name, description: model.description, fields: JSON.parse(modelData.fields) }, data: [] }
-    const jsonString = JSON.stringify(exportData)
-    const header = new Uint8Array([0x41, 0x4d, 0x44, 0x00])
-    const { deflate } = await import('pako')
-    const compressed = deflate(new TextEncoder().encode(jsonString))
-    const fileData = new Uint8Array(header.length + compressed.length)
-    fileData.set(header); fileData.set(compressed, header.length)
-    const blob = new Blob([fileData], { type: 'application/octet-stream' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a'); link.href = url; link.download = `${model.name} - 数据表.amd`
-    document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url)
-  } catch (e) { Message.error('导出失败: ' + e.message) }
+  const modelData = await dataAPI.getModel(model.id)
+  await exportToFile(
+    async () => ({ name: model.name, description: model.description, fields: JSON.parse(modelData.fields) }),
+    MODULE_CONFIG.model,
+    { data: [] }
+  )
 }
 
 const handleImport = () => {
-  const input = document.createElement('input'); input.type = 'file'; input.accept = '.amd'
-  input.onchange = async (e) => {
-    const file = e.target.files?.[0]; if (!file) return
-    const reader = new FileReader()
-    reader.onload = async (event) => {
-      try {
-        const fileData = new Uint8Array(event.target.result)
-        if (fileData[0] !== 0x41 || fileData[1] !== 0x4d || fileData[2] !== 0x44 || fileData[3] !== 0x00) throw new Error('无效的文件格式')
-        const { inflate } = await import('pako')
-        const text = new TextDecoder().decode(inflate(fileData.slice(4)))
-        const importData = JSON.parse(text)
-        if (!importData.app_version || !importData.model || !importData.data) throw new Error('无效的文件内容')
-        if (compareVersion(getAppVersion(), importData.app_version) < 0) throw new Error('软件版本不匹配')
-        const modelData = { name: importData.model.name, description: importData.model.description, fields: importData.model.fields }
-        const existingModels = await dataAPI.getModels({ page: 1, pageSize: 999999, keyword: modelData.name })
-        if (existingModels.data.some((m) => m.name === modelData.name)) modelData.name = `【导入】${modelData.name}`
-        await dataAPI.createModel(modelData)
-        Message.success(`成功导入模型 "${modelData.name}"`)
-        fetchModels(true)
-      } catch (e) { Message.error('导入失败: ' + e.message) }
-    }
-    reader.readAsArrayBuffer(file)
-  }
-  input.click()
+  importFromFile(() => fetchModels(true))
 }
 
 watch(searchKeyword, debounce(() => { currentPage.value = 1; fetchModels(true) }, 300))
