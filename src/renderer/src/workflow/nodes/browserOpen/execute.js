@@ -3,8 +3,7 @@
  * @author: dabao / FreeRPA
  */
 
-import { openBrowser } from '@/common'
-import puppeteer from 'puppeteer-core'
+import { openBrowser, puppeteer } from '@/common'
 
 const execute = async (node, context) => {
   const { browser = 'automan' } = node.config
