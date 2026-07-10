@@ -21,7 +21,7 @@ const execute = async (node, context) => {
 
     // 获取元素状态
     const getElementState = async () => {
-      const element = await page.$(selector)
+      const element = await page.find(selector)
       if (!element) return false
       const state = {}
       for (const type of types) {
@@ -33,11 +33,11 @@ const execute = async (node, context) => {
             state.notExists = !element
             break
           case 'visible': {
-            state.visible = element.isVisible()
+            state.visible = await element.isVisible()
             break
           }
           case 'notVisible': {
-            state.notVisible = element.isHidden()
+            state.notVisible = await element.isHidden()
             break
           }
           case 'inViewport': {
@@ -129,7 +129,6 @@ const execute = async (node, context) => {
           }
         }
       }
-      console.log('state', state);
       return state
     }
 

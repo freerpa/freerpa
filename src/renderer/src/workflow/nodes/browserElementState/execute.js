@@ -17,10 +17,9 @@ const execute = async (node, context) => {
     let visible = false
     let inViewport = false
     let rect = null
-    const element = await page.$(selector)
-    console.log('element', element)
+
+    const element = await page.find(selector)
     if (element) {
-      // 定义判断元素是否在视口内的函数
       inViewport = await page_eval(
         element,
         `(element) => {
@@ -33,22 +32,14 @@ const execute = async (node, context) => {
         )
       }`
       )
-      const isIntersectingViewport = await element.boundingBox()
-      console.log('inViewport', inViewport, isIntersectingViewport)
       exists = true
       visible = await element.isVisible()
       rect = await element.boundingBox()
     }
 
-    // 返回检查结果
-    complete({
-      exists,
-      visible,
-      inViewport,
-      rect
-    })
+    complete({ exists, visible, inViewport, rect })
   } catch (error) {
-    throw new Error(`元素状态检查失败: ${error.message}`)
+    throw new Error(`元素状态检查失败[${selector.name}]: ${error.message}`)
   }
 }
 

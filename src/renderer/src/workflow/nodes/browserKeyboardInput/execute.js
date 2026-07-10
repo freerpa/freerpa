@@ -29,13 +29,9 @@ const execute = async (node, context) => {
     const type = async () => {
       try {
         if (keyboardMode === 'input') {
-          // 等待元素出现
-          // await page.waitForSelector(inputSelector)
           // 查找元素
           const element = await page.find(inputSelector)
-          if (!element) {
-            throw new Error(`未找到元素: ${inputSelector}`)
-          }
+          if (!element) throw new Error(`未找到元素: ${inputSelector?.name || '未知'}`)
           // 聚焦元素
           // await element.focus()
           //移动光标到最后
@@ -77,14 +73,8 @@ const execute = async (node, context) => {
           }
         } else {
           if (keySelector) {
-            // 等待元素出现
-            await page.waitForSelector(keySelector)
-            // 查找元素
-            const element = await page.$(keySelector)
-            if (!element) {
-              throw new Error(`未找到元素: ${keySelector}`)
-            }
-            // 聚焦元素
+            const element = await page.find(keySelector)
+            if (!element) throw new Error(`未找到元素: ${keySelector?.name || '未知'}`)
             await element.focus()
           }
           // 按下修饰键

@@ -3,6 +3,7 @@
  * @author: dabao
  * @date: 2024-03-15
  */
+import path from 'path'
 import { page_eval } from '@pageEval'
 const execute = async (node, context) => {
   const {
@@ -17,8 +18,8 @@ const execute = async (node, context) => {
     const realPath = path.join(fs.realpathSync(filePath), fileName + ".pdf")
     for (const exclude of excludes) {
       try {
-        const element = await page.$(exclude.selector)
-        await page_eval(element, `el => el.remove()`)
+        const element = await page.find(exclude.selector)
+        if (element) await page_eval(element, `el => el.remove()`)
       } catch (error) {
         console.log(error)
       }

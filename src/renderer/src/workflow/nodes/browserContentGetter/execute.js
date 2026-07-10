@@ -143,7 +143,7 @@ const execute = async (node, context) => {
       try {
         let result = getAll ? [] : ''
         // 获取多个元素
-        let elements = await page.$$(selector)
+        let elements = await page.find(selector, { all: true })
 
         // 根据元素状态过滤元素
         if (elementState.includes('visible')) {
@@ -205,9 +205,6 @@ const execute = async (node, context) => {
         throw error
       }
     }
-
-    // 等待元素出现
-    await page.waitForSelector(selector)
 
     // 获取内容
     const content = await getElements()

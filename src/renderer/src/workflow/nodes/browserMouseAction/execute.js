@@ -36,15 +36,11 @@ const execute = async (node, context) => {
     }
 
     try {
-      // 等待元素出现
-      // await page.waitForSelector(selector, { visible: true })
+      const name = selector.name
 
       if (clickAll && ['click', 'dblclick', 'rightClick'].includes(action)) {
-        // 获取所有匹配的元素
-        const elements = await page.$$(selector)
-        if (!elements.length) {
-          throw new Error(`未找到匹配的元素: ${selector}`)
-        }
+        const elements = await page.find(selector, { all: true })
+        if (!elements.length) throw new Error(`未找到元素: ${name}`)
 
         // 依次操作每个元素
         for (let i = 0; i < elements.length; i++) {
@@ -74,10 +70,7 @@ const execute = async (node, context) => {
         }
       } else {
         const element = await page.find(selector)
-        console.log('element', element)
-        if (!element) {
-          throw new Error(`未找到元素: ${selector}`)
-        }
+        if (!element) throw new Error(`未找到元素: ${name}`)
         switch (action) {
           case 'click':
             await element.click()
@@ -97,12 +90,8 @@ const execute = async (node, context) => {
             }
             break
           case 'drag':
-            // 等待目标元素出现
-            await page.waitForSelector(dragConfig.target, { visible: true })
-            const target = await page.$(dragConfig.target)
-            if (!target) {
-              throw new Error('未找到拖拽目标元素')
-            }
+            const target = await page.find(dragConfig.target)
+            if (!target) throw new Error(`未找到拖拽目标元素`)
 
             const pos = await calculateClickPosition(element)
             if (!pos) throw new Error('无法获取起始元素位置')

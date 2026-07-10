@@ -18,11 +18,9 @@ const execute = async (node, context) => {
       attrValue,
     } = config
 
-    // 等待元素出现
-    await page.waitForSelector(selector)
-    const elements = await page.$$(selector)
+    const elements = await page.find(selector, { all: true })
     if (!elements || elements.length === 0) {
-      throw new Error(`未找到目标元素：${selector}`)
+      throw new Error(`未找到元素: ${selector.name}`)
     }
     switch (type) {
       case 'appendAttrValue':
@@ -59,15 +57,6 @@ const execute = async (node, context) => {
         )
         break
       case 'modifyAttrValue':
-        await page_eval(
-          page,
-          `(...elements) => {
-              for (const element of elements) {
-                element.setAttribute('${attrName}', '${attrValue}')
-              }
-            }`, ...elements
-        )
-        break
       case 'addAttribute':
         await page_eval(
           page,
@@ -75,8 +64,7 @@ const execute = async (node, context) => {
               for (const element of elements) {
                 element.setAttribute('${attrName}', '${attrValue}')
               }
-            }`
-          , ...elements
+            }`, ...elements
         )
         break
       case 'deleteAttribute':
@@ -94,7 +82,6 @@ const execute = async (node, context) => {
         await page_eval(
           page,
           `(...elements) => {
-            window.elements = elements
               elements.forEach(element => element.remove())
             }`
           , ...elements
@@ -112,7 +99,6 @@ const execute = async (node, context) => {
         )
         break
     }
-    // 完成执行
     complete()
   } catch (error) {
     throw error

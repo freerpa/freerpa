@@ -12,13 +12,13 @@ const execute = async (node, context) => {
   try {
     const page = inputs.page
     const {
-      url = [],
+      url = {},
       method = [],
-      headers = [],
-      body = [],
+      headers = {},
+      body = {},
       resourceTypes = [],
       statusCodes = [],
-      responseMatch = [],
+      responseMatch = {},
       isContinuous = true
     } = config
 

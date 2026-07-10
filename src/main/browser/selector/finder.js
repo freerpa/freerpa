@@ -1,40 +1,41 @@
 /**
  * @file: Finder — Puppeteer 自定义元素查找器
  *
- * page.find(json)     → 返回第一个匹配的 ElementHandle | null
- * page.findAll(json)  → 返回所有匹配的 ElementHandle[]
- *
- * json = JSON.stringify({ match_condition: 'any'|'all',
- *         selectors: [{ type, text_subtype, expression }] })
+ * page.find(element, { all?, wait? })
+ *   element = { name, match_condition: 'any'|'all',
+ *              selectors: [{ type, text_subtype, expression }] }
+ *   all  = false → ElementHandle | null
+ *   all  = true  → ElementHandle[]
+ *   wait = true  → 等待元素出现再查找
  */
 
 import { matchTemplate } from './imageMatcher.js'
 
-// ─── 查找器（统一返回 ElementHandle[]）──────────────────
+// ─── 查找器 ────────────────────────────────────────────
 
-async function findByCss(page, expr) {
+async function findByCss(page, expr, opts) {
   try {
-    await page.waitForSelector(expr, { visible: true })
+    if (opts.wait) await page.waitForSelector(expr, { visible: true })
     return page.$$(expr)
   } catch { return [] }
 }
 
-async function findByXPath(page, expr) {
+async function findByXPath(page, expr, opts) {
   try {
     const pseudo = `::-p-xpath(${expr})`
-    await page.waitForSelector(pseudo, { visible: true })
+    if (opts.wait) await page.waitForSelector(pseudo, { visible: true })
     return page.$$(pseudo)
   } catch { return [] }
 }
 
-async function findByText(page, subtype, expr) {
+async function findByText(page, subtype, expr, opts) {
   const map = {
-    start:    `//body//*[starts-with(normalize-space(text()), ${quote(expr)})]`,
-    end:      `//body//*[substring(normalize-space(text()), string-length(normalize-space(text())) - string-length(${quote(expr)}) + 1) = ${quote(expr)}]`,
-    equals:   `//body//*[normalize-space(text()) = ${quote(expr)}]`,
+    start: `//body//*[starts-with(normalize-space(text()), ${quote(expr)})]`,
+    end: `//body//*[substring(normalize-space(text()), string-length(normalize-space(text())) - string-length(${quote(expr)}) + 1) = ${quote(expr)}]`,
+    equals: `//body//*[normalize-space(text()) = ${quote(expr)}]`,
     contains: `//body//*[contains(normalize-space(text()), ${quote(expr)})]`
   }
-  return map[subtype] ? findByXPath(page, map[subtype]) : []
+  return map[subtype] ? findByXPath(page, map[subtype], opts) : []
 }
 
 async function findByPoint(page, expr) {
@@ -62,9 +63,7 @@ async function findByImage(page, expression) {
     ])
     const m = await matchTemplate(`data:image/png;base64,${raw}`, expression)
     if (!m) return []
-    const cx = Math.round((m.x + (m.width >> 1)) / dpr)
-    const cy = Math.round((m.y + (m.height >> 1)) / dpr)
-    return findByPoint(page, `${cx},${cy}`)
+    return findByPoint(page, `${Math.round((m.x + (m.width >> 1)) / dpr)},${Math.round((m.y + (m.height >> 1)) / dpr)}`)
   } catch { return [] }
 }
 
@@ -76,27 +75,27 @@ function quote(s) {
 
 const FINDERS = { css: findByCss, xpath: findByXPath, text: findByText, position: findByPoint, image: findByImage }
 
-async function resolve(page, sel) {
+async function resolve(page, sel, opts) {
   const fn = FINDERS[sel.type]
   if (!fn) return []
-  return sel.type === 'text' ? fn(page, sel.text_subtype, sel.expression) : fn(page, sel.expression)
+  return sel.type === 'text' ? fn(page, sel.text_subtype, sel.expression, opts) : fn(page, sel.expression, opts)
 }
 
 // ─── 匹配模式 ──────────────────────────────────────────
 
-async function matchAny(page, selectors) {
+async function matchAny(page, selectors, opts) {
   for (const sel of selectors) {
-    const h = await resolve(page, sel)
+    const h = await resolve(page, sel, opts)
     if (h.length) return h
   }
   return []
 }
 
-async function matchAll(page, selectors) {
+async function matchAll(page, selectors, opts) {
   if (!selectors.length) return []
   const groups = []
   for (const sel of selectors) {
-    const h = await resolve(page, sel)
+    const h = await resolve(page, sel, opts)
     if (!h.length) return []
     groups.push(h)
   }
@@ -104,21 +103,19 @@ async function matchAll(page, selectors) {
   return groups.flat().filter(h => seen.has(h) ? false : (seen.add(h), true))
 }
 
-function parse(json) {
-  try { return JSON.parse(json) } catch { return null }
-}
-
 // ─── 对外 API ──────────────────────────────────────────
 
-export async function find(page, json) {
-  const el = parse(json)
-  if (!el?.selectors?.length) return null
-  const handles = await (el.match_condition === 'all' ? matchAll : matchAny)(page, el.selectors)
-  return handles[0] || null
-}
-
-export async function findAll(page, json) {
-  const el = parse(json)
-  if (!el?.selectors?.length) return []
-  return (el.match_condition === 'all' ? matchAll : matchAny)(page, el.selectors)
+/**
+ * @param {object} page
+ * @param {object} element — { name, match_condition, selectors }
+ * @param {object} [opts]
+ * @param {boolean} [opts.all=false] — true 返回全部, false 返回首个
+ * @param {boolean} [opts.wait=true] — 是否等待元素出现
+ * @returns {ElementHandle | ElementHandle[] | null}
+ */
+export async function find(page, element, opts = {all: false, wait: true}) {
+  if (!element?.selectors?.length) return opts.all ? [] : null
+  const fn = element.match_condition === 'all' ? matchAll : matchAny
+  const handles = await fn(page, element.selectors, opts)
+  return opts.all ? handles : (handles[0] || null)
 }

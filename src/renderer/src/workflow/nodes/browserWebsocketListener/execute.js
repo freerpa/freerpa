@@ -86,7 +86,6 @@ const execute = async (node, context) => {
     const cleanup = async () => {
       try {
         await page._client().send('Network.disable')
-        await page._client().detach()
       } catch (error) {
         console.error('清理CDP会话失败:', error)
       }

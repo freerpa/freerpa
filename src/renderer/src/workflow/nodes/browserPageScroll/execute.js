@@ -15,8 +15,7 @@ const execute = async (node, context) => {
     const { scrollType, scrollArea } = config
     let scrollAreaElement = null
     if (scrollArea) {
-      await page.waitForSelector(scrollArea)
-      scrollAreaElement = await page.$(scrollArea)
+      scrollAreaElement = await page.find(scrollArea)
       if (!scrollAreaElement) {
         throw new Error(`未找到滚动区域: ${scrollArea}`)
       }
@@ -35,10 +34,9 @@ const execute = async (node, context) => {
       if (!selector) {
         throw new Error('目标元素选择器不能为空')
       }
-      await page.waitForSelector(selector)
-      const element = await page.$(selector)
+      const element = await page.find(selector)
       if (!element) {
-        throw new Error(`未找到目标元素: ${selector}`)
+        throw new Error(`未找到元素: ${selector.name}`)
       }
       await page_eval(
         page,
@@ -187,7 +185,7 @@ const execute = async (node, context) => {
                 hitEdge = nextX >= maxScrollLeft
                 break
               case 'left':
-                nextX = Math.max(currentX - options.step, 0)
+                nextX = Math.max(currentX - step, 0)
                 hitEdge = nextX <= 0
                 break
             }

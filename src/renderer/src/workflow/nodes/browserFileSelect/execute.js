@@ -243,10 +243,9 @@ const execute = async (node, context) => {
       }
     }
 
-    // 等待目标元素出现
-    await page.waitForSelector(selector)
     // 获取目标元素
-    const element = await page.$(selector)
+    const element = await page.find(selector)
+    if (!element) throw new Error(`未找到元素: ${selector.name}`)
     //根据元素是否为input file类型选择处理方法
     const isInputFile = await page_eval(
       element,

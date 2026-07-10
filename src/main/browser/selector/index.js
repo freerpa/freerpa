@@ -2,18 +2,15 @@
  * @file: Selector 模块统一导出
  */
 
-export { find, findAll } from './finder.js'
+export { find } from './finder.js'
 export { matchTemplate } from './imageMatcher.js'
 
-import { find as _find, findAll as _findAll } from './finder.js'
+import { find as _find } from './finder.js'
 
-/**
- * 挂载 find / findAll 到 puppeteer.Page.prototype
- */
+/** 挂载 find 到 puppeteer.Page.prototype */
 export function mountFinder(puppeteer) {
   const proto = puppeteer?.Page?.prototype
   if (!proto) return
 
-  proto.find ??= async function (json) { return _find(this, json) }
-  proto.findAll ??= async function (json) { return _findAll(this, json) }
+  proto.find ??= async function (element, opts) { return _find(this, element, opts) }
 }

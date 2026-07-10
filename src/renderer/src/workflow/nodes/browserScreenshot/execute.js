@@ -58,7 +58,7 @@ const execute = async (node, context) => {
         if (!selector) {
           throw new Error('元素选择器不能为空')
         }
-        const element = await page.$(selector)
+        const element = await page.find(selector)
         if (!element) {
           throw new Error('未找到指定元素')
         }
