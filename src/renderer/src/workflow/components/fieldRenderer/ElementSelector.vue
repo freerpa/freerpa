@@ -27,6 +27,7 @@
         <div class="tree-panel">
           <div class="panel-header">元素集</div>
           <a-tree
+            ref="treeRef"
             :data="treeData"
             :selected-keys="selectedKeys"
             :default-expanded-keys="expandedKeys"
@@ -144,9 +145,14 @@ const onModalOpen = async () => {
     console.error('ElementSelector loadTree failed:', e)
   }
 }
-
+const treeRef = ref(null)
 const onTreeSelect = (keys, { node }) => {
-  if (!node?.isLeaf || !node?._elementData) return
+  if (!node?.isLeaf || !node?._elementData){
+    console.log('expandNode', node)
+    treeRef.value?.expandNode(node.key,!node.isExpanded)
+    node.isExpanded = !node.isExpanded
+    return
+  } 
   selectedKeys.value = keys
   const el = node._elementData
   editingElement.value = {
@@ -167,7 +173,7 @@ const onConfirm = () => {
     return
   }
   value.value = {
-    name: el.name,
+    name: el.name.trim() || '',
     match_condition: el.match_condition || 'any',
     selectors: (el.selectors || []).map(({ _key, _sizeError, ...rest }) => rest)
   }

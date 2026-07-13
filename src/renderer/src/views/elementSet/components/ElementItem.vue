@@ -1,26 +1,31 @@
 <template>
-  <div class="element-item">
+  <div class="element-item" :class="{ 'no-remove': !showRemove }">
     <!-- 匹配条件 + 名称 + 删除 合并行 -->
     <div class="name-row">
-      <span>名称</span>
-      <a-input v-model="model.name" placeholder="元素名称" allow-clear class="name-input" />
-      <a-button v-if="showRemove" type="text" status="danger" @click="emit('remove')">
+      <span class="name-label">元素名称</span>
+      <a-input size="medium" v-model="model.name" placeholder="元素名称" allow-clear class="name-input" />
+      <a-button v-if="showRemove" size="medium" type="text" status="danger" @click="emit('remove')">
         <template #icon><icon-delete /></template>
       </a-button>
     </div>
     <div class="selector-header">
-      <span>选择器</span>
-      <a-button type="secondary" size="mini" @click="addSelector">添加选择器</a-button>
-      <span>匹配</span>
-      <a-select v-model="model.match_condition" size="mini" style="width: 120px">
-        <a-option value="any">任一匹配</a-option>
-        <a-option value="all">全部匹配</a-option>
-      </a-select>
+      <div class="match-condition">
+        <span class="match-condition-label" style="width: 60px">匹配模式</span>
+        <a-radio-group v-model="model.match_condition" type="button" size="mini">
+          <a-radio value="any">任一匹配</a-radio>
+          <a-radio value="all">全部匹配</a-radio>
+        </a-radio-group>
+      </div>
+
+      <a-button type="secondary" @click="addSelector" size="mini">
+        <template #icon><RiCrosshair2Line /></template>
+        添加选择器
+      </a-button>
     </div>
     <!-- 选择器表格（可拖拽排序） -->
     <a-table
       :data="model.selectors"
-      :bordered="true"
+      :bordered="false"
       :pagination="false"
       :hoverable="false"
       :show-header="false"
@@ -29,15 +34,18 @@
       :draggable="{ type: 'handle', width: 24 }"
       class="selector-table"
     >
+      <template #empty>
+        <div class="empty-state">暂无选择器</div>
+      </template>
       <template #columns>
         <a-table-column :width="90">
           <template #cell="{ record }">
             <a-select v-model="record.type" size="mini" style="width: 100%" @change="onSelectorTypeChange(record)">
               <a-option value="css">CSS</a-option>
               <a-option value="xpath">XPath</a-option>
-              <a-option value="image">图片</a-option>
+              <a-option value="image">截图</a-option>
               <a-option value="text">文本</a-option>
-              <a-option value="position">Position</a-option>
+              <a-option value="position">坐标</a-option>
             </a-select>
           </template>
         </a-table-column>
@@ -66,9 +74,7 @@
                   <a-button size="mini" @click="handleUpload(record)">上传</a-button>
                   <a-button size="mini" @click="handlePaste(record)">粘贴</a-button>
                 </a-space>
-                <div v-if="record.expression" class="image-thumb" @click="previewImage = record.expression">
-                  <img :src="record.expression" />
-                </div>
+                <a-image v-if="record.expression" height="24" :src="record.expression" />
                 <span v-if="record._sizeError" class="size-error">超过500KB</span>
                 <input
                   type="file"
@@ -99,17 +105,6 @@
         </a-table-column>
       </template>
     </a-table>
-
-    <!-- 图片预览放大 -->
-    <a-modal
-      v-model:visible="showPreview"
-      title="图片预览"
-      :footer="false"
-      width="auto"
-      :body-style="{ padding: '12px', textAlign: 'center' }"
-    >
-      <img :src="previewImage" style="max-width: 80vw; max-height: 80vh" />
-    </a-modal>
   </div>
 </template>
 
@@ -117,6 +112,7 @@
   import { ref } from 'vue';
   import { Message } from '@arco-design/web-vue';
   import { IconDelete, IconPlus, IconMinusCircleFill } from '@arco-design/web-vue/es/icon';
+  import { RiCrosshair2Line } from '@remixicon/vue';
 
   const props = defineProps({
     index: { type: Number, default: 0 },
@@ -159,8 +155,6 @@
   // ─── 图片处理 ──────────────────────────
   const MAX_SIZE = 500 * 1024;
   const fileInputs = ref({});
-  const showPreview = ref(false);
-  const previewImage = ref('');
 
   const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -221,6 +215,9 @@
 </script>
 
 <style lang="less" scoped>
+  .no-remove {
+    border: none !important;
+  }
   .element-item {
     margin-bottom: 8px;
     border: 1px solid var(--color-border-2);
@@ -234,8 +231,8 @@
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
-    span {
-      width: 50px;
+    .name-label {
+      width: 60px;
     }
     .name-input {
       flex: 1;
@@ -245,10 +242,16 @@
   .selector-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 8px;
     margin-bottom: 8px;
-    span {
-      width: 50px;
+    .match-condition {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      .match-condition-label {
+        width: 60px;
+      }
     }
   }
 
@@ -256,8 +259,19 @@
     :deep(.arco-table-cell) {
       padding: 3px 6px;
     }
+    :deep(.arco-table-td) {
+      border: none;
+    }
     :deep(.arco-table-th) {
       display: none;
+    }
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      padding: 1px;
+      color: var(--color-text-3);
     }
   }
 
@@ -275,17 +289,10 @@
   }
 
   .image-thumb {
-    cursor: pointer;
-    border: 1px solid var(--color-border-2);
-    border-radius: 3px;
-    overflow: hidden;
-    flex-shrink: 0;
-    img {
-      width: 36px;
-      height: 24px;
-      object-fit: cover;
-      display: block;
-    }
+    width: 36px;
+    height: 24px;
+    object-fit: cover;
+    display: block;
   }
 
   .size-error {
