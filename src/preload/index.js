@@ -214,18 +214,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getSize: () => ipcRenderer.invoke('cache:getSize'),
     clear: () => ipcRenderer.invoke('cache:clear')
   },
-  shortcut: {
-    list: () => ipcRenderer.invoke('shortcut:list'),
-    update: (id, keys) => ipcRenderer.invoke('shortcut:update', { id, keys }),
-    reset: () => ipcRenderer.invoke('shortcut:reset'),
-    getDefaults: () => ipcRenderer.invoke('shortcut:getDefaults'),
-    getInApp: () => ipcRenderer.invoke('shortcut:getInApp'),
-    onTriggered: (callback) => {
-      const listener = (event, id) => callback(id)
-      ipcRenderer.on('shortcut:triggered', listener)
-      return () => ipcRenderer.removeListener('shortcut:triggered', listener)
-    }
-  },
   plugin: {
     addDir: () => ipcRenderer.invoke('plugin:addDir'),
     removeDir: (dir) => ipcRenderer.invoke('plugin:removeDir', dir),

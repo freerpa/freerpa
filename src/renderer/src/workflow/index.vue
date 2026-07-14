@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted, provide, inject } from 'vue'
+import { ref, onMounted, onUnmounted, provide, inject } from 'vue'
 import FlowCanvas from './components/FlowCanvas.vue'
 import FlowToolbar from './components/FlowToolbar.vue'
 import chat from './components/aiBot/chat.vue'
@@ -31,7 +31,7 @@ import { storeToRefs } from 'pinia'
 import { useFlowStore } from './store'
 import { useStore } from '@/store'
 import { autoLayout, getInitNodeData, ConnectionRules } from '@/workflow/utils'
-import { findMatch } from '@/utils/shortcutMatcher'
+import { getShortcuts, findMatch, onChanged } from '@/utils/shortcut'
 import { getActions } from './components/aiBot/functionCalling.js'
 const props = defineProps({
   workflowId: {
@@ -74,11 +74,17 @@ const handleKeyUp = async (event) => {
 // 快捷键配置（运行时从 store 加载）
 const inAppShortcuts = ref([])
 
-/** 加载应用内快捷键配置 */
-const loadShortcuts = async () => {
-  inAppShortcuts.value = await window.electronAPI.shortcut.list()
+/** 加载快捷键配置 */
+const loadShortcuts = () => {
+  inAppShortcuts.value = getShortcuts()
 }
 loadShortcuts()
+
+/** 快捷键变更时重载 */
+let removeOnChanged = null
+onMounted(() => {
+  removeOnChanged = onChanged(loadShortcuts)
+})
 
 const handleKeyDownOnce = async (event) => {
   isCtrl.value = _isCtrlKey(event)
@@ -197,6 +203,7 @@ onUnmounted(() => {
     flowRef.value?.handleStop()
     removeKeyDownEventListener()
     removeKeyUpEventListener()
+    removeOnChanged?.()
   } catch (e) {
     console.log(e)
   }

@@ -42,18 +42,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { IconRefresh, IconInfoCircle } from '@arco-design/web-vue/es/icon'
+import { getShortcuts, getDefaults, updateShortcut, resetShortcuts, formatKeys, eventToAccelerator, onChanged } from '@/utils/shortcut'
 
 const shortcuts = ref([])
-const defaults = ref([])
+const defaults = ref(getDefaults())
 const recording = ref(null)
 const currentKeys = ref('')
 const activeCategories = ref([])
-
-/** 按 category 分组 */
 const grouped = ref([])
+const defaultsList = ref(getDefaults())
+
 const group = () => {
   const map = {}
   for (const s of shortcuts.value) {
@@ -64,18 +65,9 @@ const group = () => {
   grouped.value = Object.entries(map).map(([category, items]) => ({ category, items }))
 }
 
-const formatKeys = (keys) => {
-  if (!keys) return '未设置'
-  return keys
-    .replace('CommandOrControl', navigator.platform.includes('Mac') ? '⌘' : 'Ctrl')
-    .replace('Shift', '⇧')
-    .replace('Alt', '⌥')
-    .replace(/\+/g, ' + ')
-}
-
-const fetchList = async () => {
-  shortcuts.value = await window.electronAPI.shortcut.list()
-  defaults.value = await window.electronAPI.shortcut.getDefaults()
+const fetchList = () => {
+  shortcuts.value = getShortcuts()
+  defaultsList.value = getDefaults()
   group()
   if (grouped.value.length && activeCategories.value.length === 0) {
     activeCategories.value = grouped.value.map((g) => g.category)
@@ -89,16 +81,14 @@ const startRecord = (item) => {
   const onKeyDown = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    const parts = []
-    if (e.metaKey || e.ctrlKey) parts.push('CommandOrControl')
-    if (e.shiftKey) parts.push('Shift')
-    if (e.altKey) parts.push('Alt')
-    if (!['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) parts.push(e.key.toUpperCase())
-    currentKeys.value = formatKeys(parts.join('+'))
+    const acc = eventToAccelerator(e)
+    currentKeys.value = formatKeys(acc)
+
+    const parts = acc.split('+')
     if (parts.some((k) => !['CommandOrControl', 'Shift', 'Alt'].includes(k))) {
-      window.electronAPI.shortcut.update(item.id, parts.join('+'))
-      shortcuts.value.find((s) => s.id === item.id).keys = parts.join('+')
-      Message.success(`已更新: ${formatKeys(parts.join('+'))}`)
+      updateShortcut(item.id, acc)
+      shortcuts.value.find((s) => s.id === item.id).keys = acc
+      Message.success(`已更新: ${formatKeys(acc)}`)
       stop()
     }
   }
@@ -121,23 +111,27 @@ const startRecord = (item) => {
   setTimeout(() => { if (recording.value === item.id) { stop(); Message.info('录制超时') } }, 5000)
 }
 
-const handleResetOne = async (id) => {
-  const def = defaults.value.find((d) => d.id === id)
+const handleResetOne = (id) => {
+  const def = defaultsList.value.find((d) => d.id === id)
   if (def) {
-    await window.electronAPI.shortcut.update(id, def.keys)
+    updateShortcut(id, def.keys)
     shortcuts.value.find((s) => s.id === id).keys = def.keys
     Message.success('已恢复默认')
   }
 }
 
-const handleResetAll = async () => {
-  await window.electronAPI.shortcut.reset()
-  shortcuts.value = await window.electronAPI.shortcut.list()
-  group()
+const handleResetAll = () => {
+  resetShortcuts()
+  fetchList()
   Message.success('已恢复全部默认快捷键')
 }
 
-onMounted(fetchList)
+let removeListener = null
+onMounted(() => {
+  fetchList()
+  removeListener = onChanged(fetchList)
+})
+onUnmounted(() => removeListener?.())
 </script>
 
 <style lang="less" scoped>
