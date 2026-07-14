@@ -12,6 +12,10 @@ import { register as storeRegisterIPC } from '../store/ipc'
 import { register as apiRegisterIPC } from '../api/ipc'
 import { register as registerIPC } from '../ipc'
 import { register as systemRegisterIPC } from '../system/ipc'
+import { register as cacheRegisterIPC } from '../cache/ipc'
+import { register as dbInfoRegisterIPC } from '../data/dbIpc'
+import { register as shortcutRegisterIPC } from '../shortcut/ipc'
+import { register as pluginRegisterIPC } from '../plugin/ipc'
 import { getCanUsePort } from './port'
 
 /**
@@ -77,6 +81,10 @@ export const bootstrap = async () => {
   storeRegisterIPC()
   apiRegisterIPC()
   systemRegisterIPC()
+  cacheRegisterIPC()
+  dbInfoRegisterIPC()
+  shortcutRegisterIPC()
+  pluginRegisterIPC()
   registerIPC()
 
   // 创建浏览器 VM（fire-and-forget，匹配原始语义）

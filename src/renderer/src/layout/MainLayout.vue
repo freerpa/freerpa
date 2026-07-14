@@ -2,7 +2,7 @@
   <div class="layout">
     <TitleBar @myCenter="showMyCenter" />
     <div class="layout-content">
-      <SideMenu @myCenter="showMyCenter" @settingsCenter="showSettingsCenter" />
+      <SideMenu @settingsCenter="showSettingsCenter" />
       <div class="layout-page">
         <router-view v-slot="{ Component }">
           <transition>
@@ -40,8 +40,8 @@
     <a-modal
       v-model:visible="settingsCenterVisible"
       title="设置"
-      width="700px"
-      body-style="padding: 0;height: 500px"
+      width="900px"
+      body-style="padding: 0;height: 600px"
       unmount-on-close
       :footer="false"
     >
@@ -78,7 +78,7 @@ import SideMenu from './components/SideMenu.vue'
 import UserCenter from '@/views/user/index.vue'
 import MyCenter from '@/views/my/index.vue'
 import SettingsCenter from '@/views/settings/index.vue'
-import { ref, h } from 'vue'
+import { ref, h, provide } from 'vue'
 import { Modal } from '@arco-design/web-vue'
 import Workflow from '@/workflow/index.vue'
 import DataViewer from '@/views/data/components/DataViewer.vue'
@@ -108,6 +108,8 @@ const showMyCenter = () => {
 const showSettingsCenter = () => {
   settingsCenterVisible.value = true
 }
+
+provide('showMyCenter', showMyCenter)
 
 const onLogout = () => {
   myCenterVisible.value = false

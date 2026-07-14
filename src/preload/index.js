@@ -76,6 +76,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     permanentDelete: (id) => ipcRenderer.invoke('data:permanentDelete', id)
   },
 
+  // 数据库管理 API
+  dbInfo: {
+    getInfo: () => ipcRenderer.invoke('data:getDbInfo'),
+    changeLocation: () => ipcRenderer.invoke('data:changeDbLocation'),
+    backup: () => ipcRenderer.invoke('data:backupDb'),
+    restore: () => ipcRenderer.invoke('data:restoreDb'),
+    openFolder: () => ipcRenderer.invoke('data:openDbFolder')
+  },
+
   // 浏览器管理模块API
   env: {
     // 内核管理
@@ -200,6 +209,31 @@ contextBridge.exposeInMainWorld('electronAPI', {
   store: {
     get: (key) => ipcRenderer.invoke('store:get', key),
     set: (key, value) => ipcRenderer.invoke('store:set', key, value)
+  },
+  cache: {
+    getSize: () => ipcRenderer.invoke('cache:getSize'),
+    clear: () => ipcRenderer.invoke('cache:clear')
+  },
+  shortcut: {
+    list: () => ipcRenderer.invoke('shortcut:list'),
+    update: (id, keys) => ipcRenderer.invoke('shortcut:update', { id, keys }),
+    reset: () => ipcRenderer.invoke('shortcut:reset'),
+    getDefaults: () => ipcRenderer.invoke('shortcut:getDefaults'),
+    getInApp: () => ipcRenderer.invoke('shortcut:getInApp'),
+    onTriggered: (callback) => {
+      const listener = (event, id) => callback(id)
+      ipcRenderer.on('shortcut:triggered', listener)
+      return () => ipcRenderer.removeListener('shortcut:triggered', listener)
+    }
+  },
+  plugin: {
+    addDir: () => ipcRenderer.invoke('plugin:addDir'),
+    removeDir: (dir) => ipcRenderer.invoke('plugin:removeDir', dir),
+    getDirs: () => ipcRenderer.invoke('plugin:getDirs'),
+    list: () => ipcRenderer.invoke('plugin:list'),
+    get: (pluginId) => ipcRenderer.invoke('plugin:get', pluginId),
+    resolvePath: (pluginId) => ipcRenderer.invoke('plugin:resolvePath', pluginId),
+    execute: (params) => ipcRenderer.invoke('plugin:execute', params)
   },
   system: {
     getWindows: (keyWord) => ipcRenderer.invoke('system:getWindows', keyWord),

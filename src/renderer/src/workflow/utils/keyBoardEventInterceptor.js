@@ -1,24 +1,20 @@
-//拦截默认撤销重做键盘事件
+/**
+ * 拦截输入字段中的键盘事件，防止画布快捷键意外触发
+ * 规则：所有 Ctrl/Meta 组合键 + Delete/Backspace/+/-/功能键 在输入字段中阻止传播
+ */
 export const unDoReDoInterceptor = (e) => {
   const key = e.key.toLowerCase()
-  // 检测撤销操作 (Ctrl+Z 或 Cmd+Z)
-  const isUndo = (e.ctrlKey || e.metaKey) && key === 'z'
+  const isModifierKey = e.ctrlKey || e.metaKey || e.altKey
 
-  // 检测重做操作 (Ctrl+Y 或 Cmd+Y 或 Ctrl+Shift+Z)
-  const isRedo = (e.ctrlKey || e.metaKey) && (key === 'y' || (key === 'z' && e.shiftKey))
-
-  if (isUndo || isRedo) {
-    e.preventDefault()
+  // Ctrl/Meta + 任意键 = 可能是快捷键，拦截
+  if (isModifierKey) {
+    e.stopPropagation()
+    return
   }
 
-  const isAllSelect = (e.ctrlKey || e.metaKey) && key === 'a'
-  const isCopy = (e.ctrlKey || e.metaKey) && key === 'c'
-  const isPaste = (e.ctrlKey || e.metaKey) && key === 'v'
-  const isCut = (e.ctrlKey || e.metaKey) && key === 'x'
-  const isDelete = key === 'delete' || key === 'backspace'
-  const isZoom = key === '=' || key === '-'
-  // 如果是删除键则拦截
-  if (isDelete || isAllSelect || isCopy || isPaste || isZoom || isCut) {
+  // 特殊键
+  const blockedKeys = new Set(['delete', 'backspace', '=', '-', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12', 'escape'])
+  if (blockedKeys.has(key)) {
     e.stopPropagation()
   }
 }

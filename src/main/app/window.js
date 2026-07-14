@@ -1,4 +1,4 @@
-import { BaseWindow, WebContentsView, session, globalShortcut, ipcMain } from 'electron'
+import { BaseWindow, WebContentsView, session, ipcMain } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import path from 'path'
 
@@ -34,7 +34,7 @@ export const createWindow = () => {
       webviewTag: true
     }
   })
-
+view.webContents.openDevTools()
   win.contentView.addChildView(view)
 
   // 初始 bounds 填满窗口
@@ -59,14 +59,9 @@ export const createWindow = () => {
     }
   })
 
-  // 阻挡 F11 全屏
-  globalShortcut.register('F11', () => {})
-
   // 加载内容
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     view.webContents.loadURL(process.env['ELECTRON_RENDERER_URL']).catch(() => {})
-    globalShortcut.register('F1', () => view.webContents.openDevTools())
-    globalShortcut.register('F2', () => view.webContents.reload())
   } else {
     view.webContents.loadFile(path.join(__dirname, '../renderer/index.html'))
   }

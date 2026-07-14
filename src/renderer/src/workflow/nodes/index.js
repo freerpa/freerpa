@@ -101,12 +101,13 @@ import previewAudio from './previewAudio'
 // 特殊节点
 import workflowStart from './workflowStart'
 import workFlow from './workFlow'
+import workflowCallPlugin from './workflowCallPlugin'
 
 // 节点分类
 export const categories = {
   workflow: {
     name: '流程控制',
-    nodes: [workflowIf, workflowLoop, workflowEnd, workflowRestart, workflowThrowException, workflowNotice, workflowCustomNode, workflowSubWorkflow]
+    nodes: [workflowIf, workflowLoop, workflowEnd, workflowRestart, workflowThrowException, workflowNotice, workflowCustomNode, workflowSubWorkflow, workflowCallPlugin]
   },
   time: {
     name: '时间计数',

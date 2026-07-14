@@ -90,6 +90,10 @@
         </template>
         <template #extra>
           <a-space>
+            <a-button type="text" @click="handleMyCenter">
+              <icon-user />
+              我的
+            </a-button>
             <a-button type="text" @click="showCustomerService">
               <icon-customer-service />
               客服
@@ -122,11 +126,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, inject } from 'vue'
 import {
   IconApps,
   IconCustomerService,
-  IconNotification
+  IconNotification,
+  IconUser
 } from '@arco-design/web-vue/es/icon'
 import WorkflowStore from './home/components/WorkflowStore.vue'
 import { getProfile } from '@/api/user'
@@ -150,6 +155,15 @@ const showCustomerService = async () => {
   const result = await getCustomerService()
   customerService.value = result
   customerServiceVisible.value = true
+}
+
+const showMyCenter = inject('showMyCenter', () => {})
+const handleMyCenter = () => {
+  if (!store.userInfo) {
+    store.showLogin()
+    return
+  }
+  showMyCenter()
 }
 
 // 数据状态

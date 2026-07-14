@@ -31,6 +31,7 @@ import { storeToRefs } from 'pinia'
 import { useFlowStore } from './store'
 import { useStore } from '@/store'
 import { autoLayout, getInitNodeData, ConnectionRules } from '@/workflow/utils'
+import { findMatch } from '@/utils/shortcutMatcher'
 import { getActions } from './components/aiBot/functionCalling.js'
 const props = defineProps({
   workflowId: {
@@ -70,98 +71,100 @@ const handleKeyUp = async (event) => {
 }
 
 // 处理键盘事件,只执行一次
+// 快捷键配置（运行时从 store 加载）
+const inAppShortcuts = ref([])
+
+/** 加载应用内快捷键配置 */
+const loadShortcuts = async () => {
+  inAppShortcuts.value = await window.electronAPI.shortcut.list()
+}
+loadShortcuts()
+
 const handleKeyDownOnce = async (event) => {
-  const key = event.key.toLowerCase()
-  const isCtrlKey = _isCtrlKey(event)
-  isCtrl.value = isCtrlKey
-  if (key === 's' && isCtrlKey) {
-    console.log('save workflow')
-    flowStore.saveWorkflow()
-  } else if (key === 'r' && isCtrlKey) {
-    !isExecuting.value && flowStore.engine.start()
-  } else if (key === 'escape' || (key === 'e' && isCtrlKey)) {
-    isExecuting.value && flowStore.engine.stop()
-  }
+  isCtrl.value = _isCtrlKey(event)
+
+  // 匹配应用内快捷键
+  const matchId = findMatch(event, inAppShortcuts.value)
 
   // 如果正在执行,则不处理画布快捷键
   if (isExecuting.value) {
+    if (matchId === 'workflow.stop') {
+      flowStore.engine.stop()
+    }
     return
   }
-  if (isCtrlKey) {
-    if (key === 'c') {
+
+  if (!matchId) return
+
+  switch (matchId) {
+    case 'workflow.save':
+      flowStore.saveWorkflow()
+      event.preventDefault()
+      break
+    case 'workflow.run':
+      !isExecuting.value && flowStore.engine.start()
+      event.preventDefault()
+      break
+    case 'canvas.copy':
       flowRef.value?.handleNodeCopy(vueFlowRef.value, clipboard)
       event.preventDefault()
-    } else if (key === 'x') {
+      break
+    case 'canvas.cut':
       flowRef.value?.handleNodeCopy(vueFlowRef.value, clipboard)
-      flowRef.value?.handleNodeDelete([
-        ...vueFlowRef.value.getSelectedNodes,
-        ...vueFlowRef.value.getSelectedEdges
-      ])
+      flowRef.value?.handleNodeDelete([...vueFlowRef.value.getSelectedNodes, ...vueFlowRef.value.getSelectedEdges])
       event.preventDefault()
-    } else if (key === 'v') {
-      flowRef.value?.handleNodePaste(
-        vueFlowRef.value,
-        clipboard.value,
-        flowRef.value?.isOverNodeLimit
-      )
+      break
+    case 'canvas.paste':
+      flowRef.value?.handleNodePaste(vueFlowRef.value, clipboard.value, flowRef.value?.isOverNodeLimit)
       event.preventDefault()
-    } else if (key === 'k') {
+      break
+    case 'canvas.autoLayout':
       autoLayout(vueFlowRef.value)
       event.preventDefault()
-    } else if (key === 'd') {
-      vueFlowRef.value.fitView({
-        padding: 0.05,
-        includeHiddenNodes: false,
-        maxZoom: 1
-      })
+      break
+    case 'canvas.fitView':
+      vueFlowRef.value.fitView({ padding: 0.05, includeHiddenNodes: false, maxZoom: 1 })
       event.preventDefault()
-    }
+      break
   }
 }
 
-// 处理键盘事件,支持重复执行
+// 处理键盘事件,支持重复执行（缩放、删除）
 const handleKeyDown = async (event) => {
-  const key = event.key.toLowerCase()
-  const isCtrlKey = _isCtrlKey(event)
-  isCtrl.value = isCtrlKey
+  isCtrl.value = _isCtrlKey(event)
 
-  if (key === '=') {
-    vueFlowRef.value.zoomIn()
-  } else if (key === '-') {
-    vueFlowRef.value.zoomOut()
-  }
+  const matchId = findMatch(event, inAppShortcuts.value)
 
   // 如果正在执行,则不处理画布快捷键
-  if (isExecuting.value) {
-    return
-  }
+  if (isExecuting.value) return
 
-  if (key === 'delete' || key === 'backspace') {
-    flowRef.value?.handleNodeDelete([
-      ...vueFlowRef.value.getSelectedNodes,
-      ...vueFlowRef.value.getSelectedEdges
-    ])
-    event.preventDefault()
-  }
-  if (isCtrlKey) {
-    if (key === 'z') {
-      if (event.shiftKey) {
-        flowStore.redo()
-      } else {
-        flowStore.undo()
-      }
+  if (!matchId) return
+
+  switch (matchId) {
+    case 'canvas.zoomIn':
+      vueFlowRef.value.zoomIn()
+      break
+    case 'canvas.zoomOut':
+      vueFlowRef.value.zoomOut()
+      break
+    case 'canvas.delete':
+      flowRef.value?.handleNodeDelete([...vueFlowRef.value.getSelectedNodes, ...vueFlowRef.value.getSelectedEdges])
       event.preventDefault()
-    } else if (key === 'y') {
+      break
+    case 'canvas.undo':
+      flowStore.undo()
+      event.preventDefault()
+      break
+    case 'canvas.redo':
       flowStore.redo()
       event.preventDefault()
-    } else if (key === 'a') {
+      break
+    case 'canvas.selectAll':
       vueFlowRef.value.nodes.forEach((node) => {
-        if (node.selectable !== false) {
-          node.selected = true
-        }
+        if (node.selectable !== false) node.selected = true
       })
       event.preventDefault()
-    }
+      break
   }
 }
 

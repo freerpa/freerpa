@@ -49,8 +49,9 @@ import { checkUpdate } from '@/utils/version'
 import { useStore } from '@/store'
 import { storeToRefs } from 'pinia'
 import { IconLoading } from '@arco-design/web-vue/es/icon'
+import { useFlowStore } from '@/workflow/store'
 const store = useStore()
-const { updateVisible, hasUpdate } = storeToRefs(store)
+const { updateVisible, hasUpdate, openedTabs, activeTab } = storeToRefs(store)
 const updateInfo = ref({})
 const updateIng = ref(false)
 const percent = ref(0)
@@ -71,16 +72,33 @@ const handleExit = () => {
   window.electronAPI.window.close()
 }
 
-// 检查更新
+// 检查更新 + 注册全局快捷键响应
 onMounted(async () => {
   updateInfo.value = await checkUpdate()
   if (updateInfo.value.has_update) {
     hasUpdate.value = true
-
     if (updateInfo.value.force) {
       updateVisible.value = true
     }
   }
+
+  // 监听全局快捷键（保存/运行/停止工作流）
+  window.electronAPI.shortcut.onTriggered((id) => {
+    const tab = openedTabs.value[activeTab.value]
+    if (!tab || tab.type !== 'workflow') return
+    const flowStore = useFlowStore(activeTab.value)
+    switch (id) {
+      case 'workflow.save':
+        flowStore.saveWorkflow()
+        break
+      case 'workflow.run':
+        if (!flowStore.isExecuting) flowStore.engine.start()
+        break
+      case 'workflow.stop':
+        if (flowStore.isExecuting) flowStore.engine.stop()
+        break
+    }
+  })
 })
 
 const keyDownFn = new Map()
