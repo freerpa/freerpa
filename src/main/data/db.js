@@ -15,7 +15,7 @@ let db = null
 export const initDatabase = async () => {
   if (db?.db?.open) return db
 
-  const userDataPath = app.getPath('appData')
+  const userDataPath = app.getPath('userData')
   const dbDir = path.join(userDataPath, 'storage')
   if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true })

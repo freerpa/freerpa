@@ -14,10 +14,10 @@ export default {
           id: 'browser',
           name: '打开方式',
           type: 'radio',
-          default: 'automan',
+          default: 'FreeRPA',
           description: '支持内置浏览器和CDP连接',
           options: [
-            { label: '内置浏览器', value: 'automan' },
+            { label: '内置浏览器', value: 'FreeRPA' },
             { label: 'CDP连接', value: 'cdp' }
           ],
           quickConfig: true
@@ -39,7 +39,7 @@ export default {
           required: true,
           description: '选择浏览器运行环境',
           quickConfig: true,
-          show: '${browser} === "automan"',
+          show: '${browser} === "FreeRPA"',
           onChange: async (val, formData) => {
             if (!val) return
             const env = await window.electronAPI.browserLocal.getBrowser(val)
@@ -52,7 +52,7 @@ export default {
           id: 'proxyUrl',
           name: '代理地址',
           type: 'text',
-          show: '${browser} === "automan" && !!${envId}',
+          show: '${browser} === "FreeRPA" && !!${envId}',
           description: '协议://用户名:密码@地址:端口',
           quickConfig: true
         },
@@ -75,13 +75,13 @@ export default {
             { label: '自定义参数', value: '--custom-arg' },
           ],
           description: '无头模式可以有效提升性能，但操作受限。',
-          show: "${browser} === 'automan'",
+          show: "${browser} === 'FreeRPA'",
           quickConfig: true
         },
         extraArgs: {
           id: 'extraArgs',
           name: '启动参数',
-          show: '${launchOptions}.includes("--custom-arg") && ${browser} === "automan"',
+          show: '${launchOptions}.includes("--custom-arg") && ${browser} === "FreeRPA"',
           type: 'array',
           default: [],
           fields: [

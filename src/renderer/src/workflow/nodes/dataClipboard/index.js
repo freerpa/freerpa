@@ -1,6 +1,6 @@
 /**
  * @file: 剪切板操作节点
- * @author: AutoMan
+ * @author: FreeRPA
  * @date: 2025-07-30
  */
 import { IconPaste } from '@arco-design/web-vue/es/icon'

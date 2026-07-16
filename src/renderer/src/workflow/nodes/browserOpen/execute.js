@@ -6,10 +6,10 @@
 import { openBrowser, puppeteer } from '@/common'
 
 const execute = async (node, context) => {
-  const { browser = 'automan' } = node.config
+  const { browser = 'FreeRPA' } = node.config
   try {
-    if (browser === 'automan') {
-      await automanBrowser(node, context)
+    if (browser === 'FreeRPA') {
+      await freeRpaBrowser(node, context)
     } else if (browser === 'cdp') {
       await cdpBrowser(node, context)
     }
@@ -20,7 +20,7 @@ const execute = async (node, context) => {
 
 export default execute
 
-const automanBrowser = async (node, context) => {
+const freeRpaBrowser = async (node, context) => {
   const { next, onBeforeDestroy, apis } = context
   const {
     envId, proxyUrl, launchOptions,

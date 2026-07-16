@@ -178,8 +178,8 @@ const execute = async (node, context) => {
             const isGeted = await page_eval(
               element,
               `(el) => {
-              const isGeted = el.getAttribute('automan-geted-content-${node.id}');
-              el.setAttribute('automan-geted-content-${node.id}', 'true');
+              const isGeted = el.getAttribute('freerpa-geted-content-${node.id}');
+              el.setAttribute('freerpa-geted-content-${node.id}', 'true');
               return isGeted;
             }`
             )

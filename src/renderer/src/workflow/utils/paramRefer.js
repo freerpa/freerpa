@@ -1,4 +1,4 @@
-const separator = '--!@#$%automan-refer%$#@!--'
+const separator = '--!@#$%freerpa-refer%$#@!--'
 
 export const isParamRefer = (value) => {
   if (typeof value !== 'string') {

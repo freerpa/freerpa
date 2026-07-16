@@ -41,11 +41,10 @@ const formatSize = (bytes) => {
 export const register = () => {
   ipcMain.handle('cache:getSize', async () => {
     const userData = app.getPath('userData')
-    const sessionData = app.getPath('sessionData')
     const dirs = [
-      path.join(userData, 'env-sessions'),
       path.join(userData, 'sessions'),
-      path.join(sessionData, 'Partitions')
+      path.join(userData, 'kernels'),
+      path.join(userData, 'Partitions')
     ]
     let totalSize = 0
     const details = dirs.map((d) => {
@@ -58,11 +57,10 @@ export const register = () => {
 
   ipcMain.handle('cache:clear', async () => {
     const userData = app.getPath('userData')
-    const sessionData = app.getPath('sessionData')
     const dirs = [
-      path.join(userData, 'env-sessions'),
       path.join(userData, 'sessions'),
-      path.join(sessionData, 'Partitions')
+      path.join(userData, 'kernels'),
+      path.join(userData, 'Partitions')
     ]
     for (const d of dirs) {
       removeDir(d)

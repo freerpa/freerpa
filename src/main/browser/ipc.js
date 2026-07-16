@@ -66,7 +66,7 @@ export const register = () => {
       const instance = await launchKernel({
         platform: kernel.platform, version: kernel.version,
         proxy: proxy || '', fingerprintSeed: fingerprint.seed,
-        userDataDir: path.join(app.getPath('userData'), 'env-sessions', String(envId)),
+        userDataDir: path.join(app.getPath('userData'), 'sessions', String(envId)),
         extraArgs: ['--no-restore-session-state', '--disable-session-crashed-bubble'],
       })
 

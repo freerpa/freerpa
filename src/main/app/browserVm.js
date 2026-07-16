@@ -1,7 +1,22 @@
-import { WebContentsView, session } from 'electron'
-import { v4 as uuidv4 } from 'uuid'
+/**
+ * @file: 浏览器 VM（offscreen WebContentsView）
+ * @description: 创建一个离屏的 WebContentsView 用于执行用户 JavaScript 代码
+ * 通过 IPC + webContents.executeJavaScript 替代 Puppeteer
+ */
+
+import { WebContentsView, session, ipcMain } from 'electron'
+import path from 'path'
 
 let bvmView = null
+const bvmCallbacks = new Map()
+
+// IPC handler：bvm 页面通过 preload 发送回调
+ipcMain.handle('bvm:callback', (_event, fnName, outputs) => {
+  const callback = bvmCallbacks.get(fnName)
+  if (callback) {
+    callback(outputs)
+  }
+})
 
 export const createBvm = async () => {
   const win = global.mainWindow
@@ -18,6 +33,7 @@ export const createBvm = async () => {
   const view = new WebContentsView({
     webPreferences: {
       session: customSession,
+      preload: path.join(__dirname, '../preload/bvm.js'),
       webSecurity: false,
       offscreen: true,
       backgroundThrottling: false,
@@ -37,28 +53,30 @@ export const createBvm = async () => {
   view.webContents.on('new-window', (e) => e.preventDefault())
   customSession.on('will-download', (e) => e.preventDefault())
 
+  // 加载空白页
+  await view.webContents.loadURL('about:blank')
+
   bvmView = view
+  global.bvmWebContents = view.webContents
+}
 
-  const id = uuidv4()
+/**
+ * 注册 bvm 回调函数
+ * @param {string} fnName - 回调函数名
+ * @param {Function} callback - 回调函数
+ */
+export const registerBvmCallback = (fnName, callback) => {
+  bvmCallbacks.set(fnName, callback)
+}
 
-  // 页面加载失败时通过 Puppeteer 恢复连接
-  view.webContents.once('did-fail-load', async () => {
-    try {
-      if (global.browser && !global.browser.connected) {
-        await global.pptrConnect()
-      }
-      const pages = await global.browser.pages()
-      const target = pages.find((p) => p.target().url().includes(id))
-      if (target) {
-        global.bvm = target
-        await target.goto(`http://localhost:${global.httpServer.port}`)
-      }
-    } catch (err) {
-      console.error('browserVm did-fail-load recovery failed:', err.message)
-    }
-  })
-
-  await view.webContents.loadURL(`chrome://${id}`)
+/**
+ * 移除 bvm 回调函数
+ * @param {string} fnName - 回调函数名
+ */
+export const removeBvmCallback = (fnName) => {
+  bvmCallbacks.delete(fnName)
 }
 
 global.createBvm = createBvm
+global.registerBvmCallback = registerBvmCallback
+global.removeBvmCallback = removeBvmCallback

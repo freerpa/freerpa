@@ -6,7 +6,7 @@ import { ipcMain, app, dialog, shell } from 'electron'
 import fs from 'fs'
 import path from 'path'
 
-const DB_DIR = () => path.join(app.getPath('appData'), 'storage')
+const DB_DIR = () => path.join(app.getPath('userData'), 'storage')
 const DB_PATH = () => path.join(DB_DIR(), 'database.sqlite')
 
 const formatSize = (bytes) => {

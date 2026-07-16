@@ -177,10 +177,10 @@ const execute = async (node, context) => {
           await page_eval(
             page,
             `(filesStr,isStart) => {
-            if(isStart || !window.__automan_files_temp){
-              window.__automan_files_temp = []
+            if(isStart || !window.__freerpa_files_temp){
+              window.__freerpa_files_temp = []
             }
-            window.__automan_files_temp.push(filesStr)
+            window.__freerpa_files_temp.push(filesStr)
           }`,
             filesStrArr[index],
             index == 0
@@ -192,7 +192,7 @@ const execute = async (node, context) => {
           `(dropZone) => {
             if (!dropZone) return
             // 从浏览器获取文件字符串
-            const filesStr = window.__automan_files_temp.join('')
+            const filesStr = window.__freerpa_files_temp.join('')
             // 解析为文件数组
             const filesData = JSON.parse(filesStr)
 

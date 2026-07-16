@@ -1,6 +1,6 @@
 /**
  * @file: 文件状态节点执行器
- * @author: AutoMan
+ * @author: FreeRPA
  * @date: 2024-03-15
  */
 

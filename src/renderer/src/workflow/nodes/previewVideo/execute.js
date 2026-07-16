@@ -1,6 +1,6 @@
 /**
  * @file: 视频预览节点执行器
- * @author: AutoMan
+ * @author: FreeRPA
  * @date: 2025-07-31
  */
 const path = require('path')

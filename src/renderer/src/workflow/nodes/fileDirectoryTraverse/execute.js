@@ -1,6 +1,6 @@
 /**
  * @file: 文件目录遍历节点执行器
- * @author: AutoMan
+ * @author: FreeRPA
  * @date: 2025-07-30
  */
 

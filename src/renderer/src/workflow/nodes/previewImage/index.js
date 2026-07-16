@@ -1,6 +1,6 @@
 /**
  * @file: 图像预览节点
- * @author: AutoMan
+ * @author: FreeRPA
  * @date: 2025-07-31
  */
 import { IconImage } from '@arco-design/web-vue/es/icon'

@@ -2,7 +2,7 @@ import fse from 'fs-extra'
 import path from 'path'
 import { get } from '../../../store'
 
-class AutomanFs {
+class FreeRpaFs {
   constructor() {
     this.allowedRoot = () => path.resolve(get('allowedRoot'))
     return this._createProxy()
@@ -41,4 +41,4 @@ class AutomanFs {
   }
 }
 
-export default AutomanFs
+export default FreeRpaFs

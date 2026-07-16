@@ -62,7 +62,7 @@ export const openBrowser = async (env = null, options = {}) => {
 
   const fingerprintSeed = env?.fingerprint?.seed || Math.floor(Math.random() * 2147483647) + 1
 
-  const userDataDir = env?.id ? path.join(app.getPath('userData'), 'env-sessions', String(env.id)) : undefined
+  const userDataDir = env?.id ? path.join(app.getPath('userData'), 'sessions', String(env.id)) : undefined
 
   const instance = await launchKernel({
     platform: kernel.platform, version: kernel.version,

@@ -1,6 +1,6 @@
 /**
  * @file: 获取状态节点配置
- * @author: AutoMan
+ * @author: FreeRPA
  * @date: 2024-03-15
  */
 

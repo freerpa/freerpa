@@ -8,7 +8,7 @@ const CLEANUP_OVER_DAYS = 3 * 24 * 60 * 60 * 1000
  * 清理超过 3 天的 Session Partitions 目录
  */
 export const cleanupOldSessions = () => {
-  const sessionDir = path.join(app.getPath('sessionData'), 'Partitions')
+  const sessionDir = path.join(app.getPath('userData'), 'Partitions')
 
   if (!fs.existsSync(sessionDir)) return
 

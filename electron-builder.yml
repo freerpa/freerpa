@@ -1,5 +1,5 @@
-appId: com.yangdabao.automan
-productName: AutoMan
+appId: com.yangdabao.freerpa
+productName: FreeRPA
 directories:
   buildResources: build
 files:
@@ -17,7 +17,7 @@ asar: true
 asarUnpack:
   - resources/**
 win:
-  executableName: AutoMan
+  executableName: FreeRPA
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true

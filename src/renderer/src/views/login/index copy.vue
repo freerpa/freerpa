@@ -5,7 +5,7 @@
     <div class="login-box">
       <div class="login-header">
         <img :src="logoImg" alt="logo" class="logo" />
-        <h2>AutoMan</h2>
+        <h2>FreeRPA</h2>
       </div>
       <div class="login-type">
         <a-radio-group v-model="loginType">
