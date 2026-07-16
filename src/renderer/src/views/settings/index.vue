@@ -4,7 +4,7 @@
       <a-menu :selected-keys="[activeTab]" @menu-item-click="handleMenuClick">
         <a-menu-item key="cache">
           <template #icon><icon-storage /></template>
-          缓存
+          缓存管理
         </a-menu-item>
         <a-menu-item key="plugin">
           <template #icon><icon-apps /></template>
@@ -15,8 +15,8 @@
           安全目录
         </a-menu-item>
         <a-menu-item key="data">
-          <template #icon><icon-drive-file /></template>
-          数据
+          <template #icon><RiDatabase2Line /></template>
+          数据库
         </a-menu-item>
         <a-menu-item key="shortcut">
           <template #icon><icon-command /></template>
@@ -42,6 +42,7 @@
 <script setup>
 import { ref } from 'vue'
 import { IconEdit, IconStorage, IconApps, IconSafe, IconDriveFile, IconCommand } from '@arco-design/web-vue/es/icon'
+import { RiDatabase2Line } from '@remixicon/vue'
 import Feedback from '@/views/user/components/Feedback.vue'
 import CacheManager from './components/CacheManager.vue'
 import PluginManager from './components/PluginManager.vue'

@@ -6,26 +6,26 @@ const STORAGE_KEY = 'shortcutOverrides'
 // 默认快捷键 — 仅画布相关
 const DEFAULTS = [
   // ─── 画布 — 执行控制 ───
-  { id: 'workflow.save', name: '保存工作流', category: '画布 — 执行控制', keys: 'CommandOrControl+S' },
-  { id: 'workflow.run',  name: '运行工作流', category: '画布 — 执行控制', keys: 'CommandOrControl+R' },
-  { id: 'workflow.stop', name: '停止工作流', category: '画布 — 执行控制', keys: 'Escape' },
+  { id: 'workflow.save', name: '保存工作流', category: '画布', keys: 'CommandOrControl+S' },
+  { id: 'workflow.run', name: '运行工作流', category: '画布', keys: 'CommandOrControl+R' },
+  { id: 'workflow.stop', name: '停止工作流', category: '画布', keys: 'Escape' },
 
   // ─── 画布 — 视图 ───
-  { id: 'canvas.zoomIn',    name: '放大画布', category: '画布 — 视图', keys: '=' },
-  { id: 'canvas.zoomOut',   name: '缩小画布', category: '画布 — 视图', keys: '-' },
-  { id: 'canvas.fitView',   name: '适合视图', category: '画布 — 视图', keys: 'CommandOrControl+D' },
-  { id: 'canvas.autoLayout',name: '自动布局', category: '画布 — 视图', keys: 'CommandOrControl+K' },
+  { id: 'canvas.zoomIn', name: '放大画布', category: '画布', keys: '=' },
+  { id: 'canvas.zoomOut', name: '缩小画布', category: '画布', keys: '-' },
+  { id: 'canvas.fitView', name: '适合视图', category: '画布', keys: 'CommandOrControl+D' },
+  { id: 'canvas.autoLayout', name: '自动布局', category: '画布', keys: 'CommandOrControl+K' },
 
   // ─── 画布 — 节点 ───
-  { id: 'canvas.copy',      name: '复制节点', category: '画布 — 节点', keys: 'CommandOrControl+C' },
-  { id: 'canvas.cut',       name: '剪切节点', category: '画布 — 节点', keys: 'CommandOrControl+X' },
-  { id: 'canvas.paste',     name: '粘贴节点', category: '画布 — 节点', keys: 'CommandOrControl+V' },
-  { id: 'canvas.delete',    name: '删除节点', category: '画布 — 节点', keys: 'Delete' },
-  { id: 'canvas.selectAll', name: '全选节点', category: '画布 — 节点', keys: 'CommandOrControl+A' },
+  { id: 'canvas.copy', name: '复制节点', category: '画布', keys: 'CommandOrControl+C' },
+  { id: 'canvas.cut', name: '剪切节点', category: '画布', keys: 'CommandOrControl+X' },
+  { id: 'canvas.paste', name: '粘贴节点', category: '画布', keys: 'CommandOrControl+V' },
+  { id: 'canvas.delete', name: '删除节点', category: '画布', keys: 'Delete' },
+  { id: 'canvas.selectAll', name: '全选节点', category: '画布', keys: 'CommandOrControl+A' },
 
   // ─── 画布 — 编辑 ───
-  { id: 'canvas.undo', name: '撤销', category: '画布 — 编辑', keys: 'CommandOrControl+Z' },
-  { id: 'canvas.redo', name: '重做', category: '画布 — 编辑', keys: 'CommandOrControl+Shift+Z' }
+  { id: 'canvas.undo', name: '撤销', category: '画布', keys: 'CommandOrControl+Z' },
+  { id: 'canvas.redo', name: '重做', category: '画布', keys: 'CommandOrControl+Shift+Z' }
 ]
 
 // ─── Override 存储 ─────────────────────────────────
