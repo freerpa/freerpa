@@ -220,8 +220,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getDirs: () => ipcRenderer.invoke('plugin:getDirs'),
     list: () => ipcRenderer.invoke('plugin:list'),
     get: (pluginId) => ipcRenderer.invoke('plugin:get', pluginId),
-    resolvePath: (pluginId) => ipcRenderer.invoke('plugin:resolvePath', pluginId),
-    execute: (params) => ipcRenderer.invoke('plugin:execute', params)
+    resolvePath: (pluginId) => ipcRenderer.invoke('plugin:resolvePath', pluginId)
   },
   system: {
     getWindows: (keyWord) => ipcRenderer.invoke('system:getWindows', keyWord),

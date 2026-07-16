@@ -25,7 +25,7 @@
 </template>
 
 <script setup>
-import { ref, watch, inject } from 'vue'
+import { ref, watch, inject, onMounted } from 'vue'
 import { debounce } from 'lodash-es'
 import { unDoReDoInterceptor } from '@/workflow/utils'
 import { useFieldWatch } from './composables/useFieldValue'
@@ -41,7 +41,20 @@ const formData = inject('formData')
 const value = defineModel()
 useFieldWatch(props, value)
 const loading = ref(false)
-const options = ref(props.field.options || [])
+const options = ref([])
+
+// 解析 options：支持数组、async 函数
+const resolveOptions = async (rawOptions) => {
+  if (typeof rawOptions === 'function') {
+    try {
+      options.value = await rawOptions()
+    } catch {
+      options.value = []
+    }
+  } else {
+    options.value = rawOptions || []
+  }
+}
 
 // 全选/取消全选
 const handleCheckAll = (checked) => {
@@ -54,7 +67,7 @@ const handleCheckAll = (checked) => {
 
 const loadOptions = async (keyword = '') => {
   if (!props.field.remote || !props.field.remoteMethod) {
-    options.value = props.field.options || []
+    await resolveOptions(props.field.options)
     return
   }
   try {
@@ -65,6 +78,11 @@ const loadOptions = async (keyword = '') => {
     loading.value = false
   }
 }
+
+// 组件挂载时自动加载选项
+onMounted(() => {
+  loadOptions().then(() => valueValid())
+})
 
 // 远程加载选项
 if (props.field.remote) {

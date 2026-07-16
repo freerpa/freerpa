@@ -1,6 +1,6 @@
 /**
  * @file: 本地插件管理 IPC
- * @description: 插件目录管理 / 扫描 / 执行
+ * @description: 插件目录管理 / 扫描 / 信息查询
  */
 import { ipcMain, app, dialog } from 'electron'
 import fs from 'fs'
@@ -135,55 +135,5 @@ export const register = () => {
       }
     }
     return { error: '插件未找到' }
-  })
-
-  ipcMain.handle('plugin:execute', async (_, { pluginId, node }) => {
-    const dirs = getPluginDirs()
-    let executePath = null
-    for (const dir of dirs) {
-      const pluginDir = path.join(dir, pluginId)
-      const ep = path.join(pluginDir, 'execute.js')
-      if (fs.existsSync(ep)) {
-        executePath = ep
-        break
-      }
-    }
-    if (!executePath) return { error: '插件未找到: ' + pluginId }
-
-    try {
-      // 清除缓存以支持热更新
-      const modPath = require.resolve(executePath)
-      delete require.cache[modPath]
-      const executeModule = require(executePath)
-      const executeFn = executeModule.default || executeModule.execute || executeModule
-
-      if (typeof executeFn !== 'function') {
-        return { error: 'execute.js 未导出异步函数' }
-      }
-
-      // 创建 context 对象
-      let resolved = false
-      let resultOutputs = null
-
-      const pluginContext = {
-        nodeId: node.id,
-        wait: (ms) => new Promise((r) => setTimeout(r, ms)),
-        fs,
-        path,
-        complete: (outputs, isNext = true) => {
-          resolved = true
-          resultOutputs = outputs || {}
-        },
-        next: (outputs) => {
-          resolved = true
-          resultOutputs = outputs || {}
-        }
-      }
-
-      await executeFn(node, pluginContext)
-      return { success: true, outputs: resultOutputs || {} }
-    } catch (e) {
-      return { error: e.message }
-    }
   })
 }
