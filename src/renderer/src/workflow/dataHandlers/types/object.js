@@ -128,8 +128,8 @@ export default {
         return data
       }
     },
-    toJSON: {
-      label: '转JSON',
+    toString: {
+      label: '转文本',
       input: ['object'],
       description: '将对象转换为JSON字符串',
       params: [],

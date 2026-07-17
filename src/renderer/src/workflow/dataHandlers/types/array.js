@@ -221,8 +221,8 @@ export default {
         return data.slice(start, end <= 0 ? data.length + end : end)
       }
     },
-    toJSON: {
-      label: '转JSON',
+    toString: {
+      label: '转文本',
       input: ['array'],
       description: '将数组转换为JSON字符串',
       params: [],
