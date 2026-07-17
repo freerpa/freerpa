@@ -93,15 +93,6 @@
         有新版本
       </a-button>
 
-      <a-avatar
-        v-if="routePath !== '/login'"
-        @click="myCenter"
-        class="avatar"
-        :size="24"
-        :image-url="avatar"
-        shape="circle"
-      >
-      </a-avatar>
       <div class="window-controls" v-if="platform === 'win32'">
         <a-button v-if="routePath !== '/login'" type="text" @click="minimizeWindow">
           <icon-minus />
@@ -158,7 +149,7 @@ import {
   IconRight,
   IconStorage
 } from '@arco-design/web-vue/es/icon'
-import appIcon from '../../../../../build/icon.png?asset'
+
 import { useStore } from '@/store/index'
 import { useFlowStore } from '@/workflow/store'
 import { storeToRefs } from 'pinia'
@@ -223,9 +214,8 @@ watch(tabsContainer, (newVal) => {
 })
 
 const store = useStore()
-// const { vipIcon } = store
 
-const { userInfo, hasUpdate, updateVisible, platform, openedTabs, activeTab } = storeToRefs(store)
+const { hasUpdate, updateVisible, platform, openedTabs, activeTab } = storeToRefs(store)
 const { switchTab } = store
 import { useRoute } from 'vue-router'
 
@@ -240,16 +230,6 @@ const route = useRoute()
 const routePath = computed(() => {
   return route.path
 })
-
-const emit = defineEmits(['myCenter'])
-
-const avatar = computed(() => {
-  return userInfo?.value?.avatar || ''
-})
-
-const myCenter = () => {
-  emit('myCenter')
-}
 
 const minimizeWindow = () => {
   windowAPI.minimize()
@@ -518,9 +498,7 @@ const closeDataViewer = async (tab) => {
     padding: 0 12px;
     gap: 12px;
     flex: 0 0 auto;
-    .avatar {
-      cursor: pointer;
-    }
+
   }
 
   .window-controls {

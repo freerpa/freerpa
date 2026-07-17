@@ -4,7 +4,6 @@
 
     <div class="login-box">
       <div class="login-header">
-        <img :src="logoImg" alt="logo" class="logo" />
         <h2>{{ appName }}</h2>
       </div>
       <LoginByPhone />
@@ -21,7 +20,6 @@
 import { ref, h } from 'vue'
 import { Modal } from '@arco-design/web-vue'
 import TitleBar from '@/layout/components/TitleBar.vue'
-import logoImg from '../../../../../build/icon.png'
 import { getUserAgreement, getCustomerService } from '@/api/login'
 import LoginByPhone from './components/loginByPhone.vue'
 import pkg from '../../../../../package.json'
@@ -67,8 +65,6 @@ const openTermsModal = async () => {
   })
 }
 
-// 登录类型
-const loginType = ref('phone')
 </script>
 
 <style lang="less" scoped>
@@ -99,15 +95,6 @@ const loginType = ref('phone')
     .login-header {
       text-align: center;
       margin-bottom: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-
-      .logo {
-        width: 64px;
-        height: 64px;
-      }
 
       h2 {
         margin: 0;

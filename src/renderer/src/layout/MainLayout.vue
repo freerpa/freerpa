@@ -1,6 +1,6 @@
 <template>
   <div class="layout">
-    <TitleBar @myCenter="showMyCenter" />
+    <TitleBar />
     <div class="layout-content">
       <SideMenu @settingsCenter="showSettingsCenter" />
       <div class="layout-page">
@@ -57,10 +57,6 @@
       :body-style="{ padding: '32px 40px' }"
     >
       <div class="login-modal-box">
-        <div class="login-header">
-          <img :src="logoImg" alt="logo" class="logo" />
-          <h2>{{ appName }}</h2>
-        </div>
         <LoginByPhone @success="onLoginSuccess" />
         <div class="form-actions">
           <a-link @click="openTermsModal">用户协议</a-link>
@@ -73,24 +69,20 @@
 </template>
 
 <script setup>
-import TitleBar from './components/TitleBar.vue'
-import SideMenu from './components/SideMenu.vue'
-import UserCenter from '@/views/user/index.vue'
-import MyCenter from '@/views/my/index.vue'
-import SettingsCenter from '@/views/settings/index.vue'
 import { ref, h, provide } from 'vue'
 import { Modal } from '@arco-design/web-vue'
+import { storeToRefs } from 'pinia'
+import TitleBar from './components/TitleBar.vue'
+import SideMenu from './components/SideMenu.vue'
+import MyCenter from '@/views/my/index.vue'
+import SettingsCenter from '@/views/settings/index.vue'
 import Workflow from '@/workflow/index.vue'
 import DataViewer from '@/views/data/components/DataViewer.vue'
 import LoginByPhone from '@/views/login/components/loginByPhone.vue'
-import logoImg from '../../../../build/icon.png'
 import { getUserAgreement, getCustomerService } from '@/api/login'
 import { getProfile } from '@/api/user'
 import { useStore } from '@/store'
-import { storeToRefs } from 'pinia'
-import pkg from '../../../../package.json'
 
-const appName = ref(pkg.name)
 const store = useStore()
 const { openedTabs, loginModalVisible } = storeToRefs(store)
 const { closeLogin, setUserInfo, showLogin } = store

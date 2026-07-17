@@ -10,6 +10,10 @@
           <template #icon><icon-safe /></template>
           安全设置
         </a-menu-item>
+        <a-menu-item key="plugins">
+          <template #icon><icon-apps /></template>
+          我的插件
+        </a-menu-item>
         <a-menu-item key="logout">
           <template #icon><icon-export /></template>
           退出登录
@@ -21,27 +25,33 @@
       <UserSecurity v-if="activeTab === 'security'" />
     </div>
   </div>
+  <!-- 我的插件弹窗（独立于内容区，始终挂载） -->
+  <MyWorkflows v-model:visible="pluginsVisible" />
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import { IconUser, IconSafe, IconExport } from '@arco-design/web-vue/es/icon'
+import { IconUser, IconSafe, IconExport, IconApps } from '@arco-design/web-vue/es/icon'
 import UserProfile from '@/views/user/components/UserProfile.vue'
 import UserSecurity from '@/views/user/components/UserSecurity.vue'
+import MyWorkflows from '@/views/home/components/MyWorkflows.vue'
 import { Modal } from '@arco-design/web-vue'
-import { useRouter } from 'vue-router'
 import { useStore } from '@/store'
 import { storeToRefs } from 'pinia'
 
 const store = useStore()
 const { openedTabs } = storeToRefs(store)
 const activeTab = ref('profile')
-const router = useRouter()
+const pluginsVisible = ref(false)
 const emit = defineEmits(['logout'])
 
 const handleMenuClick = (key) => {
   if (key === 'logout') {
     handleLogout()
+    return
+  }
+  if (key === 'plugins') {
+    pluginsVisible.value = true
     return
   }
   activeTab.value = key
@@ -62,7 +72,6 @@ const handleLogout = () => {
     async onOk() {
       openedTabs.value = {}
       emit('logout')
-      router.push('/login')
     }
   })
 }
