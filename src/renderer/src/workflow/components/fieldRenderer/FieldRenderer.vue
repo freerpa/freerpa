@@ -54,6 +54,7 @@
           :field="field"
           v-bind="field.props"
           v-if="!isParamRefer(formData[field.id])"
+          @click.stop
         />
         <a-tag
           v-else

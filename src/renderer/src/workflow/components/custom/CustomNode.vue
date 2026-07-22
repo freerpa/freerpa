@@ -16,7 +16,6 @@
       :disabled="data?.deactivate"
       :is-executing="isExecuting"
       :show-detail="nodeDefinition.subFlow && data?.workFlow?.store"
-      :always-visible="configVisible"
       @action="actionSelect"
     />
 
@@ -61,16 +60,6 @@
       @update:node-name="nodeName = $event"
       @clear-debug="debugInfos = []"
     >
-      <template #config-trigger>
-        <NodeConfigPanel
-          v-if="showConfigPanel"
-          :all-config-fields-with-group="allConfigFieldsWithGroup"
-          :node-config="nodeConfig"
-          @update:config-visible="configVisible = $event"
-          @update:node-config="nodeConfig = $event"
-          @focus-change="isFocus = true"
-        />
-      </template>
     </NodeHeader>
 
     <!-- Node content body -->
@@ -154,7 +143,6 @@ import FlowHandles from './components/FlowHandles.vue'
 import NodeToolbar from './components/NodeToolbar.vue'
 import NodeHeader from './components/NodeHeader.vue'
 import NodeIOSection from './components/NodeIOSection.vue'
-import NodeConfigPanel from './components/NodeConfigPanel.vue'
 import SubFlowToggle from './components/SubFlowToggle.vue'
 import FieldRenderer from '../fieldRenderer/FieldRenderer.vue'
 
@@ -169,7 +157,6 @@ import { useSubFlow } from './composables/useSubFlow'
 const workflowId = inject('workflowId')
 const isExecuting = inject('isExecuting')
 const isPreview = inject('isPreview')
-const isFocus = inject('isFocus')
 const pendingConnection = inject('pendingConnection')
 const flowStore = useFlowStore(workflowId)
 const { debug } = storeToRefs(flowStore)
@@ -238,17 +225,6 @@ const nodeView = computed(() => {
     return defineAsyncComponent(() => import(`@nodes-path/${nodeDefinition.type}/view.vue`))
   }
   return null
-})
-
-// ── Config panel visibility ─────────────────────
-const configVisible = ref(false)
-const showConfigPanel = computed(() => {
-  return (
-    !isExecuting.value &&
-    !props.data?.deactivate &&
-    (nodeDefinition.type !== 'workflowCustomNode' || nodeDefinition.config?.openSource || isMyNode.value) &&
-    Object.keys(allConfigFieldsWithGroup.value).length > 0
-  )
 })
 
 // ── Resize handler ──────────────────────────────

@@ -16,6 +16,7 @@
         :delete-key-code="null"
         :zoom-on-double-click="false"
         elevate-edges-on-select
+        :select-nodes-on-drag="false"
         :selection-key-code="['Meta', 'Shift']"
         :multi-selection-key-code="['Meta', 'Shift']"
         connectionMode="strict"
@@ -29,8 +30,8 @@
         @connect-start="onConnectStart"
         @connect-end="onConnectEnd"
         @connect="onConnect"
-        @nodesChange="onNodesChange"
-        @edgesChange="onNodesChange"
+        @nodesChange="handleNodesChange"
+        @edgesChange="handleNodesChange"
         @nodeDragStart="((isDragging = true), dispatchMouseDown())"
         @nodeDrag="onNodeDrag"
         @nodeDragStop="onNodeDragStop"
@@ -97,6 +98,15 @@
           </template>
         </ModalPopover>
       </div>
+
+      <!-- 节点配置抽屉 -->
+      <NodeConfigDrawer
+        :key="selectedNodeId || '__empty__'"
+        :visible="configDrawerVisible"
+        :node-id="selectedNodeId"
+        :node-data="selectedNodeData"
+        :all-config-fields-with-group="selectedNodeConfigFields"
+      />
     </div>
 
     <workflow-detail v-model:visible="showWorkflowDetail" :workflowId="detailWorkflowId" />
@@ -104,7 +114,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, provide, inject, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, provide, inject, nextTick } from 'vue'
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { MiniMap } from '@vue-flow/minimap'
@@ -129,6 +139,7 @@ import SubFlowNode from './custom/SubFlowNode.vue'
 import CommentNode from './custom/CommentNode.vue'
 import CustomEdge from './custom/CustomEdge.vue'
 import CustomConnectionLine from './custom/CustomConnectionLine.vue'
+import NodeConfigDrawer from './NodeConfigDrawer.vue'
 import { v4 as uuidv4 } from 'uuid'
 import { storeToRefs } from 'pinia'
 import { getStoreWorkflowDetail } from '@/api/workflowStore'
@@ -162,10 +173,171 @@ const { clipboard } = storeToRefs(useStore())
 // 工作流store的元素
 const { initialized, isExecuting, vueFlowRef, engine, isDragging, IntersectingNode, isCtrl } =
   storeToRefs(flowStore)
-const { onNodesChange, saveHistory } = flowStore
+const { saveHistory } = flowStore
 provide('isExecuting', isExecuting)
 //关闭预览模式
 provide('isPreview', ref(false))
+
+// ── 选中节点追踪 ──────────────────────────────────
+const selectedNodes = ref([])
+
+/** 包装 store 的 onNodesChange，拦截选择变化来追踪选中节点 */
+const handleNodesChange = (changes) => {
+  flowStore.onNodesChange(changes)
+  if (changes.length > 0 && changes[0]?.type === 'select') {
+    nextTick(() => {
+      selectedNodes.value = vueFlowRef.value?.getSelectedNodes || []
+    })
+  }
+}
+
+/** 选中的自定义节点（排除 comment/subFlow 类型） */
+const selectedCustomNodes = computed(() => {
+  return selectedNodes.value.filter(
+    (n) => n.type === 'custom' && n.data?.type
+  )
+})
+
+/** 有且仅有一个可配置节点选中时才显示抽屉 */
+const configDrawerVisible = computed(() => {
+  if (selectedCustomNodes.value.length !== 1) return false
+  const node = selectedCustomNodes.value[0]
+  const def = nodes[node.data?.type]
+  if (!def) return false
+  // 检查是否有配置字段
+  const groups = getNodeConfigFields(node.data?.type)
+  return Object.keys(groups).length > 0
+})
+
+/** 当前选中的节点 ID */
+const selectedNodeId = computed(() => {
+  return configDrawerVisible.value ? selectedCustomNodes.value[0]?.id : ''
+})
+
+/** 当前选中节点的 data 对象 */
+const selectedNodeData = computed(() => {
+  return configDrawerVisible.value ? selectedCustomNodes.value[0]?.data : { config: {} }
+})
+
+/** 选中节点的配置字段分组 */
+const selectedNodeConfigFields = computed(() => {
+  if (!configDrawerVisible.value) return {}
+  const nodeId = selectedCustomNodes.value[0]?.id
+  const fields = getNodeConfigFields(selectedCustomNodes.value[0]?.data?.type)
+
+  // 为 errorHandleSpecifyNode 注入可用的 remoteMethod
+  if (fields['执行配置']) {
+    const specifyField = fields['执行配置'].find((f) => f.id === 'errorHandleSpecifyNode')
+    if (specifyField) {
+      specifyField.remoteMethod = async (keyword = '') => {
+        const node = vueFlowRef.value?.findNode(nodeId)
+        if (!node) return []
+        let nodesList = vueFlowRef.value?.getNodes.filter(
+          (n) => n.parentNode === node.parentNode && n.id !== node.id
+        ) || []
+        if (keyword) {
+          nodesList = nodesList.filter((n) => n.data.name.includes(keyword))
+        }
+        return nodesList.map((el) => ({
+          label: el.data.name,
+          value: el.id
+        }))
+      }
+    }
+  }
+
+  return fields
+})
+
+/**
+ * 获取节点类型的配置字段分组（含错误处理注入）
+ * 返回 { groupName: [field1, field2, ...] }
+ */
+const getNodeConfigFields = (type) => {
+  const def = nodes[type]
+  if (!def) return {}
+
+  const config = { ...def.config }
+
+  // 为非 start/end 节点注入错误处理配置
+  if (type !== 'workflowStart' && type !== 'workflowEnd') {
+    config.errorHandle = {
+      name: '执行配置',
+      fields: {
+        errorHandleType: {
+          id: 'errorHandleType',
+          name: '错误处理',
+          type: 'select',
+          description: '节点遇到错误时的处理方式',
+          default: 'stop',
+          paramRef: false,
+          options: [
+            { label: '忽略错误', value: 'ignore' },
+            { label: '重试节点', value: 'retry' },
+            { label: '指定节点', value: 'specify' },
+            { label: '重试流程', value: 'retryFlow' },
+            { label: '终止流程', value: 'stop' }
+          ]
+        },
+        errorHandleRetryCount: {
+          id: 'errorHandleRetryCount',
+          name: '重试次数',
+          type: 'number',
+          description: '重试次数',
+          show: "${errorHandleType}==='retry'",
+          default: 3,
+          paramRef: false
+        },
+        errorHandleRetryInterval: {
+          id: 'errorHandleRetryInterval',
+          name: '重试间隔',
+          type: 'number',
+          description: '重试间隔（毫秒）',
+          show: "${errorHandleType}==='retry'",
+          default: 1000,
+          paramRef: false
+        },
+        errorHandleRetryFailed: {
+          id: 'errorHandleRetryFailed',
+          name: '重试失败',
+          type: 'select',
+          description: '重试次数超过最大重试次数时的处理方式',
+          default: 'stop',
+          show: "${errorHandleType}==='retry'",
+          paramRef: false,
+          options: [
+            { label: '忽略错误', value: 'ignore' },
+            { label: '指定节点', value: 'specify' },
+            { label: '终止流程', value: 'stop' },
+            { label: '重试流程', value: 'retryFlow' }
+          ]
+        },
+        errorHandleSpecifyNode: {
+          id: 'errorHandleSpecifyNode',
+          name: '指定节点',
+          type: 'select',
+          description: '指定要跳转的节点',
+          show: "${errorHandleType}==='specify' || ${errorHandleRetryFailed}==='specify'",
+          paramRef: false,
+          remote: true,
+          options: [],
+          remoteMethod: null, // runtime 不适用
+          default: ''
+        }
+      }
+    }
+  }
+
+  // 转换为分组格式
+  const groups = {}
+  Object.values(config).forEach((group) => {
+    groups[group.name] = []
+    Object.values(group.fields || {}).forEach((field) => {
+      groups[group.name].push(field)
+    })
+  })
+  return groups
+}
 // 连线规则
 const { validateConnection, createConnection } = new ConnectionRules(workflowId)
 // 工作流详情弹窗
