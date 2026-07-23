@@ -5,6 +5,7 @@
 import { ipcMain, app, dialog } from 'electron'
 import fs from 'fs'
 import path from 'path'
+import { pathToFileURL } from 'url'
 import { get, set } from '../store/index.js'
 
 const STORE_KEY = 'pluginDirs'
@@ -27,13 +28,16 @@ const removePluginDir = (dir) => {
 }
 
 /** 扫描单个插件目录，返回插件信息 */
-const scanPluginDir = (dirPath) => {
+const scanPluginDir = async (dirPath) => {
   if (!fs.existsSync(dirPath)) return null
-  const pluginJsonPath = path.join(dirPath, 'plugin.json')
-  if (!fs.existsSync(pluginJsonPath)) return null
+  const indexPath = path.join(dirPath, 'index.js')
+  if (!fs.existsSync(indexPath)) return null
 
   try {
-    const pluginJson = JSON.parse(fs.readFileSync(pluginJsonPath, 'utf-8'))
+    // 使用动态 import() ES6 方式加载插件描述模块
+    const pluginModule = await import(pathToFileURL(indexPath).href)
+    const pluginDef = pluginModule.default
+
     const executePath = path.join(dirPath, 'execute.js')
     const hasExecute = fs.existsSync(executePath)
     const pkgJsonPath = path.join(dirPath, 'package.json')
@@ -42,13 +46,13 @@ const scanPluginDir = (dirPath) => {
     return {
       id: path.basename(dirPath),
       dir: dirPath,
-      name: pluginJson.name || path.basename(dirPath),
-      version: pluginJson.version || '1.0.0',
-      description: pluginJson.description || '',
-      icon: pluginJson.icon || null,
-      config: pluginJson.config || {},
-      inputs: pluginJson.inputs || [],
-      outputs: pluginJson.outputs || [],
+      name: pluginDef.name || path.basename(dirPath),
+      version: pluginDef.version || '1.0.0',
+      description: pluginDef.description || '',
+      icon: pluginDef.icon || null,
+      config: pluginDef.config || {},
+      inputs: pluginDef.inputs || [],
+      outputs: pluginDef.outputs || [],
       hasExecute,
       hasDeps,
       packageJson: hasDeps ? JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8')) : null
@@ -96,7 +100,7 @@ export const register = () => {
       for (const entry of entries) {
         if (entry.isDirectory()) {
           const pluginDir = path.join(dir, entry.name)
-          const info = scanPluginDir(pluginDir)
+          const info = await scanPluginDir(pluginDir)
           if (info) plugins.push(info)
         }
       }
@@ -109,7 +113,7 @@ export const register = () => {
     for (const dir of dirs) {
       const pluginDir = path.join(dir, pluginId)
       if (fs.existsSync(pluginDir)) {
-        const info = scanPluginDir(pluginDir)
+        const info = await scanPluginDir(pluginDir)
         if (info) {
           // 读取 execute.js 内容
           const executePath = path.join(pluginDir, 'execute.js')

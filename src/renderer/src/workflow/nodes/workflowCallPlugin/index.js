@@ -1,6 +1,6 @@
 /**
  * @file: 调用插件节点
- * @description: 在工作流中调用本地插件，选择插件后根据 plugin.json 动态生成
+ * @description: 在工作流中调用本地插件，选择插件后根据插件的 index.js 动态生成
  *              inputs / outputs / config 字段
  */
 import { IconApps } from '@arco-design/web-vue/es/icon'
@@ -8,7 +8,7 @@ import { IconApps } from '@arco-design/web-vue/es/icon'
 export default {
   name: '调用插件',
   type: 'workflowCallPlugin',
-  description: '调用本地安装的插件，根据插件的 plugin.json 自动生成配置项',
+  description: '调用本地安装的插件，根据插件的 index.js 自动生成配置项',
   icon: IconApps,
   view: true,
   config: {
@@ -34,7 +34,7 @@ export default {
       }
     }
   },
-  // 动态 inputs：根据插件的 plugin.json 自动生成连线口
+  // 动态 inputs：根据插件的 index.js 自动生成连线口
   inputs: [
     {
       type: 'dynamic',
@@ -48,7 +48,7 @@ export default {
       }
     }
   ],
-  // 动态 outputs：根据插件的 plugin.json 自动生成连线口
+  // 动态 outputs：根据插件的 index.js 自动生成连线口
   outputs: [
     {
       type: 'dynamic',

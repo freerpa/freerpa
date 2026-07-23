@@ -2,10 +2,12 @@
  * @file: 调用插件节点执行器
  * @description: 在主进程中直接加载并执行本地插件（无需 IPC 序列化传递参数）
  *              插件通过 APIContext 与工作流交互
+ *              对外开放 API：complete / next / wait
  */
 import { app } from 'electron'
 import fs from 'fs'
 import path from 'path'
+import { pathToFileURL } from 'url'
 
 const execute = async (node, context) => {
   const { pluginId } = node.config
@@ -35,14 +37,8 @@ const execute = async (node, context) => {
 
   if (!executePath) throw new Error('插件未找到: ' + pluginId)
 
-  // 清除 require 缓存以支持热更新
-  try {
-    const resolvedPath = require.resolve(executePath)
-    delete require.cache[resolvedPath]
-  } catch (_) {}
-
-  // 加载插件执行模块
-  const executeModule = require(executePath)
+  // 使用动态 import() 加载插件执行模块（ES6）
+  const executeModule = await import(pathToFileURL(executePath).href)
   const executeFn = executeModule.default || executeModule.execute || executeModule
 
   if (typeof executeFn !== 'function') {
@@ -50,50 +46,21 @@ const execute = async (node, context) => {
   }
 
   // 构建 APIContext —— 插件通过此对象与工作流交互
+  // 仅对外开放 complete / next / wait 三个核心方法
   const apiContext = {
-    nodeId: node.id,
-
     // 完成执行并输出结果到下游节点
     complete: (outputs) => {
       return context.complete(outputs)
     },
 
-    // 设置单个输出字段
-    setOutput: (key, value) => {
-      const outputs = context.getOutputs()
-      outputs[key] = value
-      context.setOutputs(outputs)
-    },
-
-    // 获取输入字段值
-    getInput: (key) => {
-      return node.inputs?.[key]
-    },
-
-    // 获取配置字段值
-    getConfig: (key) => {
-      return node.config?.[key]
+    // 跳过当前节点执行下一个节点
+    next: (outputs) => {
+      return context.next(outputs)
     },
 
     // 延时等待
     wait: (ms) => {
       return context.wait(ms)
-    },
-
-    // 日志输出
-    log: (message) => {
-      console.log(`[Plugin:${pluginId}]`, message)
-    },
-
-    // 文件系统操作（来自标准 NodeExecutor context）
-    fs: context.fs,
-
-    // 全局共享存储
-    global: context.global,
-
-    // 停止整个工作流
-    stopWorkflow: (outputs) => {
-      return context.stopWorkflow(outputs)
     }
   }
 
