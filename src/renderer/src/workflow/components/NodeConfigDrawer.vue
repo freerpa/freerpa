@@ -6,6 +6,7 @@
         type="line"
         size="mini"
         :destroy-on-hide="false"
+        scroll-position="center"
         @keydown="unDoReDoInterceptor"
         @keyup="unDoReDoInterceptor"
       >
@@ -93,6 +94,7 @@ const onConfigChange = (value) => {
     .arco-tabs-content {
       flex: 1;
       overflow: hidden;
+      padding: 0;
     }
 
     .arco-tabs-content-list {

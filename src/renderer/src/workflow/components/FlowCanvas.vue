@@ -181,10 +181,12 @@ provide('isPreview', ref(false))
 // ── 选中节点追踪 ──────────────────────────────────
 const selectedNodes = ref([])
 
-/** 包装 store 的 onNodesChange，拦截选择变化来追踪选中节点 */
+/** 包装 store 的 onNodesChange，在节点增删或选择变化后同步选中状态 */
 const handleNodesChange = (changes) => {
   flowStore.onNodesChange(changes)
-  if (changes.length > 0 && changes[0]?.type === 'select') {
+  if (changes.length === 0) return
+  const type = changes[0]?.type
+  if (type === 'select' || type === 'remove' || type === 'add') {
     nextTick(() => {
       selectedNodes.value = vueFlowRef.value?.getSelectedNodes || []
     })
@@ -209,9 +211,14 @@ const configDrawerVisible = computed(() => {
   return Object.keys(groups).length > 0
 })
 
+/** 缓存最后有效节点 ID — 确保关闭时 key 不变，让 Transition 正常触发 leave 动画 */
+const _cachedNodeId = ref('')
+
 /** 当前选中的节点 ID */
 const selectedNodeId = computed(() => {
-  return configDrawerVisible.value ? selectedCustomNodes.value[0]?.id : ''
+  const id = configDrawerVisible.value ? selectedCustomNodes.value[0]?.id : ''
+  if (id) _cachedNodeId.value = id
+  return id || _cachedNodeId.value
 })
 
 /** 当前选中节点的 data 对象 */
