@@ -1,5 +1,4 @@
 import { ipcMain, screen, dialog, shell, app, Notification } from 'electron'
-import { autoUpdater } from 'electron-updater'
 import { sendToRenderer } from './workflow/core/utils/rendererUtils'
 import { manager as workflowManager } from './workflow/index'
 import { get } from './store/index'
@@ -105,27 +104,6 @@ export const register = () => {
     return process.platform
   })
 
-  ipcMain.handle('app:updateApp', (event, url) => {
-    autoUpdater.setFeedURL(url)
-    autoUpdater.forceDevUpdateConfig = true //开发环境下强制更新
-    autoUpdater.autoDownload = true // 自动下载
-    autoUpdater.on('download-progress', (prog) => {
-      const speed =
-        prog.bytesPerSecond / 1000000 > 1
-          ? Math.ceil(prog.bytesPerSecond / 1000000) + 'M/s'
-          : Math.ceil(prog.bytesPerSecond / 1000) + 'K/s'
-      sendToRenderer('download-progress', {
-        speed, // 网速
-        percent: Math.ceil(prog.percent) // 百分比
-      })
-    })
-    autoUpdater.on('update-downloaded', async () => {
-      await workflowManager.cleanup()
-      app.releaseSingleInstanceLock()
-      autoUpdater.quitAndInstall(true, true)
-    })
-    autoUpdater.checkForUpdatesAndNotify()
-  })
 
 
   ipcMain.handle('system:showNotification', (event, options) => {

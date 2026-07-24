@@ -1,354 +1,297 @@
 <template>
   <div class="home-container scrollbar">
-    <!-- Banner区域 -->
-    <div class="banner-section">
-      <a-carousel
-        :style="{ width: '100%', height: '300px' }"
-        :autoPlay="true"
-        animation-name="card"
-        indicator-type="line"
-        show-arrow="hover"
-        arrow-class="carousel-arrow"
-      >
-        <a-carousel-item
-          v-for="banner in banners"
-          :key="banner.id"
-          @click="handleBannerClick(banner)"
-          class="banner-item"
-        >
-          <a-image
-            :src="banner.image + '?imageView2/1/w/1200/h/300'"
-            :preview="false"
-            :alt="banner.title"
-            width="100%"
-            height="100%"
-            fit="fill"
-          />
-          <div class="banner-info">
-            <h3>{{ banner.title }}</h3>
+    <!-- 快捷创建区 -->
+    <div class="section">
+      <h3 class="section-title">
+        <icon-plus-circle />
+        快速创建
+      </h3>
+      <div class="quick-actions">
+        <a-card class="action-card" hoverable @click="$router.push('/workflow')">
+          <div class="action-icon" style="background: rgb(var(--primary-1))">
+            <ri-flow-chart style="color: rgb(var(--primary-6)); font-size: 28px" />
           </div>
-        </a-carousel-item>
-      </a-carousel>
-    </div>
-
-    <!-- 内容区域 -->
-    <div class="content-section">
-      <!-- 系统公告 -->
-      <div class="notice-section">
-        <a-card
-          class="notice-card"
-          :bordered="false"
-          :body-style="{ padding: '0px 0px' }"
-          title="系统公告"
-        >
-          <template #title>
-            <a-space>
-              <icon-notification />
-              <span>系统公告</span>
-            </a-space>
-          </template>
-
-          <a-list
-            :data="notices"
-            :loading="noticeLoading"
-            :pagination="{
-              total: noticeTotal,
-              current: noticePage,
-              pageSize: noticePageSize,
-              size: 'small'
-            }"
-            :bordered="false"
-            @page-change="handleNoticePage"
-          >
-            <template #item="{ item }">
-              <a-list-item @click="showNoticeDetail(item)">
-                <div class="notice-item">
-                  <span class="notice-title">{{ item.title }}</span>
-                  <span class="notice-time">
-                    {{ item.create_time.slice(0, 10) }}
-                  </span>
-                </div>
-              </a-list-item>
-            </template>
-          </a-list>
+          <div class="action-text">
+            <span class="action-name">新建工作流</span>
+            <span class="action-desc">创建自动化流程</span>
+          </div>
+        </a-card>
+        <a-card class="action-card" hoverable @click="$router.push('/browser')">
+          <div class="action-icon" style="background: rgb(var(--success-2))">
+            <ri-chrome-line style="color: rgb(var(--success-6)); font-size: 28px" />
+          </div>
+          <div class="action-text">
+            <span class="action-name">浏览器管理</span>
+            <span class="action-desc">管理浏览器环境</span>
+          </div>
+        </a-card>
+        <a-card class="action-card" hoverable @click="$router.push('/data')">
+          <div class="action-icon" style="background: rgb(var(--warning-2))">
+            <ri-database2-line style="color: rgb(var(--warning-6)); font-size: 28px" />
+          </div>
+          <div class="action-text">
+            <span class="action-name">数据表</span>
+            <span class="action-desc">管理本地数据模型</span>
+          </div>
+        </a-card>
+        <a-card class="action-card" hoverable @click="$router.push('/elementSet')">
+          <div class="action-icon" style="background: rgb(var(--arcoblue-2))">
+            <ri-stack-line style="color: rgb(var(--arcoblue-6)); font-size: 28px" />
+          </div>
+          <div class="action-text">
+            <span class="action-name">元素集</span>
+            <span class="action-desc">管理网页元素集合</span>
+          </div>
         </a-card>
       </div>
-
-      <!-- 工作流市场 -->
-      <a-card
-        class="workflow-market"
-        :bordered="false"
-        :body-style="{ padding: '15px 0px' }"
-        :header-style="{ padding: '15px 0px' }"
-        title="插件市场"
-      >
-        <template #title>
-          <a-space>
-            <icon-apps />
-            <span>插件商店（Store）</span>
-          </a-space>
-        </template>
-        <template #extra>
-          <a-space>
-            <a-button type="text" @click="handleMyCenter">
-              <icon-user />
-              我的
-            </a-button>
-            <a-button type="text" @click="showCustomerService">
-              <icon-customer-service />
-              客服
-            </a-button>
-          </a-space>
-        </template>
-        <WorkflowStore />
-      </a-card>
     </div>
-    <!-- 公告详情弹窗 -->
-    <a-modal
-      v-model:visible="showNoticeModal"
-      :title="currentNotice?.title"
-      @cancel="closeNoticeModal"
-      :footer="false"
-      width="800px"
-      :body-style="{ maxHeight: '800px', overflow: 'auto' }"
-    >
-      <div class="editor-content-view" v-html="currentNotice?.content"></div>
-      <div class="notice-meta">
-        <span>发布时间：{{ currentNotice?.create_time }}</span>
-      </div>
-    </a-modal>
 
-    <!-- 客服弹窗 -->
-    <a-modal v-model:visible="customerServiceVisible" title="客服" :footer="false">
-      <div class="editor-content-view" v-html="customerService"></div>
-    </a-modal>
+    <!-- 最近工作流 -->
+    <div class="section">
+      <h3 class="section-title">
+        <icon-history />
+        最近工作流
+      </h3>
+      <a-spin :loading="workflowLoading">
+        <a-empty v-if="recentWorkflows.length === 0 && !workflowLoading" description="暂无工作流" />
+        <div v-else class="workflow-grid">
+          <a-card
+            v-for="wf in recentWorkflows"
+            :key="wf.id"
+            class="workflow-card"
+            hoverable
+            @click="openWorkflow(wf)"
+          >
+            <div class="workflow-card-top">
+              <ri-flow-chart style="font-size: 20px; color: rgb(var(--primary-6))" />
+              <span class="workflow-name">{{ wf.name }}</span>
+            </div>
+            <div class="workflow-meta">
+              <a-tag size="small" color="gray">{{ wf.updated_at?.slice(0, 10) || '--' }}</a-tag>
+            </div>
+          </a-card>
+        </div>
+      </a-spin>
+    </div>
+
+    <!-- 系统状态 -->
+    <div class="section">
+      <h3 class="section-title">
+        <icon-info-circle />
+        系统状态
+      </h3>
+      <a-row :gutter="16">
+        <a-col :span="8">
+          <a-card :bordered="false" class="status-card">
+            <div class="status-label">浏览器内核</div>
+            <div class="status-value">{{ kernelInfo }}</div>
+          </a-card>
+        </a-col>
+        <a-col :span="8">
+          <a-card :bordered="false" class="status-card">
+            <div class="status-label">数据库路径</div>
+            <div class="status-value status-small">{{ dbInfo }}</div>
+          </a-card>
+        </a-col>
+        <a-col :span="8">
+          <a-card :bordered="false" class="status-card">
+            <div class="status-label">本地插件</div>
+            <div class="status-value">{{ pluginCount }} 个</div>
+          </a-card>
+        </a-col>
+      </a-row>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, inject } from 'vue'
+import { ref, onMounted } from 'vue'
 import {
-  IconApps,
-  IconCustomerService,
-  IconNotification,
-  IconUser
+  IconPlusCircle,
+  IconHistory,
+  IconInfoCircle
 } from '@arco-design/web-vue/es/icon'
-import WorkflowStore from './home/components/WorkflowStore.vue'
-import { getProfile } from '@/api/user'
-import { getCustomerService } from '@/api/login'
-import { getBanners, getNotices, getNoticeDetail } from '@/api/workflowStore'
+import {
+  RiFlowChart,
+  RiChromeLine,
+  RiDatabase2Line,
+  RiStackLine
+} from '@remixicon/vue'
 import { useStore } from '@/store'
+
 const store = useStore()
-const { setUserInfo } = store
+const { switchTab } = store
 
-onMounted(async () => {
+const recentWorkflows = ref([])
+const workflowLoading = ref(false)
+const kernelInfo = ref('未知')
+const dbInfo = ref('默认位置')
+const pluginCount = ref(0)
+
+const fetchRecentWorkflows = async () => {
   try {
-    setUserInfo(await getProfile())
-  } catch (e) {
-    // 免登录模式：获取用户信息失败时静默处理
-  }
-})
-
-const customerService = ref(null)
-const customerServiceVisible = ref(false)
-const showCustomerService = async () => {
-  const result = await getCustomerService()
-  customerService.value = result
-  customerServiceVisible.value = true
-}
-
-const showMyCenter = inject('showMyCenter', () => {})
-const handleMyCenter = () => {
-  if (!store.userInfo) {
-    store.showLogin()
-    return
-  }
-  showMyCenter()
-}
-
-// 数据状态
-const banners = ref([])
-const currentNotice = ref(null)
-const showNoticeModal = ref(false)
-
-// 公告列表状态
-const notices = ref([])
-const noticeLoading = ref(false)
-const noticeTotal = ref(0)
-const noticePage = ref(1)
-const noticePageSize = ref(10)
-
-// 获取Banner列表
-const fetchBanners = async () => {
-  try {
-    const result = await getBanners()
-    banners.value = result
-  } catch (error) {
-    // Message.error("获取Banner列表失败")
-  }
-}
-
-// 显示公告详情
-const showNoticeDetail = async (notice) => {
-  try {
-    const result = await getNoticeDetail({ id: notice.id })
-    currentNotice.value = result
-    showNoticeModal.value = true
-  } catch (error) {
-    // Message.error("获取公告详情失败")
-  }
-}
-
-// 关闭公告详情
-const closeNoticeModal = () => {
-  showNoticeModal.value = false
-  currentNotice.value = null
-}
-
-// 处理Banner点击
-const handleBannerClick = (banner) => {
-  // 根据banner类型处理跳转
-  switch (banner.type) {
-    case 1: // 通知公告
-      showNoticeDetail({ id: banner.target_id })
-      break
-    case 2: // 工作流
-      handleWorkflowClick({ id: banner.target_id })
-      break
-    case 3: // 外链
-      window.electronAPI.shell.openExternal(banner.target_id)
-      break
-  }
-}
-
-// 获取所有公告
-const fetchNotices = async () => {
-  try {
-    noticeLoading.value = true
-    const result = await getNotices({
-      page: noticePage.value,
-      pageSize: noticePageSize.value
+    workflowLoading.value = true
+    const res = await window.electronAPI.workflow.getWorkflows({
+      page: 1,
+      pageSize: 8
     })
-    notices.value = result.list
-    noticeTotal.value = result.total
-  } catch (error) {
-    // Message.error("获取公告列表失败")
+    recentWorkflows.value = res.data || []
+  } catch (_) {
+    // 静默失败
   } finally {
-    noticeLoading.value = false
+    workflowLoading.value = false
   }
 }
 
-// 处理公告分页
-const handleNoticePage = async (page) => {
-  noticePage.value = page
-  await fetchNotices()
+const fetchKernelInfo = async () => {
+  try {
+    const list = await window.electronAPI.env.getKernelList()
+    kernelInfo.value = list?.length ? `${list.length} 个版本可用` : '暂无'
+  } catch (_) {
+    kernelInfo.value = '获取失败'
+  }
 }
 
-// 页面加载时获取数据
-onMounted(async () => {
-  fetchBanners()
-  fetchNotices()
-})
+const fetchDbInfo = async () => {
+  try {
+    const info = await window.electronAPI.dbInfo.getInfo()
+    dbInfo.value = info?.path || '默认位置'
+  } catch (_) {
+    dbInfo.value = '默认位置'
+  }
+}
 
+const fetchPluginCount = async () => {
+  try {
+    const plugins = await window.electronAPI.plugin.list()
+    pluginCount.value = plugins?.length || 0
+  } catch (_) {
+    pluginCount.value = 0
+  }
+}
+
+const openWorkflow = (wf) => {
+  // 打开工作流编辑器 tab
+  if (!store.openedTabs[wf.id]) {
+    store.openedTabs[wf.id] = {
+      id: wf.id,
+      name: wf.name,
+      type: 'workflow',
+      visible: true
+    }
+  }
+  switchTab(wf.id)
+}
+
+onMounted(() => {
+  fetchRecentWorkflows()
+  fetchKernelInfo()
+  fetchDbInfo()
+  fetchPluginCount()
+})
 </script>
 
 <style lang="less" scoped>
 .home-container {
-  padding: 16px;
+  padding: 24px;
   overflow: auto;
-  .banner-section {
-    margin-bottom: 16px;
-    border-radius: var(--border-radius-small);
-    overflow: hidden;
-    cursor: pointer;
+  height: 100%;
+}
 
-    .banner-item {
-      width: 1200px;
-      height: 300px;
-      border-radius: var(--border-radius-small);
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
+.section {
+  margin-bottom: 32px;
 
-      .banner-info {
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        padding: 16px;
-        background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
-        color: #fff;
-
-        h3 {
-          margin: 0 0 8px;
-          font-size: 24px;
-        }
-
-        p {
-          margin: 0;
-          font-size: 14px;
-          opacity: 0.8;
-        }
-      }
-    }
-  }
-
-  .content-section {
+  .section-title {
     display: flex;
-    gap: 16px;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-1);
+    margin-bottom: 16px;
+  }
+}
 
-    .notice-section {
-      min-width: 300px;
-      .notice-card {
-        height: 100%;
-      }
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
 
-      .notice-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        cursor: pointer;
-
-        .notice-title {
-          flex: 1;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .notice-time {
-          color: var(--color-text-3);
-          font-size: 12px;
-          margin-left: 16px;
-        }
-      }
+  .action-card {
+    :deep(.arco-card-body) {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
     }
-    .workflow-market {
-      flex: 1;
+
+    .action-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .action-text {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .action-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--color-text-1);
+      }
+
+      .action-desc {
+        font-size: 12px;
+        color: var(--color-text-3);
+      }
     }
   }
 }
 
-.notice-meta {
-  padding-top: 16px;
-  border-top: 1px solid var(--color-border);
-  color: var(--color-text-3);
-  font-size: 12px;
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+
+  .workflow-card {
+    .workflow-card-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+
+      .workflow-name {
+        font-size: 14px;
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
 }
-:deep(.arco-carousel-arrow) {
-  .arco-carousel-arrow-left,
-  .arco-carousel-arrow-right {
-    background-color: rgb(var(--primary-6));
-    border-radius: var(--border-radius-small);
+
+.status-card {
+  .status-label {
+    font-size: 13px;
+    color: var(--color-text-3);
+    margin-bottom: 8px;
   }
-  .arco-carousel-arrow-left:hover,
-  .arco-carousel-arrow-right:hover {
-    background-color: rgb(var(--primary-5));
+
+  .status-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-1);
   }
-  .arco-carousel-indicator-wrapper-bottom {
-    background: transparent;
+
+  .status-small {
+    font-size: 13px;
   }
 }
 </style>

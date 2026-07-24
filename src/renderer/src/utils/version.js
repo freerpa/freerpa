@@ -1,27 +1,14 @@
 /**
- * @file: 版本管理工具类
- * @author: dabao
+ * @file: 版本管理工具类 (离线版本)
+ * @author: FreeRPA
  * @date: 2024-03-16
  */
 
-import { checkVersion } from '@/api/version'
 import pkg from '../../../../package.json'
 
 // 获取当前版本
 export const getAppVersion = () => {
   return pkg.version
-}
-
-// 检查更新
-export const checkUpdate = async () => {
-  try {
-    //获取平台标识
-    const platform = await window.electronAPI.app.getPlatform()
-    const result = await checkVersion(pkg.version, platform)
-    return result
-  } catch (error) {
-    console.error('检查更新失败:', error)
-  }
 }
 
 // 版本比较

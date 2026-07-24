@@ -161,8 +161,6 @@ const pendingConnection = inject('pendingConnection')
 const flowStore = useFlowStore(workflowId)
 const { debug } = storeToRefs(flowStore)
 const { validateConnection } = new ConnectionRules(workflowId)
-const { userInfo } = useStore()
-const isMyNode = computed(() => props.data.user_id === userInfo?.id)
 
 // ── Props & emits ───────────────────────────────
 const props = defineProps({
@@ -180,7 +178,6 @@ const emit = defineEmits([
 ])
 
 // ── Provides ────────────────────────────────────
-provide('isMyNode', isMyNode)
 provide('storeScene', 'nodeDetail')
 provide('nodeData', props.data)
 provide('nodeId', props.id)

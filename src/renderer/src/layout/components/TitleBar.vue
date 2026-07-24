@@ -4,7 +4,7 @@
       <div class="logo">
         <template v-if="platform !== 'darwin' || isFullscreen"> {{ appName }} </template>
       </div>
-      <div class="tabs" v-if="routePath !== '/login'">
+      <div class="tabs">
         <div
           class="tab-item home"
           :class="{ active: activeTab === 'home' }"
@@ -79,25 +79,11 @@
       </div>
     </div>
     <div class="right">
-      <a-button
-        v-if="hasUpdate"
-        shape="round"
-        size="mini"
-        type="secondary"
-        status="danger"
-        @click="updateVisible = true"
-      >
-        <template #icon>
-          <icon-cloud-download />
-        </template>
-        有新版本
-      </a-button>
-
       <div class="window-controls" v-if="platform === 'win32'">
-        <a-button v-if="routePath !== '/login'" type="text" @click="minimizeWindow">
+        <a-button type="text" @click="minimizeWindow">
           <icon-minus />
         </a-button>
-        <a-button v-if="routePath !== '/login'" type="text" @click="maximizeWindow">
+        <a-button type="text" @click="maximizeWindow">
           <icon-fullscreen />
         </a-button>
         <a-button type="text" @click="closeWindow">
@@ -139,7 +125,6 @@ import {
   IconMinus,
   IconFullscreen,
   IconClose,
-  IconCloudDownload,
   IconHome,
   IconBranch,
   IconLoading,
@@ -215,20 +200,14 @@ watch(tabsContainer, (newVal) => {
 
 const store = useStore()
 
-const { hasUpdate, updateVisible, platform, openedTabs, activeTab } = storeToRefs(store)
+const { platform, openedTabs, activeTab } = storeToRefs(store)
 const { switchTab } = store
-import { useRoute } from 'vue-router'
 
 const { window: windowAPI } = window.electronAPI
 
 const isFullscreen = ref(false)
 windowAPI.onFullscreenChange((event, fullscreen) => {
   isFullscreen.value = fullscreen
-})
-const route = useRoute()
-
-const routePath = computed(() => {
-  return route.path
 })
 
 const minimizeWindow = () => {
@@ -246,9 +225,6 @@ onMounted(() => {
 let confirmModal = null
 
 const closeWindow = () => {
-  if (routePath.value === '/login') {
-    windowAPI.close()
-  } else {
     let content = '确认关闭软件吗？'
     if (Object.keys(openedTabs.value).length > 0) {
       content = '确认关闭软件吗？\n当前有未关闭的标签，退出后将丢失未保存的数据。'
@@ -275,7 +251,6 @@ const closeWindow = () => {
         windowAPI.close()
       }
     })
-  }
 }
 
 const confirmModalVisible = ref(false)

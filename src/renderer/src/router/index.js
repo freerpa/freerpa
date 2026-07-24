@@ -5,9 +5,6 @@ import Workflow from '../views/workflowManager/index.vue'
 import Data from '../views/data/index.vue'
 import BrowserView from '../views/browser/index.vue'
 import ElementSet from '../views/elementSet/index.vue'
-import Login from '../views/login/index.vue'
-import { getToken, removeToken } from '@/utils/token'
-
 const routes = [
   {
     path: '/',
@@ -36,10 +33,6 @@ const routes = [
         component: ElementSet
       }
     ]
-  },
-  {
-    path: '/login',
-    component: Login
   }
 ]
 
@@ -53,19 +46,5 @@ if (firstLoad) {
   window.electronAPI.window.maximize(true)
   firstLoad = false
 }
-// 路由守卫：免登录模式，仅处理登录页面的清理工作
-router.beforeEach((to, from, next) => {
-  if (to.path === '/login') {
-    removeToken()
-    window.electronAPI.emitFlowEvent('cleanup')
-    window.electronAPI.window.size(800, 600)
-    next()
-  } else if (from.path === '/login') {
-    window.electronAPI.window.maximize()
-    next()
-  } else {
-    next()
-  }
-})
 
 export default router

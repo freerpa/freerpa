@@ -1,24 +1,28 @@
 /**
- * @file: AI 模型相关接口
- * @author: dabao
- * @date: 2024-03-15
+ * @file: AI 模型接口 (离线版本 - 暂不可用)
  */
 
-import request, { createSSE } from './request'
+import { Message } from '@arco-design/web-vue'
 
-// 获取AI模型列表
+// 获取AI模型列表（离线模式返回空）
 export const getModels = () => {
-  return request.get('/app/ai/getModels')
+  return Promise.resolve([])
 }
-// 创建聊天流式响应
-export const createChatStream = (data, onMessage, onError, onClose) => {
-  return createSSE('/app/ai/chat', data, {}, onMessage, onError, onClose)
+
+// 创建聊天流式响应（离线模式不可用）
+export const createChatStream = (_data, _onMessage, onError) => {
+  if (onError) {
+    onError(new Error('离线模式：AI 对话功能暂未配置，请先连接本地 AI 模型（如 Ollama）'))
+  }
+  return { start: () => {}, abort: () => {} }
 }
-// 获取聊天记录
-export const getChatMessages = (params) => {
-  return request.get('/app/ai/getChatMessages', { params })
+
+// 获取聊天记录（离线模式返回空）
+export const getChatMessages = () => {
+  return Promise.resolve([])
 }
+
 // 删除聊天记录
-export const deleteChatMessages = (params) => {
-  return request.delete('/app/ai/deleteChatMessages', { params })
+export const deleteChatMessages = () => {
+  return Promise.resolve()
 }

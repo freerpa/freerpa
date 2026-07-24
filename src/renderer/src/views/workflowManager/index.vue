@@ -53,18 +53,6 @@
 
   <WorkflowInfoEditor v-model:visible="showWorkflowInfoEditor" :model-id="selectedWorkflow?.id" @success="handleEditorSuccess" />
 
-  <a-modal v-model:visible="showDependencies" title="依赖列表" width="1000px" :footer="false">
-    <a-alert style="margin-bottom:16px" type="warning">导入时如果工作流含有依赖工作流，需要同时兑换未拥有的依赖工作流</a-alert>
-    <a-table :data="dependencies" :pagination="false">
-      <template #columns>
-        <a-table-column title="名称" data-index="name" />
-        <a-table-column title="描述" data-index="description" />
-        <a-table-column title="积分" data-index="price" />
-        <a-table-column title="查看" :width="60" align="center"><template #cell="{ record }"><a-button type="text" @click="handleViewDependency(record)">查看</a-button></template></a-table-column>
-      </template>
-    </a-table>
-  </a-modal>
-  <workflow-detail v-model:visible="showWorkflowDetail" :workflowId="detailWorkflowId" />
   <RecycleBin v-model:visible="showTrash" :api="workflowAPI" :on-restored="() => fetchWorkflows(true)" />
 </template>
 
@@ -76,7 +64,6 @@ import { RiFlowChart } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
 import WorkflowInfoEditor from './components/WorkflowInfoEditor.vue'
 import RecycleBin from '@/components/RecycleBin.vue'
-import WorkflowDetail from '../home/components/WorkflowDetail.vue'
 import { useFlowStore } from '@/workflow/store'
 import { useStore } from '@/store'
 import { storeToRefs } from 'pinia'
@@ -97,11 +84,6 @@ const currentPage = ref(1)
 const pageSize = 24
 const hasMore = ref(true)
 const categoryId = ref('')
-
-const showDependencies = ref(false)
-const dependencies = ref([])
-const detailWorkflowId = ref(null)
-const showWorkflowDetail = ref(false)
 
 const onCategoryChange = (val) => { categoryId.value = val; fetchWorkflows(true) }
 const loadMore = () => { currentPage.value++; fetchWorkflows() }
@@ -163,8 +145,6 @@ const getStatus = (id) => { try { return useFlowStore(id)().workflowStatus || 'i
 const getStatusText = (id) => ({ idle: '未执行', running: '执行中', error: '执行失败', completed: '执行完成', stopping: '停止中', stopped: '已停止' }[getStatus(id)] || '未执行')
 const getStatusColor = (id) => ({ idle: 'gray', running: 'blue', error: 'red', completed: 'green', stopping: 'blue', stopped: 'gray' }[getStatus(id)] || 'gray')
 const getNoticeNum = (id) => { try { return useFlowStore(id)().noticeNum || 0 } catch { return 0 } }
-
-const handleViewDependency = (record) => { detailWorkflowId.value = record.id; showWorkflowDetail.value = true }
 
 watch(searchKeyword, debounce(() => { currentPage.value = 1; fetchWorkflows(true) }, 300))
 onActivated(() => fetchWorkflows(true))

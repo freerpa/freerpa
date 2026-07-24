@@ -1,11 +1,5 @@
 <template>
   <div class="customNode-view">
-    <!-- <a-space class="open-source" v-if="isMyNode">
-      <a-tooltip content="开源后任意用户都可以查看和修改代码，闭源后只有创建者可以查看和修改代码">
-        <icon-question-circle-fill size="16" />
-      </a-tooltip>
-      是否开源：<a-switch v-model="node.config.openSource" size="small" />
-    </a-space> -->
     <div class="description scrollbar" v-html="description || '暂无描述'"></div>
     <template v-if="paramFields?.length">
       <a-divider orientation="left">配置项</a-divider>
@@ -17,12 +11,10 @@
 </template>
 
 <script setup>
-import { IconQuestionCircleFill } from '@arco-design/web-vue/es/icon'
-import { ref, computed, inject, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import FormView from '@/workflow/components/nodes/FormView.vue'
 
 import { buildConfigFields } from '../common'
-const isMyNode = inject('isMyNode')
 
 const props = defineProps({
   node: {

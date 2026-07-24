@@ -12,7 +12,6 @@
     />
     <div class="toolbar">
       <div class="left">
-        <a-tag style="height: 28px" type="primary">积分：{{ userInfo?.points || 0 }}</a-tag>
       </div>
       <div class="right">
         <a-select size="small" v-model="selectedModel" :options="models" />
@@ -37,9 +36,7 @@
 import { ref, defineProps, defineEmits } from 'vue'
 import { IconRecordStop, IconArrowUp } from '@arco-design/web-vue/es/icon'
 import { getModels } from '@/api/aiModels'
-import { useStore } from '@/store'
 import { v4 as uuidv4 } from 'uuid'
-const { userInfo } = useStore()
 const props = defineProps({
   placeholder: {
     type: String,

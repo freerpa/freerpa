@@ -66,7 +66,6 @@
             @action="handleNodeAction"
             @addNode="addNodeFromNode"
             @showQuickConnect="showQuickConnect"
-            @openWorkflowDetail="openWorkflowDetail"
           />
         </template>
         <template #node-subFlow="nodeProps">
@@ -109,7 +108,6 @@
       />
     </div>
 
-    <workflow-detail v-model:visible="showWorkflowDetail" :workflowId="detailWorkflowId" />
   </a-spin>
 </template>
 
@@ -120,7 +118,6 @@ import { Background } from '@vue-flow/background'
 import { MiniMap } from '@vue-flow/minimap'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
-import WorkflowDetail from '../../views/home/components/WorkflowDetail.vue'
 import {
   IconFullscreen,
   IconSave,
@@ -142,7 +139,6 @@ import CustomConnectionLine from './custom/CustomConnectionLine.vue'
 import NodeConfigDrawer from './NodeConfigDrawer.vue'
 import { v4 as uuidv4 } from 'uuid'
 import { storeToRefs } from 'pinia'
-import { getStoreWorkflowDetail } from '@/api/workflowStore'
 import nodes from '@nodes-path'
 import {
   ConnectionRules,
@@ -167,7 +163,7 @@ const { workflow: workflowAPI } = window.electronAPI
 // 工作流store
 const flowStore = useFlowStore(workflowId)
 // 用户store
-const { userInfo, platform } = useStore()
+const { platform } = useStore()
 // 剪贴板
 const { clipboard } = storeToRefs(useStore())
 // 工作流store的元素
@@ -347,13 +343,6 @@ const getNodeConfigFields = (type) => {
 }
 // 连线规则
 const { validateConnection, createConnection } = new ConnectionRules(workflowId)
-// 工作流详情弹窗
-const showWorkflowDetail = ref(false)
-const detailWorkflowId = ref('')
-const openWorkflowDetail = (workflowId) => {
-  showWorkflowDetail.value = true
-  detailWorkflowId.value = workflowId
-}
 // 触摸板处理：平移画布
 function handleTouchpadWheel(e) {
   const { x, y, zoom } = vueFlowRef.value.viewport
@@ -799,22 +788,18 @@ const addNode = async (nodeData, position) => {
 
   let workflow = null
   if (nodeData.workflow) {
-    if (nodeData.workflow.isStore) {
-      workflow = await getStoreWorkflowDetail(nodeData.workflow.id)
-    } else {
-      const localWf = await workflowAPI.getWorkflow(nodeData.workflow.id)
-      if (localWf) {
-        let graph = {}
-        try { graph = typeof localWf.graph === 'string' ? JSON.parse(localWf.graph) : (localWf.graph || {}) } catch (e) {}
-        workflow = {
-          id: localWf.id,
-          name: localWf.name,
-          description: localWf.description,
-          cover: '',
-          only_node: false,
-          elements: typeof localWf.graph === 'string' ? localWf.graph : JSON.stringify(localWf.graph || {}),
-          nodes_count: (graph.nodes || []).length
-        }
+    const localWf = await workflowAPI.getWorkflow(nodeData.workflow.id)
+    if (localWf) {
+      let graph = {}
+      try { graph = typeof localWf.graph === 'string' ? JSON.parse(localWf.graph) : (localWf.graph || {}) } catch (e) {}
+      workflow = {
+        id: localWf.id,
+        name: localWf.name,
+        description: localWf.description,
+        cover: '',
+        only_node: false,
+        elements: typeof localWf.graph === 'string' ? localWf.graph : JSON.stringify(localWf.graph || {}),
+        nodes_count: (graph.nodes || []).length
       }
     }
   }
@@ -838,7 +823,7 @@ const addNode = async (nodeData, position) => {
     // expandParent: !!nodeData.parentNode,
     // extent: { range: 'parent', padding: [20, 20, 20, 20] },
     data: {
-      user_id: nodeData.user_id || userInfo?.id,
+      user_id: nodeData.user_id || '',
       type: nodeData.type,
       name: getNodeName(
         vueFlowRef.value.getNodes.filter((n) => n.parentNode === nodeData.parentNode),
@@ -881,7 +866,7 @@ const addSubFlowNode = async (node, workFlow) => {
       y: 150
     },
     data: {
-      user_id: node.user_id || userInfo?.id,
+      user_id: node.user_id || '',
       type: 'subFlow',
       name: node.data.type === 'workFlow' ? workFlow.name : '工作流',
       inputs: [],

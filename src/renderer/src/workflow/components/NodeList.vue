@@ -3,9 +3,8 @@
     <a-space style="margin-bottom: 6px" direction="vertical" align="center">
       <a-space>
         <a-radio-group type="button" size="small" v-model="activeTab" @change="handleTabChange">
-          <a-radio value="system">系统</a-radio>
+          <a-radio value="system">节点</a-radio>
           <a-radio value="workflow">工作流</a-radio>
-          <a-radio value="store">商店</a-radio>
         </a-radio-group>
       </a-space>
 
@@ -24,32 +23,6 @@
         </a-input>
       </div>
 
-      <div v-if="activeTab == 'store'" class="search-bar">
-        <a-input placeholder="请输入关键字" v-model="storeKeyword" allow-clear size="small">
-          <template #prepend>
-            <a-dropdown trigger="hover" @select="handleSelectStoreCategory">
-              <span style="cursor: pointer">
-                {{ storeCategories.find((item) => item.id === storeCategory)?.name || '全部' }}
-                <icon-down />
-              </span>
-              <template #content>
-                <a-doption value="">全部</a-doption>
-                <a-doption v-for="item of storeCategories" :key="item.id" :value="item.id">
-                  {{ item.name }}
-                </a-doption>
-              </template>
-            </a-dropdown>
-          </template>
-          <template #prefix> <icon-search /> </template>
-          <template #append>
-            <a-tooltip content="获取更多">
-              <span style="cursor: pointer" @click="showStoreWorkflows = true">
-                <icon-apps />
-              </span>
-            </a-tooltip>
-          </template>
-        </a-input>
-      </div>
     </a-space>
     <div v-if="activeTab === 'system'">
       <div v-if="searchKeyword" class="node-list">
@@ -180,88 +153,21 @@
       </a-list>
     </div>
 
-    <div class="node-list" v-if="activeTab === 'store'">
-      <a-empty
-        style="margin-top: 100px"
-        v-if="storeWorkflows.length === 0"
-        description="暂无数据"
-      />
-      <a-list
-        v-else
-        @reach-bottom="fetchStoreData"
-        :hoverable="false"
-        :split="false"
-        :max-height="400"
-        :bordered="false"
-      >
-        <template #scroll-loading>
-          <a-divider v-if="!storeIsMore">没有更多了</a-divider>
-          <a-spin v-else />
-        </template>
-        <a-list-item
-          v-for="item of storeWorkflows"
-          :grid-props="{ gutter: [20, 20], sm: 24, md: 12, lg: 8, xl: 6 }"
-          :key="item.id"
-          :bordered="false"
-          class="node-item workflow-item"
-          :class="{
-            disabled: disabled,
-            click: trigger === 'click',
-            drag: trigger === 'drag'
-          }"
-          :draggable="!disabled && trigger === 'drag'"
-          @dragstart="(event) => handleDragStart(event, 'workFlow', item.id, true)"
-          @dragend="dragStartNode = false"
-          @click="trigger === 'click' ? handleClick('workFlow', item.id, true) : null"
-        >
-          <div class="workflow-item-header">
-            <div class="workflow-item-header-icon">
-              <a-avatar :size="24" :image-url="item.cover" shape="square"></a-avatar>
-            </div>
-            <div class="workflow-item-header-title">
-              <a-typography-text ellipsis style="margin: 0px">
-                {{ item.name }}
-              </a-typography-text>
-              <a-tag size="small"> {{ item.nodes_count }}个节点 </a-tag>
-            </div>
-          </div>
-          <a-typography-text
-            class="workflow-item-description"
-            :ellipsis="{ rows: 2 }"
-            style="margin: 0px"
-          >
-            {{ item.description || '暂无描述' }}
-          </a-typography-text>
-        </a-list-item>
-      </a-list>
-    </div>
   </div>
-  <a-modal
-    v-model:visible="showStoreWorkflows"
-    title="插件商店"
-    width="1200px"
-    :body-style="{ maxHeight: '80vh' }"
-    :footer="false"
-  >
-    <WorkflowStore v-if="showStoreWorkflows" @purchase-success="purchaseSuccess = true" />
-  </a-modal>
 </template>
 
 <script setup>
-import { IconBranch, IconApps, IconSearch, IconDown } from '@arco-design/web-vue/lib/icon'
+import { IconBranch, IconSearch } from '@arco-design/web-vue/lib/icon'
 import allNodes, { categories } from '@nodes-path'
 import { debounce } from 'lodash-es'
 import { defineEmits, inject, ref, onMounted, watch, provide, computed } from 'vue'
 import { useFlowStore } from '../store'
 import { storeToRefs } from 'pinia'
 import { getInitNodeData } from '../utils'
-import WorkflowStore from '@/views/home/components/WorkflowStore.vue'
 import CategorySelect from '@/components/CategorySelect.vue'
 const { workflow: workflowAPI } = window.electronAPI
 const workflowId = inject('workflowId')
 const { dragStartNode, activeNodeTab } = storeToRefs(useFlowStore(workflowId))
-import { getMyPurchases, getStoreWorkflowCategories } from '@/api/workflowStore'
-import { getAppVersion, compareVersion } from '@/utils/version'
 const props = defineProps({
   disabled: {
     type: Boolean,
@@ -276,14 +182,13 @@ const props = defineProps({
     default: 'add'
   }
 })
-
 provide('storeScene', 'nodeList')
 
 const emit = defineEmits(['chooseNode', 'dragStart'])
 
-const handleClick = async (type, workflowId, isStore = false) => {
+const handleClick = async (type, workflowId) => {
   if (props.disabled || !isValid(allNodes[type])) return
-  emit('chooseNode', getInitNodeData(type, workflowId, isStore))
+  emit('chooseNode', getInitNodeData(type, workflowId, false))
 }
 
 const isValid = (node) => {
@@ -296,16 +201,15 @@ const isValid = (node) => {
   return valid
 }
 
-const handleDragStart = async (event, type, workflowId, isStore = false) => {
+const handleDragStart = async (event, type, workflowId) => {
   if (props.disabled || !isValid(allNodes[type])) return
   dragStartNode.value = true
-  event.dataTransfer.setData('node', getInitNodeData(type, workflowId, isStore))
+  event.dataTransfer.setData('node', getInitNodeData(type, workflowId, false))
 }
 
 const activeTab = ref('system')
 const systemKeyword = ref('')
 const workflowKeyword = ref('')
-const storeKeyword = ref('')
 const searchKeyword = ref('')
 
 const searchNodes = computed(() => {
@@ -328,31 +232,11 @@ watch(
   }, 300)
 )
 
-watch(
-  storeKeyword,
-  debounce(() => {
-    fetchStoreData(true)
-  }, 300)
-)
 
-// 工作流商店分类
-const storeCategories = ref([])
-const storeCategory = ref(null)
-const getStoreCategories = async () => {
-  if (storeCategories.value.length > 0) return
-  const res = await getStoreWorkflowCategories()
-  storeCategories.value = res
-}
-
-const handleSelectStoreCategory = (value) => {
-  storeCategory.value = value
-  fetchStoreData(true)
-}
-
-// 工作流商店购买成功之后关闭时刷新
-const purchaseSuccess = ref(false)
-
-const workflows = ref([])
+onMounted(() => {
+  page = 0
+  total = 0
+})
 let page = 0
 let total = 0
 const isMore = ref(true)
@@ -386,67 +270,16 @@ const fetchData = async (isSearch = false) => {
   }
 }
 
-const storeWorkflows = ref([])
-let storePage = 0
-let storeTotal = 0
-const storeIsMore = ref(true)
-const fetchStoreData = async (isSearch = false) => {
-  getStoreCategories()
-  if (isSearch) {
-    storePage = 1
-    storeIsMore.value = true
-  } else {
-    if (!storeIsMore.value) return
-    storePage++
-  }
-  const res = await getMyPurchases({
-    page: storePage,
-    pageSize: 10,
-    keyword: storeKeyword.value,
-    category: storeCategory.value
-  })
-  storeTotal = res.total
-  const list = res.list.filter((item) => compareVersion(getAppVersion(), item.app_version) >= 0)
-  if (storePage === 1) {
-    storeWorkflows.value = list
-  } else {
-    storeWorkflows.value = [...storeWorkflows.value, ...list]
-  }
-  if (storeWorkflows.value.length >= storeTotal) {
-    storeIsMore.value = false
-  }
-}
-
-const showStoreWorkflows = ref(false)
-
-watch(showStoreWorkflows, () => {
-  let visible = null
-  if (showStoreWorkflows.value) {
-    visible = true
-  } else {
-    if (purchaseSuccess.value) {
-      purchaseSuccess.value = false
-      storeCategory.value = null
-      storeKeyword.value = ''
-      fetchStoreData(true)
-    }
-  }
-  emit('showStoreWorkflows', visible)
-})
+const workflows = ref([])
 
 onMounted(() => {
   page = 0
   total = 0
-  storePage = 0
-  storeTotal = 0
 })
 
 const handleTabChange = (value) => {
   if (value === 'workflow' && page === 0) {
     fetchData()
-  }
-  if (value === 'store' && storePage === 0) {
-    fetchStoreData()
   }
 }
 </script>

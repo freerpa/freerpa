@@ -1,0 +1,2 @@
+[permissions]
+allow = ["Edit", "Bash(cd /Users/yangdabao/Desktop/project/FreeRPA/freerpa && npm run build 2>&1 | grep -i \"error\\|failed\\|✓ built\" | tail -5)"]

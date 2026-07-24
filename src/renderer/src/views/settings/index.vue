@@ -22,10 +22,6 @@
           <template #icon><icon-command /></template>
           快捷键
         </a-menu-item>
-        <a-menu-item key="feedback">
-          <template #icon><icon-edit /></template>
-          意见反馈
-        </a-menu-item>
       </a-menu>
     </div>
     <div class="content">
@@ -34,16 +30,14 @@
       <SecurityDir v-if="activeTab === 'security'" />
       <DataManager v-if="activeTab === 'data'" />
       <ShortcutManager v-if="activeTab === 'shortcut'" />
-      <Feedback v-if="activeTab === 'feedback'" />
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import { IconEdit, IconStorage, IconApps, IconSafe, IconDriveFile, IconCommand } from '@arco-design/web-vue/es/icon'
+import { IconStorage, IconApps, IconSafe, IconDriveFile, IconCommand } from '@arco-design/web-vue/es/icon'
 import { RiDatabase2Line } from '@remixicon/vue'
-import Feedback from '@/views/user/components/Feedback.vue'
 import CacheManager from './components/CacheManager.vue'
 import PluginManager from './components/PluginManager.vue'
 import SecurityDir from './components/SecurityDir.vue'
