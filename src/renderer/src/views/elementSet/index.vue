@@ -43,7 +43,7 @@
         </div>
         <div class="element-set-info">
           <a-space>
-            <a-tag color="arcoblue" size="large">{{ es.elementCount ?? 0 }}个元素</a-tag>
+            <a-tag size="large">{{ es.elementCount ?? 0 }}个元素</a-tag>
           </a-space>
         </div>
       </a-card>
