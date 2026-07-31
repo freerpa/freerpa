@@ -219,7 +219,9 @@ setupEngineLifecycle()
 // ── Node view async component ──────────────────
 const nodeView = computed(() => {
   if (nodeDefinition.view) {
-    return defineAsyncComponent(() => import(`@nodes-path/${nodeDefinition.type}/view.vue`))
+    // 使用节点自身保存的版本号加载 view.vue，而非注册表中的最新版本
+    const version = props.data.version || 'V1'
+    return defineAsyncComponent(() => import(`@nodes-path/${nodeDefinition.type}/${version}/view.vue`))
   }
   return null
 })

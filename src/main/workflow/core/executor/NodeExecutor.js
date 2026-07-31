@@ -98,7 +98,7 @@ class NodeExecutor extends EventEmitter {
         let executeStr = fs.readFileSync(
           path.join(
             __dirname,
-            `../../src/renderer/src/workflow/nodes/${this.node.type}/execute.js`
+            `../../src/renderer/src/workflow/nodes/${this.node.type}/${this.node.version || 'V1'}/execute.js`
           ),
           'utf-8'
         )
@@ -108,7 +108,7 @@ class NodeExecutor extends EventEmitter {
         this.executor = eval(executeStr)
       } else {
         // 加载节点执行器
-        const execute = await import(`@renderer/workflow/nodes/${this.node.type}/execute.js`)
+        const execute = await import(`@renderer/workflow/nodes/${this.node.type}/${this.node.version || 'V1'}/execute.js`)
         this.executor = execute.default
       }
       this.setState('initialized')

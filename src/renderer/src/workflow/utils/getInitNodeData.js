@@ -47,7 +47,8 @@ export const getInitNodeData = (type, workflowId, isStore) => {
     view: node.view,
     inputs: node.inputs,
     outputs: node.outputs,
-    config: config
+    config: config,
+    version: node._version || 'V1'
   }
   if (workflowId) {
     nodeData.workflow = {

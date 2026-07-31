@@ -2,167 +2,112 @@
  * @file: 工作流节点定义
  * @author: dabao
  * @date: 2024-03-15
+ * @update: 2025-07-29 — 重构为版本化自动发现机制
+ *
+ * 节点版本化规则：
+ * - 节点目录结构：nodes/{nodeType}/V{num}/index.js
+ * - import.meta.glob eager 模式自动加载所有版本
+ * - 每个 nodeType 自动选取最大版本号作为节点定义
+ * - 旧版本目录保留，工作流保存时记录版本号实现兼容
  */
 
-// 流程控制节点
-import workflowIf from './workflowIf'
-import workflowLoop from './workflowLoop'
-import workflowEnd from './workflowEnd'
-import workflowRestart from './workflowRestart'
-import workflowThrowException from './workflowThrowException'
-import workflowNotice from './workflowNotice'
-import workflowCustomNode from './workflowCustomNode'
-import workflowSubWorkflow from './workflowSubWorkflow'
+// ═══════════════════════════════════════════════════
+// 1. Eager 加载所有版本节点定义
+// ═══════════════════════════════════════════════════
+const allNodeModules = import.meta.glob('./*/V*/index.js', { eager: true })
 
-// 时间计数节点
-import timeGetter from './timeGetter'
-import timeHandle from './timeHandle'
-import timeSchedule from './timeSchedule'
-import timeDelay from './timeDelay'
-import timeBaseTimer from './timeBaseTimer'
-import timeBaseTimerHandle from './timeBaseTimerHandle'
-import timeCounter from './timeCounter'
-import timeCounterHandle from './timeCounterHandle'
+/**
+ * 从所有版本中为每个 nodeType 选取最新版本
+ * nodeDefMap[type] = { ...nodeDef, _version: 'V2' }
+ */
+const nodeDefMap = {}
+Object.entries(allNodeModules).forEach(([modulePath, mod]) => {
+  const match = modulePath.match(/^\.\/([^/]+)\/V(\d+)\/index\.js$/)
+  if (!match) return
+  const [, nodeType, verNum] = match
+  const ver = parseInt(verNum, 10)
+  const current = nodeDefMap[nodeType]
+  if (!current || ver > current._verNum) {
+    const def = mod.default || mod
+    nodeDefMap[nodeType] = {
+      ...def,
+      _version: `V${verNum}`,
+      _verNum: ver
+    }
+  }
+})
 
-// 网页控制节点
-import browserOpen from './browserOpen'
-import browserUrlVisit from './browserUrlVisit'
-import browserKeyboardInput from './browserKeyboardInput'
-import browserMouseAction from './browserMouseAction'
-import browserPageScroll from './browserPageScroll'
-import browserContentGetter from './browserContentGetter'
-import browserElementState from './browserElementState'
-import browserElementEdit from './browserElementEdit'
-import browserInjectScript from './browserInjectScript'
-import browserFileSelect from './browserFileSelect'
-import browserScreenshot from './browserScreenshot'
-import browserMonitor from './browserMonitor'
-import browserOnNewPage from './browserOnNewPage'
-import browserDownloadListener from './browserDownloadListener'
-import browserDomListener from './browserDomListener'
-import browserNetworkListener from './browserNetworkListener'
-import browserWebsocketListener from './browserWebsocketListener'
-import browserSavePdf from './browserSavePdf'
+/** 便捷方法：从 type 名数组解析为节点定义数组 */
+const resolveNodes = (...types) => types.map((t) => nodeDefMap[t]).filter(Boolean)
 
-// 本地数据节点
-import dataSave from './dataSave'
-import dataRead from './dataRead'
-import dataDelete from './dataDelete'
-import dataUpdate from './dataUpdate'
-import dataTemp from './dataTemp'
-import dataTempClear from './dataTempClear'
-
-// 网络操作节点
-import networkHttpRequest from './networkHttpRequest'
-import networkHttpServer from './networkHttpServer'
-import networkWebsocketConnect from './networkWebsocketConnect'
-import networkWebsocketSend from './networkWebsocketSend'
-
-// 文件操作节点
-import fileDirCreate from './fileDirCreate'
-import fileOpenDir from './fileOpenDir'
-import fileDirectoryTraverse from './fileDirectoryTraverse'
-import fileReader from './fileReader'
-import fileSave from './fileSave'
-import fileWriter from './fileWriter'
-import fileMove from './fileMove'
-import fileCopy from './fileCopy'
-import fileDelete from './fileDelete'
-import fileStatus from './fileStatus'
-
-// 数据处理节点
-import dataCreate from './dataCreate'
-import dataHandlerString from './dataHandlerString'
-import dataHandlerNumber from './dataHandlerNumber'
-import dataHandlerObject from './dataHandlerObject'
-import dataHandlerArray from './dataHandlerArray'
-import dataParser from './dataParser'
-import dataExtract from './dataExtract'
-import dataFilter from './dataFilter'
-import dataClipboard from './dataClipboard'
-
-// Excel 节点
-import workbookCreate from './workbookCreate'
-import workbookSave from './workbookSave'
-import workbookCellMerge from './workbookCellMerge'
-import workbookCellMergeUn from './workbookCellMergeUn'
-import workbookCellRead from './workbookCellRead'
-import workbookCellWrite from './workbookCellWrite'
-import workbookRowInsert from './workbookRowInsert'
-import workbookRowDelete from './workbookRowDelete'
-import workbookColumnInsert from './workbookColumnInsert'
-import workbookColumnDelete from './workbookColumnDelete'
-
-// 文件预览节点
-import previewImage from './previewImage'
-import previewVideo from './previewVideo'
-import previewAudio from './previewAudio'
-
-// 特殊节点
-import workflowStart from './workflowStart'
-import workFlow from './workFlow'
-import workflowCallPlugin from './workflowCallPlugin'
-
-// 节点分类
+// ═══════════════════════════════════════════════════
+// 2. 节点分类（保持原有顺序和分组）
+// ═══════════════════════════════════════════════════
 export const categories = {
   workflow: {
     name: '流程控制',
-    nodes: [workflowIf, workflowLoop, workflowEnd, workflowRestart, workflowThrowException, workflowNotice, workflowCustomNode, workflowSubWorkflow, workflowCallPlugin]
+    nodes: resolveNodes(
+      'workflowIf', 'workflowLoop', 'workflowEnd', 'workflowRestart',
+      'workflowThrowException', 'workflowNotice', 'workflowCustomNode',
+      'workflowSubWorkflow', 'workflowCallPlugin'
+    )
   },
   time: {
     name: '时间计数',
-    nodes: [timeGetter, timeHandle, timeSchedule, timeDelay, timeBaseTimer, timeBaseTimerHandle, timeCounter, timeCounterHandle]
+    nodes: resolveNodes(
+      'timeGetter', 'timeHandle', 'timeSchedule', 'timeDelay',
+      'timeBaseTimer', 'timeBaseTimerHandle', 'timeCounter', 'timeCounterHandle'
+    )
   },
   browser: {
     name: '网页控制',
-    nodes: [
-      browserOpen,
-      browserUrlVisit,
-      browserKeyboardInput,
-      browserMouseAction,
-      browserPageScroll,
-      browserContentGetter,
-      browserElementState,
-      browserElementEdit,
-      browserInjectScript,
-      browserFileSelect,
-      browserScreenshot,
-      browserMonitor,
-      browserOnNewPage,
-      browserDownloadListener,
-      browserDomListener,
-      browserNetworkListener,
-      browserWebsocketListener,
-      browserSavePdf
-    ]
+    nodes: resolveNodes(
+      'browserOpen', 'browserUrlVisit', 'browserKeyboardInput', 'browserMouseAction',
+      'browserPageScroll', 'browserContentGetter', 'browserElementState', 'browserElementEdit',
+      'browserInjectScript', 'browserFileSelect', 'browserScreenshot', 'browserMonitor',
+      'browserOnNewPage', 'browserDownloadListener', 'browserDomListener',
+      'browserNetworkListener', 'browserWebsocketListener', 'browserSavePdf'
+    )
   },
   data: {
     name: '本地数据',
-    nodes: [dataSave, dataRead, dataDelete, dataUpdate, dataTemp, dataTempClear]
+    nodes: resolveNodes('dataSave', 'dataRead', 'dataDelete', 'dataUpdate', 'dataTemp', 'dataTempClear')
   },
   network: {
     name: '网络操作',
-    nodes: [networkHttpRequest, networkHttpServer, networkWebsocketConnect, networkWebsocketSend]
+    nodes: resolveNodes('networkHttpRequest', 'networkHttpServer', 'networkWebsocketConnect', 'networkWebsocketSend')
   },
   file: {
     name: '文件操作',
-    nodes: [fileDirCreate, fileOpenDir, fileDirectoryTraverse, fileReader, fileSave, fileWriter, fileMove, fileCopy, fileDelete, fileStatus]
+    nodes: resolveNodes(
+      'fileDirCreate', 'fileOpenDir', 'fileDirectoryTraverse', 'fileReader', 'fileSave',
+      'fileWriter', 'fileMove', 'fileCopy', 'fileDelete', 'fileStatus'
+    )
   },
   dataProcess: {
     name: '数据处理',
-    nodes: [dataCreate, dataHandlerString, dataHandlerNumber, dataHandlerObject, dataHandlerArray, dataParser, dataExtract, dataFilter, dataClipboard]
+    nodes: resolveNodes(
+      'dataCreate', 'dataHandlerString', 'dataHandlerNumber', 'dataHandlerObject',
+      'dataHandlerArray', 'dataParser', 'dataExtract', 'dataFilter', 'dataClipboard'
+    )
   },
   workbook: {
     name: 'Excel',
-    nodes: [workbookCreate, workbookSave, workbookCellMerge, workbookCellMergeUn, workbookCellRead, workbookCellWrite, workbookRowInsert, workbookRowDelete, workbookColumnInsert, workbookColumnDelete]
+    nodes: resolveNodes(
+      'workbookCreate', 'workbookSave', 'workbookCellMerge', 'workbookCellMergeUn',
+      'workbookCellRead', 'workbookCellWrite', 'workbookRowInsert', 'workbookRowDelete',
+      'workbookColumnInsert', 'workbookColumnDelete'
+    )
   },
   preview: {
     name: '文件预览',
-    nodes: [previewImage, previewVideo, previewAudio]
+    nodes: resolveNodes('previewImage', 'previewVideo', 'previewAudio')
   }
 }
 
-// 获取所有节点
+// ═══════════════════════════════════════════════════
+// 3. 扁平化节点映射
+// ═══════════════════════════════════════════════════
 const getNodes = () => {
   const nodes = {}
   Object.values(categories).forEach((category) => {
@@ -170,12 +115,12 @@ const getNodes = () => {
       nodes[node.type] = node
     })
   })
-  nodes['workflowStart'] = workflowStart
-  nodes['workFlow'] = workFlow
+  // workflowStart 和 workFlow 确保始终存在
+  nodes['workflowStart'] = nodeDefMap['workflowStart']
+  nodes['workFlow'] = nodeDefMap['workFlow']
   return nodes
 }
 
-// 导出所有节点
 export default getNodes()
 
 const availableNodesForAIBot = getNodes()

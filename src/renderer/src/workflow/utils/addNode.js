@@ -71,7 +71,8 @@ export const addNode = async (nodeData, position, vueFlowRef) => {
       outputs: nodeData.outputs,
       config: nodeData.config || {}, // 初始化空配置
       status: 'pending', // 初始状态
-      view: nodeData.view
+      view: nodeData.view,
+      version: nodeData.version || 'V1'
     },
     focusable: true
   }

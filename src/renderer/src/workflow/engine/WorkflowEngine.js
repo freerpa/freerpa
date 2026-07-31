@@ -186,6 +186,7 @@ export class WorkflowEngine {
         id: node.id,
         name: node.data.name,
         type: node.data.type,
+        version: node.data.version || 'V1',
         deactivate: node.data.deactivate,
         parentNode: node.parentNode,
         subFlow: !!nodes[node.data.type]?.subFlow,

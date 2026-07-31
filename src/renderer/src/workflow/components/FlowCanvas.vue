@@ -738,6 +738,15 @@ onMounted(async () => {
     // 删除节点style 保持自动调整大小
     if (result.elements && result.elements.nodes.length > 0) {
       vueFlowRef.value.fromObject(result.elements)
+      // 兼容旧工作流：确保所有节点都有 version 字段，缺失时默认 V1
+      nextTick(() => {
+        const nodes = vueFlowRef.value.getNodes
+        nodes.forEach((node) => {
+          if (!node.data.version) {
+            node.data.version = 'V1'
+          }
+        })
+      })
     } else {
       addStartNode()
     }
@@ -835,7 +844,8 @@ const addNode = async (nodeData, position) => {
       outputs: nodeData.outputs,
       config: nodeData.config || {}, // 初始化空配置
       status: 'pending', // 初始状态
-      view: nodeData.view
+      view: nodeData.view,
+      version: nodeData.version || 'V1'
     },
     focusable: true
   }
