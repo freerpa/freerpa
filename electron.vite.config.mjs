@@ -1,6 +1,6 @@
 import { resolve } from 'path'
-import { defineConfig, externalizeDepsPlugin, bytecodePlugin } from 'electron-vite'
-import { terser } from 'rollup-plugin-terser'
+import { defineConfig } from 'electron-vite'
+import terser from '@rollup/plugin-terser'
 import vue from '@vitejs/plugin-vue'
 import { createHash } from 'crypto'
 import fs from 'fs'
@@ -43,22 +43,9 @@ const _terser =
       })
     : {}
 
-const chunkAlias = ['index', ...Object.keys(nodeNamesMap), 'common']
-
 export default defineConfig({
   main: {
-    plugins: [
-      externalizeDepsPlugin(),
-      bytecodePlugin({
-        chunkAlias,
-        protectedStrings: [
-          '2bmd.vCK!ddOf0ke2ey6kjC@5Q^a++R_',
-          'kgJsGk#4_^n%CRn~nD4oKDVgqwKG5T7+',
-          'PEtbFYrwJnJz5s4B'
-        ]
-      }),
-      _terser
-    ],
+    plugins: [_terser],
     build: {
       rollupOptions: {
         output: {
@@ -105,7 +92,7 @@ export default defineConfig({
     }
   },
   preload: {
-    plugins: [externalizeDepsPlugin(), bytecodePlugin({ chunkAlias: ['index'] })],
+    plugins: [],
     build: {
       rollupOptions: {
         input: {
