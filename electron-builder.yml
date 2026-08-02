@@ -16,6 +16,11 @@ files:
 asar: true
 asarUnpack:
   - resources/**
+extraResources:
+  - from: resources/deno
+    to: deno
+  - from: resources/worker
+    to: worker
 win:
   executableName: FreeRPA
 nsis:

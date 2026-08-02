@@ -1,4 +1,4 @@
-import NodeExecutor from '../executor/NodeExecutor'
+import NodeExecutor from './NodeExecutor.js'
 
 class ExecutorManager {
   constructor(engine) {

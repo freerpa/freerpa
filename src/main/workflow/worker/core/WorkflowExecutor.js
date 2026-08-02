@@ -1,6 +1,6 @@
-import { EventEmitter } from 'events'
-import ExecutorManager from '../manager/ExecutorManager'
-import { isParamRefer, getRefer, paramReferRegex } from '@renderer/workflow/utils/paramRefer'
+import { EventEmitter } from 'node:events'
+import ExecutorManager from './ExecutorManager.js'
+import { isParamRefer, getRefer, paramReferRegex } from './paramRefer.js'
 
 class WorkflowExecutor extends EventEmitter {
   constructor(options) {
@@ -23,6 +23,7 @@ class WorkflowExecutor extends EventEmitter {
     }
     this.debug = options.debug || false
     this.isSubFlow = options.isSubFlow || false
+    this.ioRoots = options.ioRoots || []
     this.subFlows = new Map()
     this.allNodes = options.allNodes
     this.allEdges = options.allEdges
@@ -312,6 +313,7 @@ class WorkflowExecutor extends EventEmitter {
         global: this.global,
         debug: this.debug,
         isSubFlow: true,
+        ioRoots: this.ioRoots,
         nodes: childNodes,
         edges: childEdges,
         allNodes: this.allNodes,

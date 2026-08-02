@@ -48,11 +48,15 @@ export const bootstrap = async () => {
   global.mainWindow = win
   global.mainView = view
 
-  // 退出时清理所有浏览器
+  // 退出时清理所有浏览器与引擎宿主
   app.on('before-quit', async () => {
     try {
       const { closeAllBrowsers } = await import('../browser/manager')
       await closeAllBrowsers()
+    } catch (_) {}
+    try {
+      const { default: EngineHost } = await import('../workflow/host/index')
+      await EngineHost.shutdown()
     } catch (_) {}
   })
 

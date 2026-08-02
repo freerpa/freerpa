@@ -1,4 +1,4 @@
-import WorkflowExecutor from '../executor/WorkflowExecutor'
+import WorkflowExecutor from './WorkflowExecutor.js'
 
 class WorkflowManager {
   constructor() {

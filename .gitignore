@@ -7,3 +7,6 @@ out
 runtime
 storage
 .reasonix
+resources/deno
+resources/worker
+deno.lock

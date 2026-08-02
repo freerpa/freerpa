@@ -2,22 +2,8 @@ import { resolve } from 'path'
 import { defineConfig } from 'electron-vite'
 import terser from '@rollup/plugin-terser'
 import vue from '@vitejs/plugin-vue'
-import { createHash } from 'crypto'
-import fs from 'fs'
 import path from 'path'
 
-const nodes = fs.readdirSync(path.join(__dirname, './src/renderer/src/workflow/nodes'))
-const nodeNames = nodes.filter((node) =>
-  fs.statSync(path.join(__dirname, './src/renderer/src/workflow/nodes', node)).isDirectory()
-)
-const nodeNamesMap = nodeNames.reduce((acc, name) => {
-  acc[name + '_execute'] = createHash('sha256')
-    .update(name)
-    .digest('hex')
-    .slice(0, 16)
-    .toUpperCase()
-  return acc
-}, {})
 const _terser =
   process.env.NODE_ENV === 'production'
     ? terser({
@@ -59,9 +45,6 @@ export default defineConfig({
             if (chunkInfo.name === 'common') {
               return 'BsXLohN0BsXLohN0.js'
             }
-            if (chunkInfo.name.includes('_execute')) {
-              return nodeNamesMap[chunkInfo.name] + '.js'
-            }
             return '[hash][hash].js'
           },
           manualChunks(id) {
@@ -73,10 +56,6 @@ export default defineConfig({
             }
             if (id.includes('main/pageEval')) {
               return 'pageEval'
-            }
-            if (id.includes('execute')) {
-              const ids = id.split('/')
-              return ids[ids.length - 2] + '_execute'
             }
           }
         }

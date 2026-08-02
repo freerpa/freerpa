@@ -1,0 +1,27 @@
+{
+  "imports": {
+    "@/common": "./worker-common.js",
+    "@pageEval": "./worker-common.js",
+    "@dataModule": "./data-bridge.js",
+    "electron": "./electron-bridge.js",
+    "@renderer/workflow/dataHandlers/": "../../../renderer/src/workflow/dataHandlers/",
+    "path": "node:path",
+    "fs": "node:fs",
+    "url": "node:url",
+    "events": "node:events",
+    "readline": "node:readline",
+    "querystring": "node:querystring",
+    "crypto": "node:crypto",
+    "os": "node:os",
+    "stream": "node:stream",
+    "util": "node:util",
+    "assert": "node:assert",
+    "http": "node:http",
+    "https": "node:https",
+    "net": "node:net",
+    "tls": "node:tls",
+    "child_process": "node:child_process",
+    "buffer": "node:buffer",
+    "zlib": "node:zlib"
+  }
+}

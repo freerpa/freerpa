@@ -1,5 +1,5 @@
 import { ipcMain, screen, dialog, shell, app, Notification } from 'electron'
-import { sendToRenderer } from './workflow/core/utils/rendererUtils'
+import { sendToRenderer } from './workflow/host/rendererUtils'
 import { manager as workflowManager } from './workflow/index'
 import { get } from './store/index'
 import fs from 'fs'

@@ -12,7 +12,7 @@
         </a-menu-item>
         <a-menu-item key="security">
           <template #icon><icon-safe /></template>
-          安全目录
+          权限管理
         </a-menu-item>
         <a-menu-item key="data">
           <template #icon><RiDatabase2Line /></template>
@@ -27,7 +27,7 @@
     <div class="content">
       <CacheManager v-if="activeTab === 'cache'" />
       <PluginManager v-if="activeTab === 'plugin'" />
-      <SecurityDir v-if="activeTab === 'security'" />
+      <PermissionManager v-if="activeTab === 'security'" />
       <DataManager v-if="activeTab === 'data'" />
       <ShortcutManager v-if="activeTab === 'shortcut'" />
     </div>
@@ -40,7 +40,7 @@ import { IconStorage, IconApps, IconSafe, IconDriveFile, IconCommand } from '@ar
 import { RiDatabase2Line } from '@remixicon/vue'
 import CacheManager from './components/CacheManager.vue'
 import PluginManager from './components/PluginManager.vue'
-import SecurityDir from './components/SecurityDir.vue'
+import PermissionManager from './components/PermissionManager.vue'
 import DataManager from './components/DataManager.vue'
 import ShortcutManager from './components/ShortcutManager.vue'
 

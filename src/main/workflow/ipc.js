@@ -2,7 +2,6 @@ import { ipcMain } from 'electron'
 import { manager } from './index'
 import { AES } from 'crypto-js'
 import CryptoJS from 'crypto-js'
-import { sendToRenderer } from './core/utils/rendererUtils'
 
 var secretKey = CryptoJS.enc.Utf8.parse('Q6bYTizo4OPRiuHUE3XsA5)Zm^WUv+t%')
 var iv = CryptoJS.enc.Utf8.parse('YAjXAT9W8nQFWKC0')
@@ -27,7 +26,7 @@ const verifyData = (data) => {
   return decrypted.toString(CryptoJS.enc.Utf8)
 }
 
-// 注册工作流相关的 IPC 处理
+// 注册工作流相关的 IPC 处理（通道与渲染端保持兼容，内部走 deno 引擎宿主）
 export const register = () => {
   // 创建工作流
   ipcMain.handle('flowEventBus:createEngine', async (event, data) => {
@@ -42,15 +41,7 @@ export const register = () => {
   // 执行工作流
   ipcMain.handle('flowEventBus:startFlow', async (event, flowId) => {
     try {
-      const engine = await manager.getEngine(flowId)
-      engine.on('stateChange', (state, error) => {
-        sendToRenderer(`flowEventBus:stateChange:${flowId}`, { state, error })
-        if (state === 'completed' || state === 'stopped' || state === 'error') {
-          engine.removeAllListeners()
-          manager.removeEngine(flowId)
-        }
-      })
-      const result = await engine.execute()
+      const result = await manager.startFlow(flowId)
       return { success: true, ...result }
     } catch (error) {
       return { success: false, message: error.message }
@@ -60,11 +51,7 @@ export const register = () => {
   // 停止工作流
   ipcMain.handle('flowEventBus:stopFlow', async (event, flowId) => {
     try {
-      const engine = manager.getEngine(flowId)
-      if (engine) {
-        engine.stop()
-        manager.removeEngine(flowId)
-      }
+      await manager.stopFlow(flowId)
       return { success: true }
     } catch (error) {
       return { success: false, message: error.message }
@@ -73,7 +60,7 @@ export const register = () => {
 
   // 清理工作流
   ipcMain.handle('flowEventBus:cleanup', async (event) => {
-    manager.cleanup() 
+    manager.cleanup()
     return { success: true }
   })
 

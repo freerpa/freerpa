@@ -10,10 +10,13 @@
     "start": "electron-vite preview",
     "dev": "electron-vite dev --inspect=9229",
     "build": "electron-vite build",
+    "fetch:deno": "node scripts/fetch-deno.mjs",
+    "build:worker": "node scripts/build-worker.mjs",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "npm run build && electron-builder --mac",
+    "build:worker:mac": "npm run fetch:deno && npm run build:worker && npm run build:mac",
     "build:linux": "npm run build && electron-builder --linux"
   },
   "dependencies": {
@@ -59,7 +62,6 @@
     "sqlite": "^5.1.1",
     "sqlite3": "^6.0.1",
     "uuid": "^14.0.0",
-    "vm2": "^3.11.5",
     "vue-codemirror": "^6.1.1",
     "vue-cropper": "^1.1.4",
     "vue-draggable-plus": "^0.6.1",

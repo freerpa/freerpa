@@ -25,13 +25,13 @@
         选择无效：必须在
         <a-tooltip>
           <template #content>
-            为了您的计算机安全，工作流只能选择安全目录下的文件或目录，安全目录默认为当前用户文档目录，可自行去
-            <b>个人中心 - 安全设置</b> 中修改
+            为了您的计算机安全，工作流只能选择文件目录下的文件或目录，可自行去
+            <b>设置 - 权限管理</b> 中修改
             <br />
-            安全目录：{{ allowedRoot }}
+            文件目录：{{ allowedRoot || '未配置（请到设置 - 权限管理添加目录）' }}
           </template>
           <span style="cursor: pointer; font-weight: bold" @click="openAllowedRoot">
-            安全目录
+            文件目录
           </span>
         </a-tooltip>
         下
@@ -61,15 +61,21 @@ const pathError = ref(false)
 
 const allowedRoot = ref('')
 
+// 文件主目录 = 权限管理 io.roots[0]（迁移自旧安全目录 allowedRoot）
+const fetchRoot = async () => {
+  const perms = await window.electronAPI.store.get('permissions')
+  allowedRoot.value = perms?.io?.roots?.[0] || ''
+}
+
 const openAllowedRoot = async () => {
-  allowedRoot.value = await window.electronAPI.store.get('allowedRoot')
-  window.electronAPI.shell.openPath(allowedRoot.value)
+  await fetchRoot()
+  if (allowedRoot.value) window.electronAPI.shell.openPath(allowedRoot.value)
 }
 
 // 处理选择路径
 const handleSelect = async () => {
-  // 获取安全目录
-  allowedRoot.value = await window.electronAPI.store.get('allowedRoot')
+  // 获取文件主目录
+  await fetchRoot()
   try {
     // 根据field.pathType判断是选择文件还是文件夹
     const properties = props.field.pathType === 'file' ? ['openFile'] : ['openDirectory']
