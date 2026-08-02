@@ -26,6 +26,7 @@ const isDev = process.argv.includes('--dev')
 function copyDir(from, to) {
   fs.mkdirSync(to, { recursive: true })
   for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+    if (entry.name === 'node_modules') continue // 跳过误入源码目录的依赖污染
     const s = path.join(from, entry.name)
     const d = path.join(to, entry.name)
     if (entry.isDirectory()) copyDir(s, d)
@@ -165,10 +166,28 @@ const args = [
 ]
 try {
   execFileSync(denoBin, args, { cwd: OUT, stdio: 'inherit' })
+  materializeNodeModules(path.join(OUT, 'node_modules'))
   console.log(`✓ 依赖闭包已预填充 resources/worker/node_modules/（${entries.length} 个入口）`)
 } catch (e) {
   console.error('deno cache 失败（构建机需联网）：', e.message)
   process.exit(1)
+}
+
+/**
+ * 实体化 node_modules：deno 布局顶层为符号链接（pkg -> .deno/pkg@ver/...），
+ * 打包工具复制时会跳过符号链接导致依赖缺失；解引用为真实目录（含内部链接）
+ */
+function materializeNodeModules(dir) {
+  if (!fs.existsSync(dir)) return
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isSymbolicLink()) continue
+    const link = path.join(dir, entry.name)
+    const target = path.resolve(dir, fs.readlinkSync(link))
+    if (!fs.existsSync(target)) continue
+    fs.rmSync(link, { force: true })
+    fs.cpSync(target, link, { recursive: true, dereference: true })
+  }
+  console.log('✓ node_modules 顶层符号链接已实体化')
 }
 
 /** 查找 deno：resources/deno → PATH → 项目 node_modules/.bin */

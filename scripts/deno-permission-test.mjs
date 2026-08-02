@@ -54,7 +54,7 @@ function createHost() {
     '--import-map', path.join(workerRoot, 'import-map.json'),
     '--node-modules-dir',
     path.join(workerRoot, 'host.js')
-  ], { stdio: ['pipe', 'pipe', 'pipe'], cwd: workerRoot })
+  ], { stdio: ['pipe', 'pipe', 'pipe'], cwd: root })
   host.stderr.on('data', () => {})
   let buf = ''
   const pending = new Map()

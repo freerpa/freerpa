@@ -21,7 +21,7 @@ const args = [
   path.join(workerRoot, 'host.js')
 ]
 
-const host = spawn(denoBin, args, { stdio: ['pipe', 'pipe', 'pipe'], cwd: workerRoot })
+const host = spawn(denoBin, args, { stdio: ['pipe', 'pipe', 'pipe'], cwd: root })
 host.stderr.on('data', (c) => console.error('[deno]', c.toString().trim()))
 host.on('exit', (code) => { console.log('宿主退出:', code); process.exit(code || 0) })
 

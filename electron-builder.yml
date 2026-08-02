@@ -5,6 +5,7 @@ directories:
 files:
   - '!**/.vscode/*'
   - '!src/*'
+  - '!resources/**'
   - '!electron.*{js,ts,mjs,cjs}'
   - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md,eslint.config.mjs}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
@@ -14,13 +15,18 @@ files:
   - '!cache/*'
   - '!*.zip'
 asar: true
-asarUnpack:
-  - resources/**
+# deno 二进制与 worker 资源经 extraResources 分发（asar 外），不打包进 asar
 extraResources:
   - from: resources/deno
     to: deno
   - from: resources/worker
     to: worker
+    filter:
+      - '**/*'
+      - '!node_modules/**'
+  # 依赖闭包单独复制（deno 布局已实体化，打包必须包含，否则运行时无法解析节点依赖）
+  - from: resources/worker/node_modules
+    to: worker/node_modules
 win:
   executableName: FreeRPA
 nsis:

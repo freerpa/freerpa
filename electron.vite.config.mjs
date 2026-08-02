@@ -9,7 +9,8 @@ const _terser =
     ? terser({
         compress: {
           arrows: true,
-          drop_console: true, // 移除console
+          // 仅移除 console.log，保留 console.error/warn 便于生产排查
+          pure_funcs: ['console.log'],
           drop_debugger: true, // 移除debugger
           dead_code: true,
           unused: true,
