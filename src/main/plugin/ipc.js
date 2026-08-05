@@ -35,8 +35,9 @@ const scanPluginDir = async (dirPath) => {
 
   try {
     // 使用动态 import() ES6 方式加载插件描述模块
+    // 兼容多种导出方式：ESM default 导出 / CommonJS module.exports / 命名导出
     const pluginModule = await import(pathToFileURL(indexPath).href)
-    const pluginDef = pluginModule.default
+    const pluginDef = pluginModule.default || pluginModule
 
     const executePath = path.join(dirPath, 'execute.js')
     const hasExecute = fs.existsSync(executePath)

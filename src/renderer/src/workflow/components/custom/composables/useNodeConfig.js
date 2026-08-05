@@ -1,12 +1,35 @@
 import { computed, watch, ref } from 'vue'
 import nodes from '@nodes-path'
+import { IconExclamationCircle } from '@arco-design/web-vue/es/icon'
+
+/**
+ * 占位节点定义：当工作流中的节点类型（如 plu_<插件id>）未注册时兜底，
+ * 通常是本地插件被移除/目录丢失。避免 CustomNode 模板因 nodeDefinition 缺失崩溃，
+ * 并给出「缺少本地插件」的明确提示（_placeholder 标记供视图层展示）。
+ */
+const PLACEHOLDER_DEF = {
+  name: '缺少本地插件',
+  description: '本地插件未安装或已被移除，请安装对应插件后重新加载工作流',
+  icon: IconExclamationCircle,
+  view: false,
+  subFlow: false,
+  resizable: false,
+  inputs: [],
+  outputs: [],
+  config: {},
+  _placeholder: true
+}
 
 /**
  * Composable for node configuration management
  * Extracts config fields grouping, quickConfig filtering, and config-related watchers
  */
 export function useNodeConfig(props, flowStore, isPreview) {
-  const nodeDefinition = nodes[props.data.type]
+  const nodeDefinition = nodes[props.data.type] || {
+    ...PLACEHOLDER_DEF,
+    type: props.data.type,
+    description: `本地插件「${props.data.name}」未安装或已被移除，请安装对应插件后重新加载工作流`
+  }
 
   // Inject error handling config for non-start/end nodes
   if (

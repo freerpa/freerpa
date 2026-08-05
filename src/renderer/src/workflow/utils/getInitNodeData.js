@@ -34,21 +34,23 @@ export const getNodeDefaultConfig = (fields) => {
 
 export const getInitNodeData = (type, workflowId, isStore) => {
   const node = nodes[type]
-  //循环初始化配置
+  //循环初始化配置（节点定义缺失时（如未注册的 plu_ 插件节点）降级为空配置，避免崩溃）
   let config = {}
-  Object.keys(node.config).forEach((group) => {
-    config = Object.assign(config, getNodeDefaultConfig(node.config[group].fields))
-  })
+  if (node?.config) {
+    Object.keys(node.config).forEach((group) => {
+      config = Object.assign(config, getNodeDefaultConfig(node.config[group].fields))
+    })
+  }
 
   const nodeData = {
-    subFlow: node.subFlow,
-    type: node.type,
-    name: node.name,
-    view: node.view,
-    inputs: node.inputs,
-    outputs: node.outputs,
+    subFlow: node?.subFlow,
+    type: type,
+    name: node?.name || type,
+    view: node?.view,
+    inputs: node?.inputs || [],
+    outputs: node?.outputs || [],
     config: config,
-    version: node._version || 'V1'
+    version: node?._version || 'V1'
   }
   if (workflowId) {
     nodeData.workflow = {

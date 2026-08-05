@@ -1,38 +1,23 @@
 import { resolve } from 'path'
 import { defineConfig } from 'electron-vite'
-import terser from '@rollup/plugin-terser'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 
-const _terser =
+// 生产构建使用 vite 内置 esbuild 压缩。
+// 原因：@rollup/plugin-terser + terser 5.49.x 在 Node 22 上存在间歇性崩溃
+// （Cannot read properties of null (reading 'length')，与具体源码无关，基线同样触发）。
+// 行为对齐原 terser 配置：仅移除 console.log 与 debugger，保留 console.error/warn 便于生产排查。
+const _esbuild =
   process.env.NODE_ENV === 'production'
-    ? terser({
-        compress: {
-          arrows: true,
-          // 仅移除 console.log，保留 console.error/warn 便于生产排查
-          pure_funcs: ['console.log'],
-          drop_debugger: true, // 移除debugger
-          dead_code: true,
-          unused: true,
-          keep_fargs: false,
-          keep_fnames: false,
-          keep_classnames: false,
-          keep_infinity: false,
-          passes: 3
-        },
-        mangle: {
-          toplevel: true,
-          eval: true
-        },
-        format: {
-          comments: false
-        }
-      })
-    : {}
+    ? {
+        pure: ['console.log'],
+        drop: ['debugger']
+      }
+    : undefined
 
 export default defineConfig({
   main: {
-    plugins: [_terser],
+    esbuild: _esbuild,
     build: {
       rollupOptions: {
         output: {
@@ -98,8 +83,7 @@ export default defineConfig({
         output: {
           chunkFileNames: '[hash][hash].js',
           assetFileNames: '[hash][hash].[ext]'
-        },
-        plugins: [_terser]
+        }
       }
     },
     resolve: {

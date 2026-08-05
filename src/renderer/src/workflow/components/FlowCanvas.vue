@@ -941,7 +941,7 @@ const addSubFlowNode = async (node, workFlow) => {
       targetHandle: 'subFlow',
       selectable: false,
       deletable: false,
-      label: nodes[node.data.type].subFlow.name
+      label: nodes[node.data.type]?.subFlow?.name || ''
     })
   ])
 

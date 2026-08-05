@@ -5,7 +5,8 @@
       selected: selected,
       'status-running': nodeStatus === 'running' || nodeStatus === 'retrying',
       'status-success': nodeStatus === 'success',
-      'status-error': nodeStatus === 'error'
+      'status-error': nodeStatus === 'error',
+      'node-missing': nodeDefinition._placeholder
     }"
   >
     <!-- Toolbar -->
@@ -64,6 +65,16 @@
 
     <!-- Node content body -->
     <div class="node-content">
+      <!-- 占位节点：缺少本地插件提示（内容栏） -->
+      <div v-if="nodeDefinition._placeholder" class="node-missing-tip">
+        <icon-exclamation-circle class="missing-icon" />
+        <div class="missing-text">
+          <div class="missing-title">缺少本地插件：{{ missingPluginName }}</div>
+          <div v-if="missingPluginVersion" class="missing-meta">版本：{{ missingPluginVersion }}</div>
+          <div class="missing-desc">插件标识：{{ missingPluginId }}，请安装对应插件后重新加载工作流</div>
+        </div>
+      </div>
+
       <!-- I/O section -->
       <NodeIOSection
         v-if="nodeInputs.length || nodeOutputs.length"
@@ -131,7 +142,7 @@ import {
   provide,
   onUnmounted
 } from 'vue'
-import { IconCheckCircle } from '@arco-design/web-vue/es/icon'
+import { IconCheckCircle, IconExclamationCircle } from '@arco-design/web-vue/es/icon'
 import { NodeResizer } from '@vue-flow/node-resizer'
 import { useFlowStore } from '../../store'
 import { storeToRefs } from 'pinia'
@@ -234,6 +245,17 @@ const handleResize = (event) => {
   }
 }
 
+// ── 占位节点：缺失插件信息（取自创建时保存的 config 隐藏字段） ──
+const missingPluginName = computed(() => {
+  const c = props.data.config || {}
+  return c._pluginName || props.data.name || props.data.type
+})
+const missingPluginVersion = computed(() => (props.data.config || {})._pluginVersion || '')
+const missingPluginId = computed(() => {
+  const type = props.data.type || ''
+  return type.startsWith('plu_') ? type.slice(4) : type
+})
+
 // ── Cleanup ─────────────────────────────────────
 onUnmounted(() => {
   flowStore.nodeRefs.delete(props.id)
@@ -295,6 +317,12 @@ onUnmounted(() => {
     }
   }
 
+  // 占位节点（缺少本地插件）：红边框提示
+  &.node-missing {
+    border-color: rgb(var(--danger-6)) !important;
+    box-shadow: 0 0 0 1px rgb(var(--danger-6)) !important;
+  }
+
   .deactivate {
     position: absolute;
     width: calc(100% - 2px);
@@ -348,6 +376,45 @@ onUnmounted(() => {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
           }
+        }
+      }
+    }
+
+    // 占位节点（缺少本地插件）内容栏提示
+    .node-missing-tip {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin: 8px;
+      padding: 10px 12px;
+      background: rgb(var(--danger-1));
+      border: 1px solid rgb(var(--danger-3));
+      border-radius: var(--border-radius-small);
+      font-size: 12px;
+
+      .missing-icon {
+        color: rgb(var(--danger-6));
+        font-size: 16px;
+        margin-top: 1px;
+        flex-shrink: 0;
+      }
+
+      .missing-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        .missing-title {
+          font-weight: 600;
+          color: var(--color-text-1);
+        }
+
+        .missing-meta {
+          color: var(--color-text-2);
+        }
+
+        .missing-desc {
+          color: var(--color-text-3);
         }
       }
     }

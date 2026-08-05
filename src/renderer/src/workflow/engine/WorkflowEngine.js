@@ -210,6 +210,16 @@ export class WorkflowEngine {
   // 创建工作流
   async create() {
     const flowData = this.getFlowData()
+    // 缺少节点定义检测（本地插件被移除等）：阻止运行并定位第一个缺失节点
+    const missingNodes = flowData.nodes.filter((n) => !nodes[n.type])
+    if (missingNodes.length > 0) {
+      locateNode(this.store.vueFlowRef, [missingNodes[0].id])
+      throw new Error(
+        `工作流包含 ${missingNodes.length} 个缺少本地插件的节点：${missingNodes
+          .map((n) => `【${n.name}】`)
+          .join('、')}，请安装对应插件后重新加载工作流`
+      )
+    }
     const { unConnectedNodes, needConnects } = storeToRefs(this.store)
     unConnectedNodes.value = this.getUnconnectedNodes(flowData)
     // 如果有未连接的节点，抛出错误

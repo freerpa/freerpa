@@ -5,6 +5,7 @@
         <a-radio-group type="button" size="small" v-model="activeTab" @change="handleTabChange">
           <a-radio value="system">节点</a-radio>
           <a-radio value="workflow">工作流</a-radio>
+          <a-radio value="plugin">本地插件</a-radio>
         </a-radio-group>
       </a-space>
 
@@ -19,6 +20,12 @@
           <template #prepend>
             <CategorySelect @change="handleSelectWorkflowCategory" />
           </template>
+          <template #prefix> <icon-search /> </template>
+        </a-input>
+      </div>
+
+      <div v-if="activeTab == 'plugin'" class="search-bar">
+        <a-input placeholder="请输入关键字" v-model="pluginKeyword" allow-clear size="small">
           <template #prefix> <icon-search /> </template>
         </a-input>
       </div>
@@ -101,6 +108,38 @@
         </a-tab-pane>
       </a-tabs>
     </div>
+    <div v-if="activeTab === 'plugin'">
+      <div v-if="filteredPlugins.length === 0" class="node-list">
+        <a-empty style="margin-top: 100px" description="暂无数据" />
+      </div>
+      <div v-else class="node-list">
+        <a-scrollbar style="width: 100%; height: 400px; overflow: auto">
+          <div class="node-group">
+            <div class="group-content">
+              <div
+                v-for="plg in filteredPlugins"
+                :key="plg.id"
+                class="node-item"
+                :class="{
+                  disabled: disabled || !pluginNodeValid(plg),
+                  click: trigger === 'click',
+                  drag: trigger === 'drag'
+                }"
+                :draggable="!disabled && trigger === 'drag'"
+                @dragstart="(event) => handlePluginDragStart(event, plg)"
+                @dragend="dragStartNode = false"
+                @click="trigger === 'click' ? handlePluginClick(plg) : null"
+              >
+                <a-tooltip :content="plg.description || plg.name">
+                  <icon-apps class="node-icon" size="16" />
+                </a-tooltip>
+                <span class="node-name">{{ plg.name }}</span>
+              </div>
+            </div>
+          </div>
+        </a-scrollbar>
+      </div>
+    </div>
     <div class="node-list" v-if="activeTab === 'workflow'">
       <a-empty style="margin-top: 100px" v-if="workflows.length === 0" description="暂无数据" />
       <a-list
@@ -157,8 +196,8 @@
 </template>
 
 <script setup>
-import { IconBranch, IconSearch } from '@arco-design/web-vue/lib/icon'
-import allNodes, { categories } from '@nodes-path'
+import { IconBranch, IconSearch, IconApps } from '@arco-design/web-vue/lib/icon'
+import allNodes, { categories, loadPluginNodes } from '@nodes-path'
 import { debounce } from 'lodash-es'
 import { defineEmits, inject, ref, onMounted, watch, provide, computed } from 'vue'
 import { useFlowStore } from '../store'
@@ -212,6 +251,56 @@ const systemKeyword = ref('')
 const workflowKeyword = ref('')
 const searchKeyword = ref('')
 
+// ═══════════════ 本地插件选项卡 ═══════════════
+const pluginKeyword = ref('')
+const plugins = ref([])
+
+const filteredPlugins = computed(() => {
+  const kw = pluginKeyword.value.trim()
+  if (!kw) return plugins.value
+  return plugins.value.filter(
+    (p) => (p.name || '').includes(kw) || (p.description || '').includes(kw)
+  )
+})
+
+const fetchPlugins = async () => {
+  try {
+    // 同步插件节点注册（清理已移除插件 + 注册最新插件），保证拖入时能按 plu_<id> 找到定义
+    await loadPluginNodes()
+    plugins.value = (await window.electronAPI.plugin.list()) || []
+  } catch (_) {
+    plugins.value = []
+  }
+}
+
+/**
+ * 插件对应的 plu_<插件id> 节点是否有效（已注册且满足增/插位置规则）
+ */
+const pluginNodeValid = (plugin) => {
+  const node = allNodes[`plu_${plugin.id}`]
+  return !!node && isValid(node)
+}
+
+/**
+ * 生成 plu_<插件id> 节点数据：
+ * 节点定义由 loadPluginNodes() 注册，config 自动携带隐藏的 pluginId（default = 插件 id），
+ * 版本号沿用节点规则（_version: 'V1'）
+ */
+const createPluginNodeData = (plugin) => {
+  return getInitNodeData(`plu_${plugin.id}`, workflowId, false)
+}
+
+const handlePluginClick = (plugin) => {
+  if (props.disabled || !pluginNodeValid(plugin)) return
+  emit('chooseNode', createPluginNodeData(plugin))
+}
+
+const handlePluginDragStart = (event, plugin) => {
+  if (props.disabled || !pluginNodeValid(plugin)) return
+  dragStartNode.value = true
+  event.dataTransfer.setData('node', createPluginNodeData(plugin))
+}
+
 const searchNodes = computed(() => {
   return Object.values(allNodes).filter((node) => {
     return node.name.includes(searchKeyword.value)
@@ -236,6 +325,7 @@ watch(
 onMounted(() => {
   page = 0
   total = 0
+  fetchPlugins()
 })
 let page = 0
 let total = 0
@@ -280,6 +370,9 @@ onMounted(() => {
 const handleTabChange = (value) => {
   if (value === 'workflow' && page === 0) {
     fetchData()
+  }
+  if (value === 'plugin') {
+    fetchPlugins()
   }
 }
 </script>
