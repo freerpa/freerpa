@@ -160,6 +160,7 @@ for (const type of fs.readdirSync(nodesOut)) {
 const args = [
   'cache',
   '--node-modules-dir',
+  '--min-dep-age=0',
   '--import-map',
   path.join(OUT, 'import-map.json'),
   ...entries

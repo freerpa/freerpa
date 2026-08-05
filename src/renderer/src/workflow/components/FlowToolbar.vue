@@ -224,7 +224,7 @@ const workflowId = inject('workflowId')
 const flowStore = useFlowStore(workflowId)
 const { isExecuting, isSaved, saveIng, debug, noticeNum, notices, playAudio } =
   storeToRefs(flowStore)
-import { debounce } from 'lodash'
+import { debounce } from 'lodash-es'
 const store = useStore()
 const showStoreWorkflows = ref(null)
 // 节点数量

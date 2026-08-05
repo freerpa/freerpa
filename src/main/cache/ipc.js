@@ -5,6 +5,7 @@
 import { ipcMain, app } from 'electron'
 import fs from 'fs'
 import path from 'path'
+import { formatSize } from '../utils.js'
 
 /** 递归计算目录大小 */
 const getDirSize = (dirPath) => {
@@ -28,14 +29,6 @@ const getDirSize = (dirPath) => {
 const removeDir = (dirPath) => {
   if (!fs.existsSync(dirPath)) return
   fs.rmSync(dirPath, { recursive: true, force: true })
-}
-
-/** 格式化字节为可读字符串 */
-const formatSize = (bytes) => {
-  if (bytes === 0) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + units[Math.min(i, units.length - 1)]
 }
 
 export const register = () => {

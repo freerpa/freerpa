@@ -4,6 +4,7 @@
 
 import { v4 as uuidv4 } from 'uuid'
 import { initDatabase } from '../db.js'
+import { queryPage, softDelete, trashList, restoreRow } from '../crud.js'
 
 const ensureTable = async (db) => {
   await db.exec(`
@@ -21,22 +22,10 @@ const ensureTable = async (db) => {
   try { await db.exec(`ALTER TABLE workflows ADD COLUMN deleted_at TIMESTAMP DEFAULT NULL`) } catch (e) {}
 }
 
-export const getWorkflows = async ({ page = 1, pageSize = 24, keyword = '', category_id = '' }) => {
+export const getWorkflows = async (params) => {
   const db = await initDatabase()
   await ensureTable(db)
-
-  let whereClause = 'WHERE deleted_at IS NULL'
-  const params = []
-  if (keyword) { whereClause += ' AND (name LIKE ? OR description LIKE ?)'; params.push(`%${keyword}%`, `%${keyword}%`) }
-  if (category_id) { whereClause += ' AND category_id = ?'; params.push(category_id) }
-
-  const countResult = await db.get(`SELECT COUNT(*) as total FROM workflows ${whereClause}`, params)
-  const offset = (page - 1) * pageSize
-  const data = await db.all(
-    `SELECT * FROM workflows ${whereClause} ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
-    [...params, pageSize, offset]
-  )
-  return { total: countResult.total, data, page, pageSize }
+  return queryPage({ db, table: 'workflows', keywordCols: ['name', 'description'], ...params })
 }
 
 export const getWorkflow = async (id) => {
@@ -77,33 +66,23 @@ export const deleteWorkflow = async (id) => {
   const db = await initDatabase()
   await ensureTable(db)
   // 软删除
-  await db.run("UPDATE workflows SET deleted_at = datetime('now','localtime') WHERE id = ?", id)
+  await softDelete(db, 'workflows', id)
 }
 
 export const getTrashWorkflows = async () => {
   const db = await initDatabase()
   await ensureTable(db)
-  return db.all("SELECT * FROM workflows WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC")
+  return trashList(db, 'workflows')
 }
 
 export const restoreWorkflow = async (id) => {
   const db = await initDatabase()
   await ensureTable(db)
-  await db.run("UPDATE workflows SET deleted_at = NULL WHERE id = ?", id)
+  await restoreRow(db, 'workflows', id)
 }
 
 export const permanentDeleteWorkflow = async (id) => {
   const db = await initDatabase()
   await ensureTable(db)
   await db.run('DELETE FROM workflows WHERE id = ?', id)
-}
-
-export const importWorkflow = async ({ name, description, category_id, graph }) => {
-  return createWorkflow({ name, description, category_id, graph })
-}
-
-export const exportWorkflow = async (id) => {
-  const db = await initDatabase()
-  await ensureTable(db)
-  return db.get('SELECT * FROM workflows WHERE id = ?', id)
 }

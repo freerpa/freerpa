@@ -10,3 +10,5 @@ storage
 resources/deno
 resources/worker
 deno.lock
+engine.bin
+.env

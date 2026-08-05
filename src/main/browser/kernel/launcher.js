@@ -115,17 +115,6 @@ export const fetchKernelList = async (baseUrl) => {
 }
 
 /**
- * 获取推荐内核版本（最新版本）
- */
-export const getRecommendedKernel = async (baseUrl) => {
-  const kernels = await fetchKernelList(baseUrl)
-  if (kernels.length > 0) {
-    return kernels[0]
-  }
-  return null
-}
-
-/**
  * 通过主版本号解析完整内核版本
  */
 export const resolveKernelVersion = async (baseUrl, majorVersion, platform) => {

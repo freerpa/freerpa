@@ -2,19 +2,15 @@
  * @file: 数据管理 IPC
  * @description: 数据库信息查询 / 备份 / 恢复 / 更换存储位置
  */
-import { ipcMain, app, dialog, shell } from 'electron'
+import { ipcMain, dialog, shell } from 'electron'
 import fs from 'fs'
 import path from 'path'
+import { formatSize } from '../utils.js'
+import { getDbPath } from './db.js'
+import { set } from '../store/index.js'
 
-const DB_DIR = () => path.join(app.getPath('userData'), 'storage')
-const DB_PATH = () => path.join(DB_DIR(), 'database.sqlite')
-
-const formatSize = (bytes) => {
-  if (!bytes || bytes === 0) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + units[Math.min(i, units.length - 1)]
-}
+const DB_PATH = () => getDbPath()
+const DB_DIR = () => path.dirname(getDbPath())
 
 export const register = () => {
   ipcMain.handle('data:getDbInfo', async () => {
@@ -56,6 +52,8 @@ export const register = () => {
       fs.copyFileSync(oldPath, newPath)
       fs.unlinkSync(oldPath)
     }
+    // 持久化新路径，重启后 initDatabase 从新位置打开
+    set('dbPath', newPath)
     return { success: true, newPath }
   })
 

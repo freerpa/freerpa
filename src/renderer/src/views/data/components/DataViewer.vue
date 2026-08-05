@@ -526,8 +526,6 @@ import {
   IconMinusCircleFill
 } from '@arco-design/web-vue/es/icon'
 import { deepClone } from '@/workflow/utils'
-import { useStore } from '@/store'
-const {} = useStore()
 
 const props = defineProps({
   model: {

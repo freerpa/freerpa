@@ -8,19 +8,23 @@ import { open } from 'sqlite'
 import path from 'path'
 import { app } from 'electron'
 import fs from 'fs'
+import { get } from '../store/index.js'
 
 let db = null
 
-// 初始化数据库（固定路径，不区分用户）
+/** 数据库文件路径（可从 store 覆盖：更换存储位置后重启生效） */
+export const getDbPath = () =>
+  get('dbPath') || path.join(app.getPath('userData'), 'storage', 'database.sqlite')
+
+// 初始化数据库
 export const initDatabase = async () => {
   if (db?.db?.open) return db
 
-  const userDataPath = app.getPath('userData')
-  const dbDir = path.join(userDataPath, 'storage')
+  const dbPath = getDbPath()
+  const dbDir = path.dirname(dbPath)
   if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true })
   }
-  const dbPath = path.join(dbDir, 'database.sqlite')
 
   db = await open({
     filename: dbPath,

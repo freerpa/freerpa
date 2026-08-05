@@ -4,6 +4,7 @@
 
 import { v4 as uuidv4 } from 'uuid'
 import { initDatabase } from '../db.js'
+import { queryPage, softDelete, trashList, restoreRow } from '../crud.js'
 
 // 创建模型表
 const ensureModelsTable = async (db) => {
@@ -33,32 +34,14 @@ export const getModel = async (id) => {
 }
 
 // 获取所有模型
-export const getModels = async ({ page = 1, pageSize = 8, keyword = '', category_id = '' }) => {
+export const getModels = async (params) => {
   const db = await initDatabase()
   await ensureModelsTable(db)
 
-  let whereClause = 'WHERE deleted_at IS NULL'
-  const params = []
-  if (keyword) { whereClause += ' AND (name LIKE ? OR description LIKE ?)'; params.push(`%${keyword}%`, `%${keyword}%`) }
-  if (category_id) { whereClause += ' AND category_id = ?'; params.push(category_id) }
+  const result = await queryPage({ db, table: 'models', keywordCols: ['name', 'description'], defaultOrder: 'created_at DESC', pageSize: 8, ...params })
 
-  const countResult = await db.get(`SELECT COUNT(*) as total FROM models ${whereClause}`, params)
-
-  const offset = (page - 1) * pageSize
   const getTableName = (id) => `model_data_${id}`
-
-  const data = await db.all(
-    `SELECT
-       m.*,
-       0 as data_count
-     FROM models m
-     ${whereClause}
-     ORDER BY created_at DESC
-     LIMIT ? OFFSET ?`,
-    [...params, pageSize, offset]
-  )
-
-  for (const model of data) {
+  for (const model of result.data) {
     try {
       const countResult = await db.get(`SELECT COUNT(*) as count FROM ${getTableName(model.id)}`)
       model.data_count = countResult.count
@@ -78,7 +61,7 @@ export const getModels = async ({ page = 1, pageSize = 8, keyword = '', category
     }
   }
 
-  return { total: countResult.total, data, page, pageSize }
+  return result
 }
 
 // 生成建表SQL
@@ -104,10 +87,6 @@ const getColumnType = (field) => {
     case 'number': return 'REAL'
     default: return 'TEXT'
   }
-}
-
-const getDefaultValue = (field) => {
-  return 'NULL'
 }
 
 // 创建模型
@@ -185,19 +164,19 @@ export const updateModel = async ({ id, name, description, category_id, fields }
 export const deleteModel = async (id) => {
   const db = await initDatabase()
   await ensureModelsTable(db)
-  await db.run("UPDATE models SET deleted_at = datetime('now','localtime') WHERE id = ?", id)
+  await softDelete(db, 'models', id)
 }
 
 export const getTrashModels = async () => {
   const db = await initDatabase()
   await ensureModelsTable(db)
-  return db.all("SELECT * FROM models WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC")
+  return trashList(db, 'models')
 }
 
 export const restoreModel = async (id) => {
   const db = await initDatabase()
   await ensureModelsTable(db)
-  await db.run("UPDATE models SET deleted_at = NULL WHERE id = ?", id)
+  await restoreRow(db, 'models', id)
 }
 
 export const permanentDeleteModel = async (id) => {
@@ -227,7 +206,7 @@ export const copyModel = async (id) => {
     )
     const columns = fields
       .map((field) =>
-        `${field.name} ${getColumnType(field)} ${field.required ? 'NOT NULL' : ''} DEFAULT ${getDefaultValue(field)}`
+        `${field.name} ${getColumnType(field)} ${field.required ? 'NOT NULL' : ''} DEFAULT NULL`
       )
       .join(',')
     await db.exec(`

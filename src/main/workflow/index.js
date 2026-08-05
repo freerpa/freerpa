@@ -4,8 +4,8 @@
  */
 import EngineHost from './host/index.js'
 import { buildDenoPermissions, getPermissions } from './permissions.js'
-import { register } from './ipc.js'
 
+// 同时运行工作流数量上限（worker 侧 WorkflowManager 中保持一致）
 const MAX_RUNNING = 999
 
 /** 基础设施读路径（引擎/节点/依赖，自动授予 worker） */
@@ -54,12 +54,5 @@ export const manager = {
   /** 清理（保留宿主进程，后续自动复用） */
   cleanup: async () => {
     EngineHost.runningFlows.clear()
-  },
-
-  getRunningWorkflowCount: () => EngineHost.runningFlows.size
-}
-
-// 注册 IPC 处理
-export const registerIPC = async () => {
-  register()
+  }
 }

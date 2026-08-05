@@ -3,37 +3,10 @@
  * 聚合 models / workflows / browsers / categories / elementSets 子模块
  */
 
-export { initDatabase } from './db.js'
-
-// Re-export models
+// Re-export models（仅引擎 RPC 需要的数据模型读写）
 export {
-  getModel, getModels, createModel, updateModel, deleteModel, copyModel,
-  getModelData, createModelData, updateModelData, deleteModelData,
-  clearModelData, batchCreateModelData, exportExcel, importExcel
+  getModelData, updateModelData, deleteModelData, batchCreateModelData
 } from './models/index.js'
-
-// Re-export workflows
-export {
-  getWorkflows, getWorkflow, createWorkflow, updateWorkflow,
-  deleteWorkflow, importWorkflow, exportWorkflow
-} from './workflows/index.js'
-
-// Re-export browsers
-export {
-  getBrowsers, getBrowser, createBrowser, updateBrowser,
-  deleteBrowser, importBrowser, exportBrowser
-} from './browsers/index.js'
-
-// Re-export categories
-export {
-  getCategories, addCategory, updateCategory, deleteCategory
-} from './categories/index.js'
-
-// Re-export elementSets
-export {
-  getElementSets, getElementSet, createElementSet, updateElementSet,
-  deleteElementSet
-} from './elementSets/index.js'
 
 // 统一 IPC 注册
 import { register as registerModels } from './models/ipc.js'

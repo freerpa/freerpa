@@ -34,7 +34,8 @@ useFieldWatch(props, value)
 let interval = null
 
 const startGetMousePos = () => {
-  window.electronAPI.system.screenshot()
+  // 隐藏主窗口进入取点模式（main 侧 app:startGetMousePos → app.hide()）
+  window.electronAPI.app.startGetMousePos()
   interval = setInterval(async () => {
     const pos = await window.electronAPI.app.getMousePos()
     value.value.x = pos.x
@@ -44,7 +45,8 @@ const startGetMousePos = () => {
 
 const stopGetMousePos = () => {
   clearInterval(interval)
-  window.electronAPI.system.stopGetMousePos()
+  // 恢复主窗口（main 侧 app:stopGetMousePos → app.show()）
+  window.electronAPI.app.stopGetMousePos()
 }
 </script>
 

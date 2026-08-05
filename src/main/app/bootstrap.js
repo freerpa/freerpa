@@ -3,14 +3,11 @@ import { is } from '@electron-toolkit/utils'
 import '../menu'
 import pkg from '../../../package.json'
 import { createWindow } from './window'
-import { createBvm } from './browserVm'
 import { register as workflowRegisterIPC } from '../workflow/ipc'
 import { register as dataRegisterIPC } from '../data'
 import { register as envRegisterIPC } from '../browser/ipc'
 import { register as storeRegisterIPC } from '../store/ipc'
-import { register as apiRegisterIPC } from '../api/ipc'
 import { register as registerIPC } from '../ipc'
-import { register as systemRegisterIPC } from '../system/ipc'
 import { register as cacheRegisterIPC } from '../cache/ipc'
 import { register as dbInfoRegisterIPC } from '../data/dbIpc'
 import { register as pluginRegisterIPC } from '../plugin/ipc'
@@ -60,21 +57,15 @@ export const bootstrap = async () => {
     } catch (_) {}
   })
 
-  // 注册所有 IPC 处理（必须在 createBvm 之前）
-  // bvm 创建 WebContentsView 时渲染进程可能发送 IPC 请求，必须先注册 handlers
+  // 注册所有 IPC 处理
   workflowRegisterIPC()
   dataRegisterIPC()
   envRegisterIPC()
   storeRegisterIPC()
-  apiRegisterIPC()
-  systemRegisterIPC()
   cacheRegisterIPC()
   dbInfoRegisterIPC()
   pluginRegisterIPC()
   registerIPC()
-
-  // 创建浏览器 VM（fire-and-forget，匹配原始语义）
-  createBvm()
 
   // macOS 激活事件
   app.on('activate', () => {

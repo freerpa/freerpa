@@ -1,7 +1,6 @@
 import { Menu } from 'electron'
 const isMac = process.platform === 'darwin'
 const template = [
-    // { role: 'appMenu' }
     ...(isMac
         ? [{
             label: '应用',
@@ -10,7 +9,6 @@ const template = [
             ]
         }]
         : []),
-    // { role: 'editMenu' }
     {
         label: '编辑',
         submenu: [

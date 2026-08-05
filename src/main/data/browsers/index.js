@@ -4,6 +4,7 @@
 
 import { v4 as uuidv4 } from 'uuid'
 import { initDatabase } from '../db.js'
+import { queryPage, softDelete, trashList, restoreRow } from '../crud.js'
 
 const ensureTable = async (db) => {
   await db.exec(`
@@ -23,22 +24,10 @@ const ensureTable = async (db) => {
   try { await db.exec(`ALTER TABLE browsers ADD COLUMN deleted_at TIMESTAMP DEFAULT NULL`) } catch (e) {}
 }
 
-export const getBrowsers = async ({ page = 1, pageSize = 24, keyword = '', category_id = '' }) => {
+export const getBrowsers = async (params) => {
   const db = await initDatabase()
   await ensureTable(db)
-
-  let whereClause = 'WHERE deleted_at IS NULL'
-  const params = []
-  if (keyword) { whereClause += ' AND (name LIKE ? OR description LIKE ?)'; params.push(`%${keyword}%`, `%${keyword}%`) }
-  if (category_id) { whereClause += ' AND category_id = ?'; params.push(category_id) }
-
-  const countResult = await db.get(`SELECT COUNT(*) as total FROM browsers ${whereClause}`, params)
-  const offset = (page - 1) * pageSize
-  const data = await db.all(
-    `SELECT * FROM browsers ${whereClause} ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
-    [...params, pageSize, offset]
-  )
-  return { total: countResult.total, data, page, pageSize }
+  return queryPage({ db, table: 'browsers', keywordCols: ['name', 'description'], ...params })
 }
 
 export const getBrowser = async (id) => {
@@ -81,33 +70,23 @@ export const updateBrowser = async ({ id, name, description, category_id, kernel
 export const deleteBrowser = async (id) => {
   const db = await initDatabase()
   await ensureTable(db)
-  await db.run("UPDATE browsers SET deleted_at = datetime('now','localtime') WHERE id = ?", id)
+  await softDelete(db, 'browsers', id)
 }
 
 export const getTrashBrowsers = async () => {
   const db = await initDatabase()
   await ensureTable(db)
-  return db.all("SELECT * FROM browsers WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC")
+  return trashList(db, 'browsers')
 }
 
 export const restoreBrowser = async (id) => {
   const db = await initDatabase()
   await ensureTable(db)
-  await db.run("UPDATE browsers SET deleted_at = NULL WHERE id = ?", id)
+  await restoreRow(db, 'browsers', id)
 }
 
 export const permanentDeleteBrowser = async (id) => {
   const db = await initDatabase()
   await ensureTable(db)
   await db.run('DELETE FROM browsers WHERE id = ?', id)
-}
-
-export const importBrowser = async ({ name, description, category_id, kernel_id, proxy_url, config }) => {
-  return createBrowser({ name, description, category_id, kernel_id, proxy_url, config })
-}
-
-export const exportBrowser = async (id) => {
-  const db = await initDatabase()
-  await ensureTable(db)
-  return db.get('SELECT * FROM browsers WHERE id = ?', id)
 }

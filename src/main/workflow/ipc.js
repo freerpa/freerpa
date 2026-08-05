@@ -11,17 +11,7 @@ const options = {
   padding: CryptoJS.pad.Pkcs7
 }
 
-const encryptedData = (data) => {
-  const encrypted = AES.encrypt(data, secretKey, options)
-  return encrypted.toString()
-}
-
 const decryptedData = (data) => {
-  const decrypted = AES.decrypt(data, secretKey, options)
-  return decrypted.toString(CryptoJS.enc.Utf8)
-}
-
-const verifyData = (data) => {
   const decrypted = AES.decrypt(data, secretKey, options)
   return decrypted.toString(CryptoJS.enc.Utf8)
 }
@@ -64,18 +54,8 @@ export const register = () => {
     return { success: true }
   })
 
-  // 加密数据
-  ipcMain.handle('workflow:encryptData', async (event, data) => {
-    return encryptedData(data)
-  })
-
   // 解密数据
   ipcMain.handle('workflow:decryptData', async (event, data) => {
     return decryptedData(data)
-  })
-
-  // 验证数据
-  ipcMain.handle('workflow:verifyData', async (event, data) => {
-    return verifyData(data)
   })
 }

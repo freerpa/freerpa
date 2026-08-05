@@ -3,11 +3,11 @@
  * @author: dabao / FreeRPA
  */
 
-import { ipcMain, app } from 'electron'
-import { checkKernelExists, launchKernel, downloadKernel, fetchKernelList } from './kernel'
+import { ipcMain } from 'electron'
+import { checkKernelExists, downloadKernel, fetchKernelList, resolveKernelVersion } from './kernel'
 import { API_CONFIG } from '@/api/config'
+import { launchEnvBrowser } from './launch.js'
 import { registerBrowser, killBrowserProcess, isBrowserOpen, getAllBrowserStatus, getBrowserInstance, incrementRef, decrementRef } from './manager'
-import path from 'path'
 
 const safeMsg = (e, fallback) => (e && typeof e.message === 'string') ? e.message : fallback
 
@@ -29,7 +29,7 @@ export const register = () => {
   })
 
   ipcMain.handle('env:resolveKernelVersion', async (_, { majorVersion, platform }) => {
-    try { return await (await fetch(`${API_CONFIG.BASE_URL}/kernel/resolveVersion?major_version=${majorVersion}&platform=${platform}`)).json() }
+    try { return { code: 200, data: await resolveKernelVersion(API_CONFIG.BASE_URL, majorVersion, platform) } }
     catch (e) { return { code: 400, message: safeMsg(e, '查询失败') } }
   })
 
@@ -57,20 +57,18 @@ export const register = () => {
           return { code: 200, message: '浏览器已打开（复用）', data: { instanceId: existing.instanceId, port: existing.port, wsEndpoint: existing.wsEndpoint } }
         }
       }
-      if (!kernel?.platform || !kernel?.version) return { code: 400, message: '内核参数不完整' }
-      if (!checkKernelExists(kernel.platform, kernel.version)) return { code: 400, message: 'KERNEL_NEED_DOWNLOAD' }
 
       const fingerprint = existingFingerprint?.seed ? existingFingerprint
         : { seed: Math.floor(Math.random() * 2147483647) + 1, platform: { win32: 'windows', darwin: 'macos' }[process.platform] || 'linux' }
 
-      const instance = await launchKernel({
-        platform: kernel.platform, version: kernel.version,
-        proxy: proxy || '', fingerprintSeed: fingerprint.seed,
-        userDataDir: path.join(app.getPath('userData'), 'sessions', String(envId)),
-        extraArgs: ['--no-restore-session-state', '--disable-session-crashed-bubble'],
+      const instance = await launchEnvBrowser({
+        envId,
+        kernel,
+        proxy: proxy || '',
+        fingerprintSeed: fingerprint.seed,
+        sender: event.sender
       })
 
-      registerBrowser(envId, instance, event.sender)
       incrementRef(envId)
 
       if (!existingFingerprint?.seed) {
@@ -79,6 +77,7 @@ export const register = () => {
 
       return { code: 200, message: '浏览器已打开', data: { instanceId: String(instance.id), port: Number(instance.port), wsEndpoint: String(instance.wsEndpoint) } }
     } catch (e) {
+      if (e?.message === 'KERNEL_NEED_DOWNLOAD') return { code: 400, message: 'KERNEL_NEED_DOWNLOAD' }
       return { code: 400, message: safeMsg(e, '打开浏览器失败') }
     }
   })
@@ -90,20 +89,7 @@ export const register = () => {
 
   // ========== 状态查询 ==========
 
-  ipcMain.handle('env:getBrowserStatus', async (_, { envId }) => {
-    return { code: 200, data: { isOpen: isBrowserOpen(envId) } }
-  })
-
   ipcMain.handle('env:getAllBrowserStatus', async () => {
     return { code: 200, data: getAllBrowserStatus() }
-  })
-
-  // ========== GEO 查询 ==========
-
-  ipcMain.handle('env:queryGeo', async (_, { proxy }) => {
-    try {
-      const url = proxy ? `${API_CONFIG.BASE_URL}/geo/query?proxy=${encodeURIComponent(proxy)}` : `${API_CONFIG.BASE_URL}/geo/query`
-      return await (await fetch(url)).json()
-    } catch (e) { return { code: 400, message: safeMsg(e, '查询失败') } }
   })
 }

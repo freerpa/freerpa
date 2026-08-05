@@ -18,32 +18,9 @@ export const register = () => {
       }
     }
   })
-  ipcMain.on('window-fullscreen', () => {
-    global.mainWindow.setFullScreen(!global.mainWindow.isFullScreen())
-  })
   ipcMain.on('window-close', async () => {
     await workflowManager.cleanup()
     app.exit(0)
-  })
-  ipcMain.on('window-size', (event, width, height) => {
-    const setSize = () => {
-      global.mainWindow.setSize(width, height)
-      global.mainWindow.center()
-    }
-    if (process.platform === 'darwin') {
-      if (!global.mainWindow.isFullScreen()) {
-        setSize()
-        return
-      } else {
-        global.mainWindow.once('leave-full-screen', () => {
-          setSize()
-        })
-        global.mainWindow.setFullScreen(false)
-      }
-    } else if (process.platform === 'win32') {
-      global.mainWindow.unmaximize()
-      setSize()
-    }
   })
   // 注册路径选择对话框处理
   ipcMain.handle('dialog:openPath', async (event, options) => {
@@ -82,10 +59,6 @@ export const register = () => {
 
   ipcMain.handle('shell:openPath', async (event, path) => {
     shell.openPath(path)
-  })
-
-  ipcMain.handle('shell:openExternal', async (event, url) => {
-    shell.openExternal(url)
   })
 
   ipcMain.handle('app:getMousePos', (event) => {

@@ -1,7 +1,6 @@
 import { resolve } from 'path'
 import { defineConfig } from 'electron-vite'
 import vue from '@vitejs/plugin-vue'
-import path from 'path'
 
 // 生产构建使用 vite 内置 esbuild 压缩。
 // 原因：@rollup/plugin-terser + terser 5.49.x 在 Node 22 上存在间歇性崩溃
@@ -25,23 +24,11 @@ export default defineConfig({
             if (chunkInfo.name === 'data') {
               return '3A6EB0790F39AC87.js'
             }
-            if (chunkInfo.name === 'pageEval') {
-              return '92A5DC04BD6F9FB8.js'
-            }
-            if (chunkInfo.name === 'common') {
-              return 'BsXLohN0BsXLohN0.js'
-            }
             return '[hash][hash].js'
           },
           manualChunks(id) {
             if (id.includes('data/index')) {
               return 'data'
-            }
-            if (id.includes('main/common')) {
-              return 'common'
-            }
-            if (id.includes('main/pageEval')) {
-              return 'pageEval'
             }
           }
         }
@@ -49,20 +36,15 @@ export default defineConfig({
     },
     resolve: {
       alias: {
-        '@': resolve('src/main'),
-        '@pageEval': resolve('src/main/pageEval'),
-        '@renderer': resolve('src/renderer/src'),
-        '@dataModule': resolve('src/main/data')
+        '@': resolve('src/main')
       }
     }
   },
   preload: {
-    plugins: [],
     build: {
       rollupOptions: {
         input: {
-          index: resolve('src/preload/index.js'),
-          bvm: resolve('src/preload/bvm.js')
+          index: resolve('src/preload/index.js')
         }
       }
     }
@@ -89,7 +71,6 @@ export default defineConfig({
     resolve: {
       alias: {
         '@': resolve('src/renderer/src'),
-        '@main': resolve('src/main'),
         '@nodes-path': resolve('src/renderer/src/workflow/nodes')
       }
     },

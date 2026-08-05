@@ -5,25 +5,26 @@ directories:
 files:
   - '!**/.vscode/*'
   - '!src/*'
+  - '!scripts/**'
   - '!resources/**'
   - '!electron.*{js,ts,mjs,cjs}'
-  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md,eslint.config.mjs}'
-  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
-  - '!storage/*'
-  - '!runtime/*'
-  - '!website/*'
-  - '!cache/*'
+  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md,README.en.md,eslint.config.mjs,reasonix.toml,.editorconfig,.DS_Store}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml,deno.lock,yarn.lock}'
+  - '!engine.bin'
   - '!*.zip'
 asar: true
 # deno 二进制与 worker 资源经 extraResources 分发（asar 外），不打包进 asar
 extraResources:
   - from: resources/deno
     to: deno
+    filter:
+      - '!**/.DS_Store'
   - from: resources/worker
     to: worker
     filter:
       - '**/*'
       - '!node_modules/**'
+      - '!**/.DS_Store'
   # 依赖闭包单独复制（deno 布局已实体化，打包必须包含，否则运行时无法解析节点依赖）
   - from: resources/worker/node_modules
     to: worker/node_modules
@@ -56,8 +57,3 @@ linux:
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
-publish:
-  provider: generic
-  url: https://example.com/auto-updates
-electronDownload:
-  mirror: https://npmmirror.com/mirrors/electron/

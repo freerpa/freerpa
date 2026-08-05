@@ -127,18 +127,4 @@ export const register = () => {
     }
     return null
   })
-
-  ipcMain.handle('plugin:resolvePath', async (_, pluginId) => {
-    const dirs = getPluginDirs()
-    for (const dir of dirs) {
-      const pluginDir = path.join(dir, pluginId)
-      if (fs.existsSync(pluginDir)) {
-        const executePath = path.join(pluginDir, 'execute.js')
-        if (fs.existsSync(executePath)) {
-          return { path: executePath }
-        }
-      }
-    }
-    return { error: '插件未找到' }
-  })
 }

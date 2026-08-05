@@ -43,19 +43,4 @@ async function sendToRendererAsync(channel, data) {
   })
 }
 
-// 监听来自渲染进程的事件
-function onFromRenderer(channel, callback) {
-  ipcMain.removeHandler(channel)
-  // 注册监听器
-  ipcMain.handle(channel, (event, data) => {
-    return callback(data)
-  })
-  // 返回清理函数
-  return () => {
-    // 移除所有监听器
-    ipcMain.removeAllListeners(channel)
-    ipcMain.removeHandler(channel)
-  }
-}
-
-export { sendToRenderer, sendToRendererAsync, onFromRenderer }
+export { sendToRenderer, sendToRendererAsync }

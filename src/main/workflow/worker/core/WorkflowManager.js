@@ -22,11 +22,11 @@ class WorkflowManager {
   // 创建工作流引擎
   async createEngine(workflow) {
     try {
-      // 免登录模式：不再从远程获取限制，使用高默认值
-      const limits = { workflow_limit: 999 }
+      // 免登录模式：不再从远程获取限制，使用高默认值（与主进程 MAX_RUNNING 保持一致）
+      const WORKFLOW_LIMIT = 999
 
-      if (limits.workflow_limit <= this.getRunningWorkflowCount()) {
-        throw new Error(`同时运行的工作流数量超过限制：${limits.workflow_limit} 个`)
+      if (WORKFLOW_LIMIT <= this.getRunningWorkflowCount()) {
+        throw new Error(`同时运行的工作流数量超过限制：${WORKFLOW_LIMIT} 个`)
       }
       // 验证工作流数据
       if (!workflow || typeof workflow !== 'object') {

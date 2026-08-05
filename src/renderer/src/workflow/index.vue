@@ -17,7 +17,6 @@
     >
       <chat :workflowId="workflowId" @close="aiBotVisible = false" :toolActions="toolActions" />
     </div>
-    <!-- <botIcon class="ai-assistant-btn" @click="toggleChat" /> -->
   </div>
 </template>
 
@@ -26,7 +25,6 @@ import { ref, onMounted, onUnmounted, provide, inject } from 'vue'
 import FlowCanvas from './components/FlowCanvas.vue'
 import FlowToolbar from './components/FlowToolbar.vue'
 import chat from './components/aiBot/chat.vue'
-// import botIcon from './components/aiBot/botIcon.vue'
 import { storeToRefs } from 'pinia'
 import { useFlowStore } from './store'
 import { useStore } from '@/store'

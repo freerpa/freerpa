@@ -5,6 +5,7 @@
 
 import { v4 as uuidv4 } from 'uuid'
 import { initDatabase } from '../db.js'
+import { queryPage, softDelete, trashList, restoreRow } from '../crud.js'
 
 const ensureTables = async (db) => {
   await db.exec(`
@@ -43,28 +44,10 @@ const ensureTables = async (db) => {
 
 // ─── 元素集 CRUD ───────────────────────────────────────
 
-export const getElementSets = async ({ page = 1, pageSize = 24, keyword = '', category_id = '' }) => {
+export const getElementSets = async (params) => {
   const db = await initDatabase()
   await ensureTables(db)
-
-  let whereClause = 'WHERE deleted_at IS NULL'
-  const params = []
-  if (keyword) {
-    whereClause += ' AND (title LIKE ? OR description LIKE ?)'
-    params.push(`%${keyword}%`, `%${keyword}%`)
-  }
-  if (category_id) {
-    whereClause += ' AND category_id = ?'
-    params.push(category_id)
-  }
-
-  const countResult = await db.get(`SELECT COUNT(*) as total FROM es_sets ${whereClause}`, params)
-  const offset = (page - 1) * pageSize
-  const data = await db.all(
-    `SELECT * FROM es_sets ${whereClause} ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
-    [...params, pageSize, offset]
-  )
-  return { total: countResult.total, data, page, pageSize }
+  return queryPage({ db, table: 'es_sets', keywordCols: ['title', 'description'], ...params })
 }
 
 export const getElementSet = async (id) => {
@@ -129,20 +112,20 @@ export const updateElementSet = async ({ id, title, description, category_id, el
 export const deleteElementSet = async (id) => {
   const db = await initDatabase()
   await ensureTables(db)
-  await db.run("UPDATE es_sets SET deleted_at = datetime('now','localtime') WHERE id = ?", id)
+  await softDelete(db, 'es_sets', id)
 }
 
 // 回收站
 export const getTrashElementSets = async () => {
   const db = await initDatabase()
   await ensureTables(db)
-  return db.all("SELECT * FROM es_sets WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC")
+  return trashList(db, 'es_sets')
 }
 
 export const restoreElementSet = async (id) => {
   const db = await initDatabase()
   await ensureTables(db)
-  await db.run("UPDATE es_sets SET deleted_at = NULL WHERE id = ?", id)
+  await restoreRow(db, 'es_sets', id)
 }
 
 export const permanentDeleteElementSet = async (id) => {

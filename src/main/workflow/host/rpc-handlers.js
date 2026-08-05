@@ -3,19 +3,14 @@
  * （浏览器内核启动、剪贴板、shell、数据模型、异步事件、节点事件注册等需主进程能力的操作）
  */
 import { clipboard, shell, app, ipcMain } from 'electron'
-import path from 'path'
 import { getBrowserDetail } from '../../api/browserDetail.js'
-import { queryGeoInfo } from '../../browser/utils/proxy.js'
-import {
-  checkKernelExists, downloadKernel, getPlatform, launchKernel, resolveKernelVersion
-} from '../../browser/kernel'
+import { launchEnvBrowser } from '../../browser/launch.js'
 import {
   getBrowserInstance, registerBrowser, incrementRef, decrementRef
 } from '../../browser/manager'
 import { matchTemplate } from '../../browser/selector/imageMatcher.js'
 import { sendToRendererAsync } from './rendererUtils.js'
 import { getModelData, updateModelData, deleteModelData, batchCreateModelData } from '../../data'
-import { API_CONFIG } from '@/api/config'
 
 // 浏览器内核归属：flowId → Set<envId>（仅允许工作流释放自己打开的环境引用）
 const openedBrowsers = new Map()
@@ -73,38 +68,19 @@ async function browserOpen(args, host, flowId) {
 // 内核启动 + 注册（browserOpen 内部复用）
 async function doLaunch(env, options) {
   const { headless = false, proxy: optionProxy = '', extraArgs = [] } = options || {}
-
   const proxy = optionProxy || env?.proxy_url || ''
-  let geoInfo = null
-  if (proxy) {
-    geoInfo = await queryGeoInfo(proxy, API_CONFIG.BASE_URL)
-    if (!geoInfo) throw new Error('代理检测失败')
-  }
 
-  const majorVersion = env?.kernel_id
-  if (!majorVersion) throw new Error('浏览器配置未设置内核版本')
-  const platform = getPlatform()
-  const kernel = await resolveKernelVersion(API_CONFIG.BASE_URL, majorVersion, platform)
-  if (!kernel) throw new Error(`当前平台无可用 Chrome ${majorVersion} 内核`)
-  if (!checkKernelExists(kernel.platform, kernel.version)) {
-    await downloadKernel(kernel, () => {})
-  }
-
-  const fingerprintSeed = env?.fingerprint?.seed || Math.floor(Math.random() * 2147483647) + 1
-  const userDataDir = env?.id ? path.join(app.getPath('userData'), 'sessions', String(env.id)) : undefined
-
-  const instance = await launchKernel({
-    platform: kernel.platform, version: kernel.version,
-    proxy, fingerprintSeed, headless,
-    timezone: geoInfo?.timeZone || env?.timezone || '',
-    lang: geoInfo?.language || 'en-US', userDataDir,
-    extraArgs: ['--no-restore-session-state', '--disable-session-crashed-bubble', ...extraArgs]
+  return launchEnvBrowser({
+    envId: env?.id,
+    majorVersion: env?.kernel_id,
+    proxy,
+    fingerprintSeed: env?.fingerprint?.seed,
+    headless,
+    timezone: env?.timezone || '',
+    lang: 'en-US',
+    extraArgs,
+    autoDownload: true
   })
-
-  if (env?.id) {
-    registerBrowser(env.id, instance, null)
-  }
-  return instance
 }
 
 // worker 内关闭页面后释放引用（ref 归零自动杀内核）

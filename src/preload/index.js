@@ -5,8 +5,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   window: {
     minimize: () => ipcRenderer.send('window-min'),
     maximize: (forceMax = false) => ipcRenderer.send('window-max', forceMax),
-    fullscreen: () => ipcRenderer.send('window-fullscreen'),
-    size: (width, height) => ipcRenderer.send('window-size', width, height),
     close: () => ipcRenderer.send('window-close'),
     onClose: (callback) => {
       ipcRenderer.removeAllListeners('window-close')
@@ -94,10 +92,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     downloadKernel: (kernel) => ipcRenderer.invoke('env:downloadKernel', kernel),
     openBrowser: (params) => ipcRenderer.invoke('env:openBrowser', params),
     closeBrowser: (params) => ipcRenderer.invoke('env:closeBrowser', params),
-    getBrowserStatus: (params) => ipcRenderer.invoke('env:getBrowserStatus', params),
     getAllBrowserStatus: () => ipcRenderer.invoke('env:getAllBrowserStatus'),
     resolveKernelVersion: (params) => ipcRenderer.invoke('env:resolveKernelVersion', params),
-    queryGeo: (params) => ipcRenderer.invoke('env:queryGeo', params),
     // 事件监听
     onDownloadKernelProgress: (callback) => {
       const listener = (event, params) => callback(params)
@@ -124,19 +120,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 工作流管理模块API
   workflow: {
     // 工作流执行
-    getAllNodes: () => ipcRenderer.invoke('workflow:getAllNodes'),
-    getAllNodeCategories: () => ipcRenderer.invoke('workflow:getAllNodeCategories'),
-    encryptData: (data) => ipcRenderer.invoke('workflow:encryptData', data),
     decryptData: (data) => ipcRenderer.invoke('workflow:decryptData', data),
-    verifyData: (data) => ipcRenderer.invoke('workflow:verifyData', data),
     // 工作流本地 CRUD
     getWorkflows: (params) => ipcRenderer.invoke('workflow:getWorkflows', params),
     getWorkflow: (id) => ipcRenderer.invoke('workflow:getWorkflow', id),
     createWorkflow: (params) => ipcRenderer.invoke('workflow:createWorkflow', params),
     updateWorkflow: (params) => ipcRenderer.invoke('workflow:updateWorkflow', params),
     deleteWorkflow: (id) => ipcRenderer.invoke('workflow:deleteWorkflow', id),
-    importWorkflow: (params) => ipcRenderer.invoke('workflow:importWorkflow', params),
-    exportWorkflow: (id) => ipcRenderer.invoke('workflow:exportWorkflow', id),
     getTrash: () => ipcRenderer.invoke('workflow:getTrash'),
     restore: (id) => ipcRenderer.invoke('workflow:restore', id),
     permanentDelete: (id) => ipcRenderer.invoke('workflow:permanentDelete', id)
@@ -149,8 +139,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     createBrowser: (params) => ipcRenderer.invoke('browser:createBrowser', params),
     updateBrowser: (params) => ipcRenderer.invoke('browser:updateBrowser', params),
     deleteBrowser: (id) => ipcRenderer.invoke('browser:deleteBrowser', id),
-    importBrowser: (params) => ipcRenderer.invoke('browser:importBrowser', params),
-    exportBrowser: (id) => ipcRenderer.invoke('browser:exportBrowser', id),
     getTrash: () => ipcRenderer.invoke('browser:getTrash'),
     restore: (id) => ipcRenderer.invoke('browser:restore', id),
     permanentDelete: (id) => ipcRenderer.invoke('browser:permanentDelete', id)
@@ -176,12 +164,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deleteCategory: (id) => ipcRenderer.invoke('category:deleteCategory', id)
   },
 
-  // 加密解密API
-  api: {
-    encrypt: (data) => ipcRenderer.invoke('api:encrypt', data),
-    decrypt: (data) => ipcRenderer.invoke('api:decrypt', data)
-  },
-
   // 路径选择对话框API
   dialog: {
     openPath: (options) => ipcRenderer.invoke('dialog:openPath', options),
@@ -189,8 +171,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   // 打开路径API
   shell: {
-    openPath: (path) => ipcRenderer.invoke('shell:openPath', path),
-    openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url)
+    openPath: (path) => ipcRenderer.invoke('shell:openPath', path)
   },
   // 获取鼠标位置API
   app: {
@@ -213,12 +194,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     removeDir: (dir) => ipcRenderer.invoke('plugin:removeDir', dir),
     getDirs: () => ipcRenderer.invoke('plugin:getDirs'),
     list: () => ipcRenderer.invoke('plugin:list'),
-    get: (pluginId) => ipcRenderer.invoke('plugin:get', pluginId),
-    resolvePath: (pluginId) => ipcRenderer.invoke('plugin:resolvePath', pluginId)
+    get: (pluginId) => ipcRenderer.invoke('plugin:get', pluginId)
   },
   system: {
-    getWindows: (keyWord) => ipcRenderer.invoke('system:getWindows', keyWord),
-    screenshot: () => ipcRenderer.invoke('system:screenshot'),
     showNotification: (options, eventCallback) => {
       ipcRenderer.invoke('system:showNotification', options)
       ipcRenderer.on('system:showNotification:on:' + options.id, (event, params) => {
