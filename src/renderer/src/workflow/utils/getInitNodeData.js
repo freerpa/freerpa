@@ -52,6 +52,11 @@ export const getInitNodeData = (type, workflowId, isStore) => {
     config: config,
     version: node?._version || 'V1'
   }
+  // 本地插件节点：把插件配置字段定义随节点保存到工作流 json，
+  // 即使插件被移除，也能按保存的字段定义渲染配置表单与输入输出
+  if (node?._pluginId) {
+    nodeData._pluginConfig = node.config
+  }
   if (workflowId) {
     nodeData.workflow = {
       id: workflowId,

@@ -33,13 +33,13 @@
       unmount-on-close
       :footer="false"
     >
-      <SettingsCenter />
+      <SettingsCenter :initial-tab="settingsTab" />
     </a-modal>
   </div>
 </template>
 
 <script setup>
-import { ref, provide } from 'vue'
+import { ref, provide, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import TitleBar from './components/TitleBar.vue'
 import SideMenu from './components/SideMenu.vue'
@@ -52,10 +52,25 @@ const store = useStore()
 const { openedTabs } = storeToRefs(store)
 
 const settingsCenterVisible = ref(false)
+// 打开设置中心时指定初始选项卡（如「去安装」→ 本地插件）；modal 为 unmount-on-close，
+// 需通过 prop 在 SettingsCenter 挂载时初始化，而非依赖事件（事件派发早于组件挂载会丢失）
+const settingsTab = ref('')
 
 const showSettingsCenter = () => {
   settingsCenterVisible.value = true
 }
+
+// 全局事件：节点占位提示「去安装」快捷链接打开设置中心（detail.tab 指定菜单）
+const onOpenSettingsCenter = (event) => {
+  settingsTab.value = event?.detail?.tab || ''
+  showSettingsCenter()
+}
+onMounted(() => {
+  window.addEventListener('open-settings-center', onOpenSettingsCenter)
+})
+onUnmounted(() => {
+  window.removeEventListener('open-settings-center', onOpenSettingsCenter)
+})
 </script>
 
 <style lang="less" scoped>

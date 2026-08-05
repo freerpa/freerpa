@@ -5,8 +5,7 @@
       selected: selected,
       'status-running': nodeStatus === 'running' || nodeStatus === 'retrying',
       'status-success': nodeStatus === 'success',
-      'status-error': nodeStatus === 'error',
-      'node-missing': nodeDefinition._placeholder
+      'status-error': nodeStatus === 'error'
     }"
   >
     <!-- Toolbar -->
@@ -64,14 +63,17 @@
     </NodeHeader>
 
     <!-- Node content body -->
-    <div class="node-content">
-      <!-- 占位节点：缺少本地插件提示（内容栏） -->
-      <div v-if="nodeDefinition._placeholder" class="node-missing-tip">
-        <icon-exclamation-circle class="missing-icon" />
-        <div class="missing-text">
-          <div class="missing-title">缺少本地插件：{{ missingPluginName }}</div>
-          <div v-if="missingPluginVersion" class="missing-meta">版本：{{ missingPluginVersion }}</div>
-          <div class="missing-desc">插件标识：{{ missingPluginId }}，请安装对应插件后重新加载工作流</div>
+    <div class="node-content" :class="{ 'has-missing-overlay': nodeDefinition._placeholder }">
+      <!-- 占位节点：缺少本地插件白色遮罩 -->
+      <div v-if="nodeDefinition._placeholder" class="node-missing-overlay">
+        <div class="missing-box">
+          <div class="missing-title">插件缺失：{{ missingPluginName }}</div>
+          <div class="missing-meta">插件标识：{{ missingPluginId }}</div>
+          <div class="missing-meta">插件版本：{{ missingPluginVersion }}</div>
+          <div class="missing-action">
+            请安装对应插件后重试
+            <a-link class="missing-link" @click="goInstall">去安装</a-link>
+          </div>
         </div>
       </div>
 
@@ -246,15 +248,21 @@ const handleResize = (event) => {
 }
 
 // ── 占位节点：缺失插件信息（取自创建时保存的 config 隐藏字段） ──
+// 插件名称优先取保存的原插件名（config._pluginName），而非用户改过的节点名
 const missingPluginName = computed(() => {
   const c = props.data.config || {}
   return c._pluginName || props.data.name || props.data.type
 })
-const missingPluginVersion = computed(() => (props.data.config || {})._pluginVersion || '')
+const missingPluginVersion = computed(() => (props.data.config || {})._pluginVersion || '未知')
 const missingPluginId = computed(() => {
   const type = props.data.type || ''
   return type.startsWith('plu_') ? type.slice(4) : type
 })
+
+// 去安装：打开设置中心-本地插件页
+const goInstall = () => {
+  window.dispatchEvent(new CustomEvent('open-settings-center', { detail: { tab: 'plugin' } }))
+}
 
 // ── Cleanup ─────────────────────────────────────
 onUnmounted(() => {
@@ -317,12 +325,6 @@ onUnmounted(() => {
     }
   }
 
-  // 占位节点（缺少本地插件）：红边框提示
-  &.node-missing {
-    border-color: rgb(var(--danger-6)) !important;
-    box-shadow: 0 0 0 1px rgb(var(--danger-6)) !important;
-  }
-
   .deactivate {
     position: absolute;
     width: calc(100% - 2px);
@@ -342,6 +344,12 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
+
+    // 占位节点：遮罩提示需要撑起内容区高度，避免提示信息被裁剪
+    &.has-missing-overlay {
+      min-height: 140px;
+    }
 
     .quick-config {
       padding: 6px;
@@ -380,45 +388,52 @@ onUnmounted(() => {
       }
     }
 
-    // 占位节点（缺少本地插件）内容栏提示
-    .node-missing-tip {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      margin: 8px;
-      padding: 10px 12px;
-      background: rgb(var(--danger-1));
-      border: 1px solid rgb(var(--danger-3));
-      border-radius: var(--border-radius-small);
-      font-size: 12px;
+  // 占位节点（缺少本地插件）白色遮罩
+  .node-missing-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
 
-      .missing-icon {
+    .missing-box {
+      width: 100%;
+      text-align: left;
+      font-size: 12px;
+      color: var(--color-text-2);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 14px;
+      background: rgba(255, 77, 79, 0.08);
+      border: 1px solid rgb(var(--danger-5));
+      border-radius: var(--border-radius-small);
+
+      .missing-title {
+        font-weight: 700;
+        font-size: 13px;
         color: rgb(var(--danger-6));
-        font-size: 16px;
-        margin-top: 1px;
-        flex-shrink: 0;
+        margin-bottom: 2px;
       }
 
-      .missing-text {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
+      .missing-meta {
+        color: var(--color-text-2);
+      }
 
-        .missing-title {
-          font-weight: 600;
-          color: var(--color-text-1);
-        }
+      .missing-action {
+        margin-top: 6px;
+        color: var(--color-text-3);
 
-        .missing-meta {
-          color: var(--color-text-2);
-        }
-
-        .missing-desc {
-          color: var(--color-text-3);
+        .missing-link {
+          margin-left: 4px;
         }
       }
     }
   }
+}
 
   // Execution status styles
   &.status-running {

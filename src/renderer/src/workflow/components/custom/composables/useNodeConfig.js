@@ -25,10 +25,15 @@ const PLACEHOLDER_DEF = {
  * Extracts config fields grouping, quickConfig filtering, and config-related watchers
  */
 export function useNodeConfig(props, flowStore, isPreview) {
+  // 占位定义：输入输出与配置字段定义取自节点保存的数据（_pluginConfig），
+  // 使插件缺失时仍能渲染连线口与配置表单
   const nodeDefinition = nodes[props.data.type] || {
     ...PLACEHOLDER_DEF,
     type: props.data.type,
-    description: `本地插件「${props.data.name}」未安装或已被移除，请安装对应插件后重新加载工作流`
+    inputs: props.data.inputs || [],
+    outputs: props.data.outputs || [],
+    config: { ...(props.data._pluginConfig || {}) },
+    description: `本地插件「${props.data.config?._pluginName || props.data.name}」未安装或已被移除，请安装对应插件后重新加载工作流`
   }
 
   // Inject error handling config for non-start/end nodes

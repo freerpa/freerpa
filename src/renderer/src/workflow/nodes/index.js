@@ -17,7 +17,7 @@
  */
 
 import { reactive, markRaw } from 'vue'
-import { IconApps } from '@arco-design/web-vue/es/icon'
+import { RiPlugLine } from '@remixicon/vue'
 
 // ═══════════════════════════════════════════════════
 // 1. Eager 加载所有版本节点定义
@@ -193,7 +193,7 @@ const buildPluginNodeDef = (plugin) => {
   return markRaw({
     type: `plu_${plugin.id}`,
     name: plugin.name || plugin.id,
-    icon: IconApps,
+    icon: RiPlugLine,
     description: plugin.description || '本地插件节点，执行本地安装的插件',
     view: false,
     config,

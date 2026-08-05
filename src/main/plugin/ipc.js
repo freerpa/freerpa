@@ -34,10 +34,26 @@ const scanPluginDir = async (dirPath) => {
   if (!fs.existsSync(indexPath)) return null
 
   try {
-    // 使用动态 import() ES6 方式加载插件描述模块
-    // 兼容多种导出方式：ESM default 导出 / CommonJS module.exports / 命名导出
+    // 使用动态 import() 方式加载插件描述模块
+    // 兼容多层导出结构：ESM default / CommonJS module.exports /
+    // {default:{...}}（TS/Babel 产物）/ 命名导出（export const name = ...）
     const pluginModule = await import(pathToFileURL(indexPath).href)
-    const pluginDef = pluginModule.default || pluginModule
+    let pluginDef = pluginModule.default
+    let depth = 0
+    while (
+      pluginDef &&
+      typeof pluginDef === 'object' &&
+      pluginDef.name === undefined &&
+      pluginDef.default &&
+      typeof pluginDef.default === 'object' &&
+      depth < 3
+    ) {
+      pluginDef = pluginDef.default
+      depth++
+    }
+    if (!pluginDef || typeof pluginDef !== 'object') {
+      pluginDef = pluginModule
+    }
 
     const executePath = path.join(dirPath, 'execute.js')
     const hasExecute = fs.existsSync(executePath)
