@@ -3,7 +3,7 @@
     <a-card title="本地插件管理" :bordered="false">
       <template #extra>
         <a-space>
-          <a-popover content="通过添加插件目录来安装本地插件。每个插件是一个独立文件夹，文件夹名作为插件唯一 ID，包含 index.js（描述文件）和 execute.js（执行文件）。">
+          <a-popover content="通过添加插件目录来安装本地插件。目录结构：{插件根目录}/{插件名}/V{版本}/index.js（描述文件）+ execute.js（执行文件），多个版本目录并存时自动使用最高版本。">
             <icon-info-circle class="info-icon" />
           </a-popover>
         </a-space>
@@ -47,7 +47,7 @@
               <template #title>
                 <div class="plugin-header">
                   <span class="plugin-name">{{ plg.name }}</span>
-                  <a-tag size="small" color="arcoblue">v{{ plg.version }}</a-tag>
+                  <a-tag size="small" color="arcoblue">{{ plg.version }}</a-tag>
                 </div>
               </template>
               <div class="plugin-body">

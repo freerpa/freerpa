@@ -13,7 +13,7 @@
  * 本地插件节点（plu_<插件id>）：
  * - 运行期由 loadPluginNodes() 从本地插件目录扫描注册，无独立源码目录
  * - 统一图标、config 展开插件配置并注入隐藏 pluginId 字段（default = 插件 id）
- * - 执行时经 worker nodeLoader 的 plu_ 前缀映射复用 workflowCallPlugin 执行器
+ * - 执行时经 worker nodeLoader 的 plu_ 前缀映射复用 pluginCall 执行器
  */
 
 import { reactive, markRaw } from 'vue'
@@ -57,7 +57,7 @@ export const categories = {
     nodes: resolveNodes(
       'workflowIf', 'workflowLoop', 'workflowEnd', 'workflowRestart',
       'workflowThrowException', 'workflowNotice', 'workflowCustomNode',
-      'workflowSubWorkflow', 'workflowCallPlugin'
+      'workflowSubWorkflow'
     )
   },
   time: {
@@ -161,8 +161,9 @@ const buildPluginNodeDef = (plugin) => {
     config[firstKey] = { name: '基础配置', fields: {} }
   }
   // pluginId 隐藏字段：getInitNodeData 自动生成 config.pluginId = 插件 id，
-  // worker 端经 nodeLoader 的 plu_ 前缀映射后由 workflowCallPlugin 执行器据此定位插件。
-  // _pluginName/_pluginVersion 随节点保存，供占位节点展示缺失插件的名称与版本
+  // worker 端经 nodeLoader 的 plu_ 前缀映射后由 pluginCall 执行器据此定位插件目录。
+  // _pluginName/_pluginVersion 随节点保存，仅用于插件缺失时占位节点展示名称与版本；
+  // 执行时始终取插件目录最高版本（升级即时生效），不按 _pluginVersion 锁定
   config[firstKey].fields = {
     pluginId: {
       id: 'pluginId',
@@ -201,7 +202,7 @@ const buildPluginNodeDef = (plugin) => {
     config,
     inputs: plugin.inputs || [],
     outputs: plugin.outputs || [],
-    _version: 'V1',
+    _version: 'V1', // 执行器目录版本（对应 pluginCall/V1/execute.js，与插件自身版本 _pluginVersion 无关）
     _pluginId: plugin.id
   })
 }
@@ -230,7 +231,7 @@ export const loadPluginNodes = async () => {
     }
     plugins.forEach(registerPluginNode)
     return plugins
-  } catch (_) {
+  } catch {
     // 插件 API 不可用时静默失败，仅保留已注册节点
     return []
   }

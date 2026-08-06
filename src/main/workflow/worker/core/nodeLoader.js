@@ -19,10 +19,10 @@ const PLUGIN_NODE_PREFIX = 'plu_'
 
 /**
  * plu_ 前缀的本地插件节点没有独立执行器目录（渲染端动态注册），
- * 统一复用 workflowCallPlugin 执行器（按其 config.pluginId 定位插件目录执行）
+ * 统一复用 pluginCall 执行器（按其 config.pluginId + _pluginVersion 定位插件目录执行）
  */
 const resolveExecutorType = (type) =>
-  type && type.startsWith(PLUGIN_NODE_PREFIX) ? 'workflowCallPlugin' : type
+  type && type.startsWith(PLUGIN_NODE_PREFIX) ? 'pluginCall' : type
 
 /** 加载节点执行器（execute.js 的 default 导出），带缓存 */
 export async function loadNodeExecutor(type, version) {

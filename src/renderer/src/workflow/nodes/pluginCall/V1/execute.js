@@ -1,12 +1,13 @@
 /**
- * @file: 调用插件节点执行器
- * @description: 在主进程中直接加载并执行本地插件（无需 IPC 序列化传递参数）
- *              插件通过 APIContext 与工作流交互
- *              对外开放 API：complete / next / wait
+ * @file: 插件调用执行器
+ * @description: 本地插件节点（plu_<插件id>）的统一执行器：在 worker 中直接加载并执行本地插件
+ *               （无需 IPC 序列化传递参数），插件通过 APIContext 与工作流交互。
+ *               对外开放 API：complete / next / wait。
+ *               插件目录布局 {pluginRoot}/{pluginId}/V{n}/ 的版本定位复用 pluginLayout 共享纯函数
+ *               （与主进程 manifest 扫描同一实现，避免双实现漂移）。
  */
-import fs from 'fs'
-import path from 'path'
 import { pathToFileURL } from 'url'
+import { resolvePluginExecute } from '@renderer/workflow/utils/pluginLayout.js'
 
 const execute = async (node, context) => {
   const { pluginId } = node.config
@@ -15,14 +16,12 @@ const execute = async (node, context) => {
   // 插件目录列表由主进程经 init 注入（engine.pluginRoots），不再直接读取 user-preferences 文件
   const pluginRoots = context.engine?.pluginRoots || []
 
-  // 在所有已注册的插件目录中查找目标插件
+  // 始终执行最高版本目录：插件新增/升级版本后即时生效（与插件发现显示的最新版本保持一致）。
+  // 不再按节点保存的 _pluginVersion 锁定 —— 否则旧节点会一直执行旧代码，产生"版本号已更新但代码未加载"的误会。
   let executePath = null
   for (const dir of pluginRoots) {
-    const ep = path.join(dir, pluginId, 'execute.js')
-    if (fs.existsSync(ep)) {
-      executePath = ep
-      break
-    }
+    executePath = resolvePluginExecute(dir, pluginId)
+    if (executePath) break
   }
 
   if (!executePath) throw new Error('插件未找到: ' + pluginId)
@@ -35,27 +34,17 @@ const execute = async (node, context) => {
     throw new Error('插件 execute.js 未导出可执行函数')
   }
 
-  // 构建 APIContext —— 插件通过此对象与工作流交互
-  // 仅对外开放 complete / next / wait 三个核心方法
+  // 构建 APIContext —— 插件通过此对象与工作流交互（仅对外开放 complete / next / wait 三个核心方法）
   const apiContext = {
     // 完成执行并输出结果到下游节点
-    complete: (outputs) => {
-      return context.complete(outputs)
-    },
-
+    complete: (outputs) => context.complete(outputs),
     // 跳过当前节点执行下一个节点
-    next: (outputs) => {
-      return context.next(outputs)
-    },
-
+    next: (outputs) => context.next(outputs),
     // 延时等待
-    wait: (ms) => {
-      return context.wait(ms)
-    }
+    wait: (ms) => context.wait(ms)
   }
 
-  // 调用插件执行函数 —— 使用新的签名
-  // execute({ inputs, outputs, config, apiContext })
+  // 调用插件执行函数 —— execute({ inputs, outputs, config, apiContext })
   // 输出/输入定义：去快照化后 node.outputs/inputs 缺失，回退 config.__nodeIO（新约定）与 _pluginInputs/_pluginOutputs（存量）
   const nodeIO = node.config?.__nodeIO || {}
   const result = await executeFn({

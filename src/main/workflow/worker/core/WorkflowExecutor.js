@@ -24,7 +24,7 @@ class WorkflowExecutor extends EventEmitter {
     this.debug = options.debug || false
     this.isSubFlow = options.isSubFlow || false
     this.ioRoots = options.ioRoots || []
-    this.pluginRoots = options.pluginRoots || [] // 插件目录（主进程 init 注入，workflowCallPlugin 执行器据此定位插件）
+    this.pluginRoots = options.pluginRoots || [] // 插件目录（主进程 init 注入，pluginCall 执行器据此定位插件）
     this.subFlows = new Map()
     this.allNodes = options.allNodes
     this.allEdges = options.allEdges
@@ -149,7 +149,7 @@ class WorkflowExecutor extends EventEmitter {
         if (isParamRefer(value)) {
           parent[key] = getRefer(value)
         }
-        if (/^\{\{[^\{\}]+\.[^\{\}]+\}\}$/.test(parent[key])) {
+        if (/^\{\{[^{}]+\.[^{}]+\}\}$/.test(parent[key])) {
           const paramPath = parent[key].slice(2, -2).split('.')
           parent[key] = paramPath.reduce((obj, key) => obj?.[key], this.nodeOutputs)
         } else {
@@ -336,6 +336,7 @@ class WorkflowExecutor extends EventEmitter {
         debug: this.debug,
         isSubFlow: true,
         ioRoots: this.ioRoots,
+        pluginRoots: this.pluginRoots, // 子流程内的插件节点同样需要插件目录定位（此前遗漏导致子流程插件必失败）
         nodes: childNodes,
         edges: childEdges,
         allNodes: this.allNodes,

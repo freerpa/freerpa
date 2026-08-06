@@ -1,7 +1,10 @@
 /**
  * @file: 插件描述解析与目录扫描（manifest 单点解析）
  *
- * 目录约定：{插件根目录}/{pluginId}/，含 index.js（描述模块）与可选的 execute.js（执行器）。
+ * 目录约定（与内置节点 nodes/{type}/V{num}/ 完全一致）：
+ *   {插件根目录}/{pluginId}/V{n}/index.js（描述模块）+ execute.js（执行器）
+ * 版本目录扫描与最高版本选择复用 pluginLayout 纯函数（与 worker 执行器同一实现，避免双实现漂移）。
+ *
  * 描述模块兼容多层导出结构：ESM default / CommonJS module.exports /
  * {default:{...}}（TS/Babel 产物）/ 命名导出。
  *
@@ -12,6 +15,7 @@ import fs from 'fs'
 import path from 'path'
 import { pathToFileURL } from 'url'
 import { getPluginDirs } from './store.js'
+import { listVersionDirs, getLatestVersionDir } from '../../renderer/src/workflow/utils/pluginLayout.js'
 
 /** 解包描述模块 default 导出（最多 3 层），返回归一后的插件定义对象 */
 function unwrapDefault(pluginModule) {
@@ -32,26 +36,29 @@ function unwrapDefault(pluginModule) {
 }
 
 /**
- * 扫描单个插件目录，返回归一插件信息。
- * 目录不存在 / 无 index.js / 解析失败均不抛出（解析失败返回含 error 字段的对象）。
+ * 扫描单个插件目录，返回归一插件信息（取最高版本 V{n} 子目录）。
+ * 目录不存在 / 无版本子目录 / 无 index.js / 解析失败均不抛出（解析失败返回含 error 字段的对象）。
  */
 export async function scanPluginDir(dirPath) {
   if (!fs.existsSync(dirPath)) return null
-  const indexPath = path.join(dirPath, 'index.js')
+  const latest = getLatestVersionDir(dirPath)
+  if (!latest) return null
+  const indexPath = path.join(latest.dir, 'index.js')
   if (!fs.existsSync(indexPath)) return null
 
   try {
     const pluginDef = unwrapDefault(await import(pathToFileURL(indexPath).href))
-    const executePath = path.join(dirPath, 'execute.js')
+    const executePath = path.join(latest.dir, 'execute.js')
     const hasExecute = fs.existsSync(executePath)
-    const pkgJsonPath = path.join(dirPath, 'package.json')
+    const pkgJsonPath = path.join(latest.dir, 'package.json')
     const hasDeps = fs.existsSync(pkgJsonPath)
 
     return {
       id: path.basename(dirPath),
       dir: dirPath,
       name: pluginDef.name || path.basename(dirPath),
-      version: pluginDef.version || '1.0.0',
+      version: latest.versionDir, // 目录版本（'V{n}'，与内置节点版本语义一致；index.js 内 version 字段不再作为版本来源）
+      versions: listVersionDirs(dirPath).map((v) => v.versionDir), // 全部版本目录（升序）
       description: pluginDef.description || '',
       icon: pluginDef.icon || null,
       config: pluginDef.config || {},

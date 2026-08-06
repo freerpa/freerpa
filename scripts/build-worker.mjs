@@ -126,6 +126,9 @@ for (const { type, ver, execute } of collectNodeExecutors(NODES_SRC)) {
 fs.copyFileSync(path.join(NODES_SRC, '..', 'utils', 'paramRefer.js'), path.join(OUT, 'param-refer.js'))
 console.log(`✓ 节点执行器 ${nodeCount} 个 → resources/worker/nodes/`)
 console.log('✓ 参数引用工具 param-refer.js（渲染端唯一实现）→ resources/worker/')
+// pluginLayout 双端复用：复制渲染端唯一实现（主进程 manifest 与 worker 插件执行器共用）
+fs.copyFileSync(path.join(NODES_SRC, '..', 'utils', 'pluginLayout.js'), path.join(OUT, 'plugin-layout.js'))
+console.log('✓ 插件布局工具 plugin-layout.js（渲染端唯一实现）→ resources/worker/')
 
 // 生成生产 import map：paramRefer 指向复制后的文件 + 裸依赖映射为 npm:（离线闭包由 deno cache 填充）
 fs.writeFileSync(path.join(OUT, 'import-map.json'), JSON.stringify(buildProdImportMap(), null, 2))
@@ -145,6 +148,7 @@ function buildProdImportMap() {
   const base = JSON.parse(fs.readFileSync(path.join(SRC, 'import-map.json'), 'utf-8')).imports
   const prodMap = { ...base }
   prodMap['@renderer/workflow/utils/paramRefer.js'] = './param-refer.js'
+  prodMap['@renderer/workflow/utils/pluginLayout.js'] = './plugin-layout.js'
 
   // 扫描 worker 全部源码 + 节点 execute.js 的裸说明符，映射为 npm:（版本取自项目 node_modules 实际安装版本）
   const files = []

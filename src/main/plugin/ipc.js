@@ -5,9 +5,9 @@
  */
 import { ipcMain, dialog } from 'electron'
 import fs from 'fs'
-import path from 'path'
 import { addPluginDir, getPluginDirs, removePluginDir } from './store.js'
 import { findPlugin, listPlugins } from './manifest.js'
+import { resolvePluginExecute } from '../../renderer/src/workflow/utils/pluginLayout.js'
 
 export const register = () => {
   ipcMain.handle('plugin:addDir', async () => {
@@ -37,9 +37,15 @@ export const register = () => {
   ipcMain.handle('plugin:get', async (_, pluginId) => {
     const found = await findPlugin(pluginId)
     if (!found) return null
-    // 附上 execute.js 源码（供渲染端配置面板展示）
+    // 附上 execute.js 源码（供渲染端配置面板展示）；新布局下经共享布局函数定位版本目录内的 execute.js
     if (found.info.hasExecute) {
-      found.info.executeCode = fs.readFileSync(path.join(found.dir, 'execute.js'), 'utf-8')
+      for (const dir of getPluginDirs()) {
+        const ep = resolvePluginExecute(dir, found.info.id)
+        if (ep) {
+          found.info.executeCode = fs.readFileSync(ep, 'utf-8')
+          break
+        }
+      }
     }
     return found.info
   })
