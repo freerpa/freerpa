@@ -1,3 +1,4 @@
+import { IO_FIELD_MAP_NAME_ID } from '../../../io-conventions.js'
 /**
  * @file: 数据加解密节点
  * @author: dabao
@@ -89,14 +90,7 @@ export default {
     {
       type: 'dynamic',
       dataPath: 'dataModel',
-      fieldMap: {
-        id: 'name',
-        name: 'name',
-        description: 'description',
-        type: 'type',
-        required: 'required',
-        isConfig: true
-      }
+      fieldMap: { ...IO_FIELD_MAP_NAME_ID, isConfig: true }
     }
   ]
 }

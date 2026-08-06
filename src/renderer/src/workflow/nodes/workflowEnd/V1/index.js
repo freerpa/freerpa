@@ -1,3 +1,4 @@
+import { IO_FIELD_MAP_NAME_ID } from '../../../io-conventions.js'
 /**
  * @file: 结束工作流节点
  * @author: dabao
@@ -40,13 +41,7 @@ export default {
     {
       type: 'dynamic',
       dataPath: 'params',
-      fieldMap: {
-        id: 'name',
-        name: 'name',
-        type: 'type',
-        description: 'description',
-        required: 'required'
-      }
+      fieldMap: IO_FIELD_MAP_NAME_ID
     }
   ],
   outputs: []

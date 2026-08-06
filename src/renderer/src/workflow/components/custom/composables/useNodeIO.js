@@ -1,6 +1,7 @@
 import { computed, watch } from 'vue'
 import nodes from '@nodes-path'
 import { parseConfigExpression } from '../../../utils'
+import { resolveDynamicIO } from '../../../resolve-io.js'
 
 /**
  * Composable for node input/output management
@@ -10,25 +11,11 @@ export function useNodeIO(props, flowStore, nodeDefinition, allConfigFieldsWithG
   // Get node inputs (static + dynamic + subFlow start node outputs)
   const nodeInputs = computed(() => {
     const inputs = nodeDefinition?.inputs?.filter((input) => input.type !== 'dynamic') || []
-    let dynamicInputs = []
-    nodeDefinition?.inputs
-      ?.filter((input) => input.type === 'dynamic')
-      .forEach((input) => {
-        const data =
-          input.dataPath.split('.').reduce((obj, key) => obj?.[key], props.data.config) || []
-        if (Array.isArray(data)) {
-          data.forEach((item) => {
-            dynamicInputs.push({
-              id: item[input.fieldMap.id],
-              name: item[input.fieldMap.name],
-              type: item[input.fieldMap.type] || 'any',
-              description: item[input.fieldMap.description] || '',
-              required: item[input.fieldMap.required] || false
-            })
-          })
-        }
-      })
-    dynamicInputs = dynamicInputs.filter((input) => input.id)
+    const dynamicInputs = resolveDynamicIO(
+      nodeDefinition?.inputs?.filter((input) => input.type === 'dynamic'),
+      props.data.config,
+      'inputs'
+    )
 
     let startNodeOutputs = []
     if (nodeDefinition?.subFlow) {
@@ -80,26 +67,11 @@ export function useNodeIO(props, flowStore, nodeDefinition, allConfigFieldsWithG
         }
       }
 
-      let dynamicOutputs = []
-      nodeDefinition?.outputs
-        ?.filter((output) => output.type === 'dynamic')
-        .forEach((output) => {
-          const data =
-            output.dataPath.split('.').reduce((obj, key) => obj?.[key], props.data.config) || []
-          if (Array.isArray(data)) {
-            data.forEach((item) => {
-              dynamicOutputs.push({
-                id: item[output.fieldMap.id],
-                name: item[output.fieldMap.name],
-                type: item[output.fieldMap.type] || 'any',
-                description: item[output.fieldMap.description] || '',
-                required: item[output.fieldMap.required] || false,
-                isConfig: output.fieldMap.isConfig || false
-              })
-            })
-          }
-        })
-      dynamicOutputs = dynamicOutputs.filter((output) => output.id)
+      const dynamicOutputs = resolveDynamicIO(
+        nodeDefinition?.outputs?.filter((output) => output.type === 'dynamic'),
+        props.data.config,
+        'outputs'
+      )
 
       let endNodeInputs = []
       if (nodeDefinition?.subFlow && nodeDefinition.subFlow.endOutputs !== false) {
@@ -123,7 +95,7 @@ export function useNodeIO(props, flowStore, nodeDefinition, allConfigFieldsWithG
       )
       props.data.outputs = allOutputs
       return allOutputs
-    } catch (error) {
+    } catch {
       return []
     }
   })

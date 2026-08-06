@@ -1,3 +1,4 @@
+import { IO_FIELD_MAP_STANDARD } from '../../../io-conventions.js'
 /**
  * @file: 剪切板操作节点
  * @author: FreeRPA
@@ -71,12 +72,7 @@ export default {
     {
       type: 'dynamic',
       dataPath: 'outputs',
-      fieldMap: {
-        id: 'id',
-        name: 'name',
-        description: 'description',
-        type: 'type'
-      }
+      fieldMap: IO_FIELD_MAP_STANDARD
     }
   ]
 }

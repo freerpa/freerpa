@@ -57,8 +57,8 @@ const pluginConfigFields = computed(() => {
 const loadPluginManifest = async (pluginId) => {
   if (!pluginId) {
     // 清空插件数据
-    formData.value._pluginInputs = []
-    formData.value._pluginOutputs = []
+    formData.value.__nodeIO = { inputs: [], outputs: [] }
+    
     pluginManifest.value = null
     pluginName.value = ''
     pluginVersion.value = ''
@@ -79,22 +79,22 @@ const loadPluginManifest = async (pluginId) => {
     pluginVersion.value = manifest.version || ''
     pluginDescription.value = manifest.description || ''
 
-    // 将插件定义的 inputs/outputs 写入 config 的动态字段
-    // useNodeIO.js 会从 config._pluginInputs / config._pluginOutputs 读取并生成连线口
-    formData.value._pluginInputs = (manifest.inputs || []).map((input) => ({
-      id: input.id,
-      name: input.name,
-      type: input.type || 'any',
-      description: input.description || '',
-      required: !!input.required
-    }))
-
-    formData.value._pluginOutputs = (manifest.outputs || []).map((output) => ({
-      id: output.id,
-      name: output.name,
-      type: output.type || 'any',
-      description: output.description || ''
-    }))
+    // 将插件定义的 inputs/outputs 写入 config.__nodeIO（动态 IO 统一约定，useNodeIO 从中读取生成连线口）
+    formData.value.__nodeIO = {
+      inputs: (manifest.inputs || []).map((input) => ({
+        id: input.id,
+        name: input.name,
+        type: input.type || 'any',
+        description: input.description || '',
+        required: !!input.required
+      })),
+      outputs: (manifest.outputs || []).map((output) => ({
+        id: output.id,
+        name: output.name,
+        type: output.type || 'any',
+        description: output.description || ''
+      }))
+    }
 
     // 为插件配置字段设置默认值
     const configFields = pluginConfigFields.value
@@ -105,8 +105,8 @@ const loadPluginManifest = async (pluginId) => {
     })
   } catch (err) {
     console.error('[workflowCallPlugin] 加载插件失败:', err)
-    formData.value._pluginInputs = []
-    formData.value._pluginOutputs = []
+    formData.value.__nodeIO = { inputs: [], outputs: [] }
+    
     pluginManifest.value = null
   } finally {
     isLoading.value = false

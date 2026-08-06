@@ -1,3 +1,4 @@
+import { IO_FIELD_MAP_NAME_ID } from '../../../io-conventions.js'
 /**
  * @file: 自定义节点
  * @author: dabao
@@ -148,13 +149,7 @@ complete({
     {
       type: 'dynamic',
       dataPath: 'inputs',
-      fieldMap: {
-        id: 'name',
-        name: 'name',
-        description: 'description',
-        type: 'type',
-        required: 'required'
-      }
+      fieldMap: IO_FIELD_MAP_NAME_ID
     }
   ],
   // 输出
@@ -162,13 +157,7 @@ complete({
     {
       type: 'dynamic',
       dataPath: 'outputs',
-      fieldMap: {
-        id: 'name',
-        name: 'name',
-        description: 'description',
-        type: 'type',
-        required: 'required'
-      }
+      fieldMap: IO_FIELD_MAP_NAME_ID
     }
   ]
 }

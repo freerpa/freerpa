@@ -4,6 +4,28 @@ import { v4 as uuidv4 } from 'uuid'
 export class ConnectionRules {
   constructor(workflowId) {
     this.workflowId = workflowId
+    // handle→IO Map 缓存：以 node.data.outputs/inputs 数组引用为失效信号（useNodeIO 每次解析生成新数组 → 自动失效重建）
+    this._handleCache = new Map()
+  }
+
+  /**
+   * 获取节点某侧 handle→IO 的 Map（缓存，避免拖线高频校验时 O(n) find）
+   * @param {Object} node 节点对象
+   * @param {'outputs'|'inputs'} side
+   * @returns {Map<string,Object>|undefined}
+   */
+  _getHandleMap = (node, side) => {
+    if (!node) return undefined
+    const cached = this._handleCache.get(node.id)?.[side]
+    const list = node.data?.[side]
+    if (cached && cached.list === list) {
+      return cached.map
+    }
+    const map = new Map()
+    list?.forEach((io) => map.set(io.id, io))
+    const entry = { ...(this._handleCache.get(node.id) || {}), [side]: { list, map } }
+    this._handleCache.set(node.id, entry)
+    return map
   }
 
   /**
@@ -60,8 +82,8 @@ export class ConnectionRules {
       return false
     }
 
-    const sourceOutput = sourceNode.data.outputs?.find((o) => o.id === sourceHandle)
-    const targetInput = targetNode.data.inputs?.find((i) => i.id === targetHandle)
+    const sourceOutput = this._getHandleMap(sourceNode, 'outputs')?.get(sourceHandle)
+    const targetInput = this._getHandleMap(targetNode, 'inputs')?.get(targetHandle)
 
     // 如果sourceHandle是next，targetHandle是prev，则允许连线
     if ((sourceHandle === 'next' || sourceHandle === 'next-false') && targetHandle === 'prev') {
@@ -134,11 +156,11 @@ export class ConnectionRules {
    */
   createConnection = (connection) => {
     let selectable = true
-    if (connection.hasOwnProperty('selectable')) {
+    if (Object.prototype.hasOwnProperty.call(connection, 'selectable')) {
       selectable = connection.selectable
     }
     let deletable = true
-    if (connection.hasOwnProperty('deletable')) {
+    if (Object.prototype.hasOwnProperty.call(connection, 'deletable')) {
       deletable = connection.deletable
     }
     return {

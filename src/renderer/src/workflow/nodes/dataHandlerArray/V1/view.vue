@@ -94,13 +94,12 @@ watch(
           description: '处理后的数据'
         })
       }
-      console.log('inputs', inputs)
-      formData.value.nodeIO = {
+      formData.value.__nodeIO = {
         inputs,
         outputs
       }
     } else {
-      formData.value.inputs = []
+      formData.value.__nodeIO = { inputs: [], outputs: [] }
     }
   }
 )

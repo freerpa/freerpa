@@ -56,9 +56,11 @@ const execute = async (node, context) => {
 
   // 调用插件执行函数 —— 使用新的签名
   // execute({ inputs, outputs, config, apiContext })
+  // 输出/输入定义：去快照化后 node.outputs/inputs 缺失，回退 config.__nodeIO（新约定）与 _pluginInputs/_pluginOutputs（存量）
+  const nodeIO = node.config?.__nodeIO || {}
   const result = await executeFn({
-    inputs: node.inputs || {},
-    outputs: node.outputs || [],
+    inputs: node.inputs || nodeIO.inputs || node.config?._pluginInputs || {},
+    outputs: node.outputs || nodeIO.outputs || node.config?._pluginOutputs || [],
     config: node.config || {},
     apiContext
   })

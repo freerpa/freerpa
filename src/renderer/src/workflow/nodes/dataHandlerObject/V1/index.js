@@ -1,3 +1,4 @@
+import { IO_FIELD_MAP_STANDARD } from '../../../io-conventions.js'
 /**
  * @file: 对象类型数据处理节点
  * @author: dabao
@@ -15,27 +16,17 @@ export default {
   inputs: [
     {
       type: 'dynamic',
-      dataPath: 'nodeIO.inputs',
-      fieldMap: {
-        id: 'id',
-        name: 'name',
-        description: 'description',
-        type: 'type',
-        required: 'required'
-      }
+      dataPath: '__nodeIO.inputs',
+      legacyDataPath: 'nodeIO.inputs',
+      fieldMap: IO_FIELD_MAP_STANDARD
     }
   ],
   outputs: [
     {
       type: 'dynamic',
-      dataPath: 'nodeIO.outputs',
-      fieldMap: {
-        id: 'id',
-        name: 'name',
-        description: 'description',
-        type: 'type',
-        required: 'required'
-      }
+      dataPath: '__nodeIO.outputs',
+      legacyDataPath: 'nodeIO.outputs',
+      fieldMap: IO_FIELD_MAP_STANDARD
     }
   ]
 }

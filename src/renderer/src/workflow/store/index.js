@@ -159,6 +159,13 @@ export const useFlowStore = (id) =>
       }
       saveIng.value = true
       const elements = vueFlowRef.value.toObject()
+      // 去快照化：剥离 useNodeIO 写入的解析快照（node.data.inputs/outputs）。
+      // 渲染端 useNodeIO 每次按 config 动态重建（静态 IO 从节点定义、动态 IO 从 config.__nodeIO/业务配置数组）；
+      // worker 端按 handle id 取数，validateOutputs 对缺失 outputs 定义跳过（已 || [] 容错）。
+      elements.nodes?.forEach((node) => {
+        delete node.data.inputs
+        delete node.data.outputs
+      })
       try {
         await workflowAPI.updateWorkflow({
           id: id,

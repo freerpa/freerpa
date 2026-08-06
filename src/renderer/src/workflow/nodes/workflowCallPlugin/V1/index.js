@@ -1,3 +1,4 @@
+import { IO_FIELD_MAP_STANDARD } from '../../../io-conventions.js'
 /**
  * @file: 调用插件节点
  * @description: 在工作流中调用本地插件，选择插件后根据插件的 index.js 动态生成
@@ -26,7 +27,7 @@ export default {
             try {
               const plugins = await window.electronAPI.plugin.list()
               return plugins.map((p) => ({ label: `${p.name} (v${p.version})`, value: p.id }))
-            } catch (_) {
+            } catch {
               return []
             }
           }
@@ -38,27 +39,18 @@ export default {
   inputs: [
     {
       type: 'dynamic',
-      dataPath: '_pluginInputs',
-      fieldMap: {
-        id: 'id',
-        name: 'name',
-        type: 'type',
-        description: 'description',
-        required: 'required'
-      }
+      dataPath: '__nodeIO.inputs',
+      legacyDataPath: '_pluginInputs',
+      fieldMap: IO_FIELD_MAP_STANDARD
     }
   ],
   // 动态 outputs：根据插件的 index.js 自动生成连线口
   outputs: [
     {
       type: 'dynamic',
-      dataPath: '_pluginOutputs',
-      fieldMap: {
-        id: 'id',
-        name: 'name',
-        type: 'type',
-        description: 'description'
-      }
+      dataPath: '__nodeIO.outputs',
+      legacyDataPath: '_pluginOutputs',
+      fieldMap: IO_FIELD_MAP_STANDARD
     }
   ]
 }
