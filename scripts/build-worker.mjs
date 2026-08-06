@@ -20,6 +20,8 @@ const root = path.resolve(import.meta.dirname, '..')
 const SRC = path.join(root, 'src', 'main', 'workflow', 'worker')
 const NODES_SRC = path.join(root, 'src', 'renderer', 'src', 'workflow', 'nodes')
 const OUT = path.join(root, 'resources', 'worker')
+const NODES_OUT = path.join(OUT, 'nodes')
+const DATA_HANDLERS_SRC = path.join(NODES_SRC, '..', 'dataHandlers') // nodes 上一级 workflow/dataHandlers
 const isDev = process.argv.includes('--dev')
 
 // ═══════════ 复制 worker 源码 ═══════════
@@ -39,24 +41,75 @@ copyDir(SRC, OUT)
 console.log('✓ worker 源码 → resources/worker/')
 
 // ═══════════ 复制节点执行器与 dataHandlers ═══════════
-const nodesOut = path.join(OUT, 'nodes')
-const dataHandlersSrc = path.join(NODES_SRC, '..', 'dataHandlers')
-let nodeCount = 0
-for (const type of fs.readdirSync(NODES_SRC)) {
-  const typeDir = path.join(NODES_SRC, type)
-  if (!fs.statSync(typeDir).isDirectory() || type === 'dataHandlers') continue
-  for (const ver of fs.readdirSync(typeDir)) {
-    const exe = path.join(typeDir, ver, 'execute.js')
-    if (!fs.existsSync(exe)) continue
-    const dest = path.join(nodesOut, type, ver, 'execute.js')
-    fs.mkdirSync(path.dirname(dest), { recursive: true })
-    fs.copyFileSync(exe, dest)
-    nodeCount++
+/**
+ * 遍历节点目录，收集全部 {type, ver, execute}（布局约定：nodes/{type}/{ver}/execute.js）
+ * 复制 / import-map 扫描 / deno cache 入口三处共用，避免遍历逻辑各自实现
+ */
+function collectNodeExecutors(dir) {
+  const list = []
+  for (const type of fs.readdirSync(dir)) {
+    const typeDir = path.join(dir, type)
+    if (!fs.statSync(typeDir).isDirectory()) continue
+    for (const ver of fs.readdirSync(typeDir)) {
+      const execute = path.join(typeDir, ver, 'execute.js')
+      if (fs.existsSync(execute)) list.push({ type, ver, execute })
+    }
+  }
+  return list
+}
+
+/** 解析节点定义 index.js 的 view 标志（default 导出对象中的字面量 view: true/false） */
+function parseNodeViewFlag(indexSrc) {
+  const m = indexSrc.match(/\bview\s*:\s*(true|false)/)
+  return m ? m[1] === 'true' : null
+}
+
+/**
+ * 显式校验节点目录约定（替代静默跳过 / 运行时才暴露）：
+ *  - 版本目录必须含 execute.js（缺失 → 构建失败）
+ *  - view: true 必须存在 view.vue（缺失 → 构建失败，CustomNode 动态 import 会白屏）
+ *  - view: false 却存在 view.vue → 警告（死文件）
+ */
+function assertNodeLayout(dir) {
+  for (const type of fs.readdirSync(dir)) {
+    const typeDir = path.join(dir, type)
+    if (!fs.statSync(typeDir).isDirectory()) continue
+    for (const ver of fs.readdirSync(typeDir)) {
+      if (!/^V\d+$/.test(ver)) continue
+      const vdir = path.join(typeDir, ver)
+      const execute = path.join(vdir, 'execute.js')
+      if (!fs.existsSync(execute)) {
+        throw new Error(`节点缺失 execute.js: ${type}/${ver}/（布局约定 nodes/{type}/{ver}/execute.js）`)
+      }
+      const indexFile = path.join(vdir, 'index.js')
+      if (!fs.existsSync(indexFile)) continue // 无渲染定义的执行器目录，跳过 view 校验
+      const flag = parseNodeViewFlag(fs.readFileSync(indexFile, 'utf-8'))
+      const viewFile = path.join(vdir, 'view.vue')
+      if (!fs.existsSync(viewFile)) {
+        if (flag === true) {
+          throw new Error(`节点声明 view: true 但缺失 view.vue: ${type}/${ver}/（CustomNode 动态 import 会失败）`)
+        }
+      } else if (flag === false) {
+        console.warn(`⚠ 节点声明 view: false 但存在 view.vue（死文件，建议删除）: ${type}/${ver}/`)
+      }
+    }
   }
 }
+
+assertNodeLayout(NODES_SRC)
+let nodeCount = 0
+for (const { type, ver, execute } of collectNodeExecutors(NODES_SRC)) {
+  const dest = path.join(NODES_OUT, type, ver, 'execute.js')
+  fs.mkdirSync(path.dirname(dest), { recursive: true })
+  fs.copyFileSync(execute, dest)
+  nodeCount++
+}
 // dataHandlers 相对 import（types/*）随目录复制
-copyDir(dataHandlersSrc, path.join(OUT, 'data-handlers'))
+copyDir(DATA_HANDLERS_SRC, path.join(OUT, 'data-handlers'))
+// paramRefer 双端复用：复制渲染端唯一实现（worker core/paramRefer.js re-export 它）
+fs.copyFileSync(path.join(NODES_SRC, '..', 'utils', 'paramRefer.js'), path.join(OUT, 'param-refer.js'))
 console.log(`✓ 节点执行器 ${nodeCount} 个 + dataHandlers → resources/worker/nodes|data-handlers/`)
+console.log('✓ 参数引用工具 param-refer.js（渲染端唯一实现）→ resources/worker/')
 
 // 生成生产 import map：dataHandlers 指向复制后的目录 + 裸依赖映射为 npm:（离线闭包由 deno cache 填充）
 fs.writeFileSync(path.join(OUT, 'import-map.json'), JSON.stringify(buildProdImportMap(), null, 2))
@@ -76,6 +129,7 @@ function buildProdImportMap() {
   const base = JSON.parse(fs.readFileSync(path.join(SRC, 'import-map.json'), 'utf-8')).imports
   const prodMap = { ...base }
   prodMap['@renderer/workflow/dataHandlers/'] = './data-handlers/'
+  prodMap['@renderer/workflow/utils/paramRefer.js'] = './param-refer.js'
 
   // 扫描 worker 全部源码 + 节点 execute.js 的裸说明符，映射为 npm:（版本取自项目 node_modules 实际安装版本）
   const files = []
@@ -90,14 +144,7 @@ function buildProdImportMap() {
     }
   }
   walk(OUT)
-  for (const type of fs.readdirSync(nodesOut)) {
-    const typeDir = path.join(nodesOut, type)
-    if (!fs.statSync(typeDir).isDirectory()) continue
-    for (const ver of fs.readdirSync(typeDir)) {
-      const exe = path.join(typeDir, ver, 'execute.js')
-      if (fs.existsSync(exe)) files.push(exe)
-    }
-  }
+  for (const { execute } of collectNodeExecutors(NODES_OUT)) files.push(execute)
   const specs = new Set()
   for (const f of files) {
     const src = fs.readFileSync(f, 'utf-8')
@@ -148,14 +195,7 @@ if (!denoBin) {
 
 // 生成入口清单：host.js + 全部节点 execute.js
 const entries = [path.join(OUT, 'host.js')]
-for (const type of fs.readdirSync(nodesOut)) {
-  const typeDir = path.join(nodesOut, type)
-  if (!fs.statSync(typeDir).isDirectory()) continue
-  for (const ver of fs.readdirSync(typeDir)) {
-    const exe = path.join(typeDir, ver, 'execute.js')
-    if (fs.existsSync(exe)) entries.push(exe)
-  }
-}
+for (const { execute } of collectNodeExecutors(NODES_OUT)) entries.push(execute)
 
 const args = [
   'cache',

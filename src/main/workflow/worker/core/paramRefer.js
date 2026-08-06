@@ -1,38 +1,6 @@
-const separator = '--!@#$%freerpa-refer%$#@!--'
-
-export const isParamRefer = (value) => {
-  if (typeof value !== 'string') {
-    return false
-  }
-  if(value.indexOf(separator) === -1) {
-    return false
-  }
-  const refer = value.split(separator)[0]
-  return /^\{\{[^\{\}]+\.[^\{\}]+\}\}$/.test(refer)
-}
-
-export const makeParamReferValue = (value, refer) => {
-  const oldValue = JSON.stringify(getOldValue(value))
-  return `${refer}${separator}${oldValue}`
-}
-
-export const getRefer = (value) => {
-  if (isParamRefer(value)) {
-    return value.split(separator)[0]
-  }
-  return ''
-}
-
-export const getOldValue = (value) => {
-  if (isParamRefer(value)) {
-    const refer = value.split(separator)[0]
-    let oldValue = value.slice(refer.length + separator.length)
-    if (oldValue) {
-      oldValue = JSON.parse(oldValue)
-    }
-    return oldValue
-  }
-  return value
-}
-
-export const paramReferRegex = /\{{[^}]+}}/g
+/**
+ * worker 端参数引用工具 —— 单一来源复用渲染端实现（内容完全一致，避免双份维护漂移）：
+ *  - dev：经 import-map 的 @renderer/workflow/utils/paramRefer.js 映射到渲染端源码
+ *  - prod：由 scripts/build-worker.mjs 复制为 resources/worker/param-refer.js 并改写映射
+ */
+export * from '@renderer/workflow/utils/paramRefer.js'

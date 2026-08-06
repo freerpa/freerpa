@@ -100,7 +100,7 @@ const execute = async (node, context) => {
       }, {})
 
       const onOpen = () => {
-        console.log('WebSocket连接成功')
+        console.error('WebSocket连接成功')
         retryCount = 0
         startHeartbeat()
         next({
@@ -111,7 +111,7 @@ const execute = async (node, context) => {
       }
 
       const onClose = () => {
-        console.log('WebSocket连接关闭')
+        console.error('WebSocket连接关闭')
         cleanup()
         next({
           websocket: null,
@@ -128,7 +128,7 @@ const execute = async (node, context) => {
       }
 
       const onMessage = (data) => {
-        console.log('WebSocket收到消息:', data)
+        console.error('WebSocket收到消息:', data)
         //处理消息
         next({
           websocket: ws,

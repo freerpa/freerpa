@@ -1,25 +1,24 @@
+/**
+ * @file: 工作流执行 IPC（命令通道）
+ *
+ * 通道命名规则（与 preload 的 onFlowEvent/emitFlowEvent 拼接保持一致，见 src/preload/index.js）：
+ *   flowEventBus:<event>[:<flowId>[:<nodeId>]]
+ * 命令通道不带 flowId 后缀（flowId 作为参数传递）；事件通道（stateChange/nodeStatus/debug 等）带 flowId 后缀。
+ */
 import { ipcMain } from 'electron'
 import { manager } from './index'
-import { AES } from 'crypto-js'
-import CryptoJS from 'crypto-js'
 
-var secretKey = CryptoJS.enc.Utf8.parse('Q6bYTizo4OPRiuHUE3XsA5)Zm^WUv+t%')
-var iv = CryptoJS.enc.Utf8.parse('YAjXAT9W8nQFWKC0')
-const options = {
-  iv: iv,
-  mode: CryptoJS.mode.CBC,
-  padding: CryptoJS.pad.Pkcs7
+// 命令通道单点定义（渲染端经 preload emitFlowEvent(event, null, null, params) 拼出同名通道）
+const CHANNELS = {
+  createEngine: 'flowEventBus:createEngine',
+  startFlow: 'flowEventBus:startFlow',
+  stopFlow: 'flowEventBus:stopFlow',
+  cleanup: 'flowEventBus:cleanup'
 }
 
-const decryptedData = (data) => {
-  const decrypted = AES.decrypt(data, secretKey, options)
-  return decrypted.toString(CryptoJS.enc.Utf8)
-}
-
-// 注册工作流相关的 IPC 处理（通道与渲染端保持兼容，内部走 deno 引擎宿主）
 export const register = () => {
   // 创建工作流
-  ipcMain.handle('flowEventBus:createEngine', async (event, data) => {
+  ipcMain.handle(CHANNELS.createEngine, async (event, data) => {
     try {
       await manager.createEngine(data)
       return { success: true }
@@ -29,7 +28,7 @@ export const register = () => {
   })
 
   // 执行工作流
-  ipcMain.handle('flowEventBus:startFlow', async (event, flowId) => {
+  ipcMain.handle(CHANNELS.startFlow, async (event, flowId) => {
     try {
       const result = await manager.startFlow(flowId)
       return { success: true, ...result }
@@ -39,7 +38,7 @@ export const register = () => {
   })
 
   // 停止工作流
-  ipcMain.handle('flowEventBus:stopFlow', async (event, flowId) => {
+  ipcMain.handle(CHANNELS.stopFlow, async (event, flowId) => {
     try {
       await manager.stopFlow(flowId)
       return { success: true }
@@ -48,14 +47,9 @@ export const register = () => {
     }
   })
 
-  // 清理工作流
-  ipcMain.handle('flowEventBus:cleanup', async (event) => {
+  // 清理工作流（解密 IPC 见 src/main/crypto.js，与工作流执行解耦）
+  ipcMain.handle(CHANNELS.cleanup, async (event) => {
     manager.cleanup()
     return { success: true }
-  })
-
-  // 解密数据
-  ipcMain.handle('workflow:decryptData', async (event, data) => {
-    return decryptedData(data)
   })
 }

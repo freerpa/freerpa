@@ -5,15 +5,12 @@ class WorkflowManager {
     this.engines = new Map()
   }
 
-  // 获取运行中的工作流数量
+  // 获取运行中的工作流数量（仅统计，不清理——避免误删刚 createEngine 尚未 start 的引擎）
   getRunningWorkflowCount() {
     let count = 0
     this.engines.forEach((engine) => {
       if (engine.state === 'running') {
         count++
-      } else {
-        engine.cleanup()
-        this.engines.delete(engine.id)
       }
     })
     return count
@@ -22,7 +19,8 @@ class WorkflowManager {
   // 创建工作流引擎
   async createEngine(workflow) {
     try {
-      // 免登录模式：不再从远程获取限制，使用高默认值（与主进程 MAX_RUNNING 保持一致）
+      // 免登录模式：不再从远程获取限制，使用高默认值。
+      // ⚠ 与主进程 src/main/workflow/index.js 的 MAX_RUNNING 保持一致（跨进程无法共享常量）
       const WORKFLOW_LIMIT = 999
 
       if (WORKFLOW_LIMIT <= this.getRunningWorkflowCount()) {
@@ -54,12 +52,14 @@ class WorkflowManager {
         allNodes: workflow.nodes,
         allEdges: workflow.edges,
         nodes: workflow.nodes,
-        edges: workflow.edges
+        edges: workflow.edges,
+        pluginRoots: workflow.pluginRoots || []
       })
       this.engines.set(id, engine)
       return engine
     } catch (error) {
-      throw new Error(error)
+      // 保留原始 Error（含 stack），不做 Error → String → Error 的丢失转换
+      throw error
     }
   }
 

@@ -24,6 +24,7 @@ class WorkflowExecutor extends EventEmitter {
     this.debug = options.debug || false
     this.isSubFlow = options.isSubFlow || false
     this.ioRoots = options.ioRoots || []
+    this.pluginRoots = options.pluginRoots || [] // 插件目录（主进程 init 注入，workflowCallPlugin 执行器据此定位插件）
     this.subFlows = new Map()
     this.allNodes = options.allNodes
     this.allEdges = options.allEdges
@@ -37,9 +38,10 @@ class WorkflowExecutor extends EventEmitter {
 
     this.executorsManager = new ExecutorManager(this)
     this.state = 'pending'
+    this.runningCount = 0 // 运行中（running/retrying）执行器计数：归零后延迟复核即全部完成，替代 250ms 轮询
+    this.completeTimer = null // 完成判定复核计时器（计数归零后延迟一窗口，等待 next() 启动的后续节点）
     this.startInputs = options.startInputs || {}
     this.nodeOutputs = options.nodeOutputs || {}
-    this.timer = null
     this.nodeExecuteTime = {}
     this.nodeErrorCount = {}
 
@@ -50,22 +52,33 @@ class WorkflowExecutor extends EventEmitter {
     return this._nodeMap.get(nodeId)
   }
 
-  handleNodeStateChange({ nodeId, state, error }) {
-    if (this.state === 'completed' || this.state === 'error') {
+  handleNodeStateChange({ state }) {
+    // 引擎已终态（completed/error/stopped）后忽略节点状态事件
+    if (['completed', 'error', 'stopped'].includes(this.state)) return
+    // error/stopped 由 executeNode 的 catch（_handleNodeError）与 stop() 处理，此处不做完成判定
+    if (state === 'error' || state === 'stopped') return
+
+    // 计数仅随运行态变化：进入 running/retrying +1，成功 success -1；initialized/pending 等中间态不参与
+    // （否则 start 节点初始化瞬间计数归零会误判完成）
+    if (state === 'running' || state === 'retrying') {
+      this.runningCount++
+    } else if (state === 'success') {
+      this.runningCount = Math.max(0, this.runningCount - 1)
+    } else {
       return
     }
-    clearTimeout(this.timer)
-    this.timer = setTimeout(() => {
-      const allCompleted = this.nodes?.every((node) => {
-        const executor = this.executorsManager.get(node.id)
-        return executor?.getState() !== 'running' && executor?.getState() !== 'retrying'
-      })
 
-      if (allCompleted) {
-        this.cleanup('completed')
-        console.log('所有节点执行完成')
-      }
-    }, 250)
+    if (this.runningCount === 0 && this.state === 'running') {
+      // 延迟复核：给 next() fire-and-forget 启动的后续节点一个进入 running 的窗口，避免误判
+      clearTimeout(this.completeTimer)
+      this.completeTimer = setTimeout(() => {
+        this.completeTimer = null
+        if (this.runningCount === 0 && this.state === 'running') {
+          this.cleanup('completed')
+          console.error('所有节点执行完成') // 走 stderr，避免污染 stdout JSON 行协议
+        }
+      }, 100)
+    }
   }
 
   setState(state, error = null) {
@@ -82,7 +95,10 @@ class WorkflowExecutor extends EventEmitter {
       }
       await this.executeNode(startNode.id)
     } catch (error) {
-      this.cleanup('error', error)
+      // _handleNodeError 已 cleanup('error') 并抛出时避免重复 cleanup（否则同一错误触发两次 engine 级 error 事件）
+      if (this.state !== 'error') {
+        this.cleanup('error', error)
+      }
       throw error
     }
   }
@@ -163,21 +179,21 @@ class WorkflowExecutor extends EventEmitter {
       }
       this.nodeExecuteTime[nodeId] = Date.now()
 
-      let executor
-      if (!this.executorsManager.get(nodeId)) {
-        executor = this.executorsManager.create(node)
-      } else {
-        executor = this.executorsManager.get(nodeId)
-      }
-
       if (!Object.prototype.hasOwnProperty.call(node, 'originalConfig')) {
         node.originalConfig = JSON.stringify(node.config)
       }
 
+      // 参数引用解析写入副本：不污染原始 node.config（避免二次执行/调试时原始配置被替换值覆盖）
       const nodeConfig = this.replaceParameters(node.originalConfig)
-      Object.keys(nodeConfig).forEach((key) => {
-        node.config[key] = nodeConfig[key]
-      })
+      const execNode = { ...node, config: { ...nodeConfig } }
+
+      let executor
+      if (!this.executorsManager.get(nodeId)) {
+        executor = this.executorsManager.create(execNode)
+      } else {
+        executor = this.executorsManager.get(nodeId)
+        executor.node = execNode // 复用执行器时同步最新解析配置
+      }
 
       executor.off('stateChange', this._boundHandleNodeStateChange)
       executor.on('stateChange', this._boundHandleNodeStateChange)
@@ -187,7 +203,13 @@ class WorkflowExecutor extends EventEmitter {
     } catch (error) {
       console.error('执行节点失败:', error)
       this.nodeErrorCount[nodeId] = this.nodeErrorCount[nodeId] || 0
-      await this._handleNodeError(nodeId, prevNodeId, error)
+      try {
+        await this._handleNodeError(nodeId, prevNodeId, error)
+      } catch {
+        // _handleNodeError 已 cleanup('error') 并决定终态；吞掉其二次抛出，
+        // 避免 next() fire-and-forget 链上的 executeNode rejection 变成 unhandled rejection
+        // （否则宿主 worker error 事件会再发一次 stateChange error）
+      }
     }
   }
 
@@ -375,10 +397,11 @@ class WorkflowExecutor extends EventEmitter {
 
     await this.executorsManager.cleanup()
 
-    clearTimeout(this.timer)
-    this.timer = null
+    clearTimeout(this.completeTimer)
+    this.completeTimer = null
 
     this.executorsManager = new ExecutorManager(this)
+    this.runningCount = 0
     this.nodeErrorCount = {}
     this.nodeExecuteTime = {}
     this.nodeOutputs = {}
@@ -398,10 +421,10 @@ class WorkflowExecutor extends EventEmitter {
     }
     this.subFlows.clear()
 
-    clearTimeout(this.timer)
-    this.timer = null
-
     await this.executorsManager.cleanup()
+    clearTimeout(this.completeTimer)
+    this.completeTimer = null
+    this.runningCount = 0
 
     if (!this.isSubFlow) {
       this.allNodes = null

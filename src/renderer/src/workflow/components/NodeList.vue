@@ -244,13 +244,8 @@
   });
 
   const fetchPlugins = async () => {
-    try {
-      // 同步插件节点注册（清理已移除插件 + 注册最新插件），保证拖入时能按 plu_<id> 找到定义
-      await loadPluginNodes();
-      plugins.value = (await window.electronAPI.plugin.list()) || [];
-    } catch (_) {
-      plugins.value = [];
-    }
+    // 单次扫描：loadPluginNodes 内部调 plugin.list() 并返回列表，同时完成 plu_ 节点注册/清理
+    plugins.value = await loadPluginNodes();
   };
 
   /**
@@ -340,11 +335,6 @@
   };
 
   const workflows = ref([]);
-
-  onMounted(() => {
-    page = 0;
-    total = 0;
-  });
 
   const handleTabChange = (value) => {
     if (value === 'workflow' && page === 0) {

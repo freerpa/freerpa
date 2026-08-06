@@ -21,7 +21,7 @@ const execute = async (node, context) => {
         const element = await page.find(exclude.selector)
         if (element) await page_eval(element, `el => el.remove()`)
       } catch (error) {
-        console.log(error)
+        console.error(error)
       }
     }
     await page.pdf({

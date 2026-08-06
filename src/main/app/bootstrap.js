@@ -11,6 +11,7 @@ import { register as registerIPC } from '../ipc'
 import { register as cacheRegisterIPC } from '../cache/ipc'
 import { register as dbInfoRegisterIPC } from '../data/dbIpc'
 import { register as pluginRegisterIPC } from '../plugin/ipc'
+import { registerDecryptIpc } from '../crypto'
 
 /**
  * 应用启动引导
@@ -65,6 +66,7 @@ export const bootstrap = async () => {
   cacheRegisterIPC()
   dbInfoRegisterIPC()
   pluginRegisterIPC()
+  registerDecryptIpc()
   registerIPC()
 
   // macOS 激活事件

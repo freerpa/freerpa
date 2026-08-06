@@ -13,7 +13,7 @@ const execute = async (node, context) => {
     const cdp = await page.createCDPSession();
     onNodeEvent(async ({ type, data }) => {
       if (type === 'start') {
-        console.log('start', frameRate, quality)
+        console.error('start', frameRate, quality)
         // 🌟 核心替换：开启CDP原生屏幕推流（替代单次截图，无阻塞）
         await cdp.send('Page.startScreencast', {
           format: 'webp', // 推流编码：webp（体积最小，推荐），可选jpeg
@@ -48,7 +48,7 @@ const execute = async (node, context) => {
           }
         });
       } else if (type === 'end') {
-        console.log('end')
+        console.error('end')
         // 停止推流
         await cdp.send('Page.stopScreencast');
       } else if (type === 'mouseMove') {

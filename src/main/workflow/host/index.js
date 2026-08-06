@@ -7,43 +7,15 @@
 import { EventEmitter } from 'events'
 import { spawn } from 'child_process'
 import path from 'path'
-import fs from 'fs'
-import { app } from 'electron'
 import { encodeLine, LineDecoder } from '../worker/protocol.js'
 import { sendToRenderer } from './rendererUtils.js'
 import { handleRpc, clearFlowBrowsers } from './rpc-handlers.js'
-
-/** dev/prod 资源路径解析 */
-function resolveDeno() {
-  const platform = `${process.platform}-${process.arch}`
-  const binName = process.platform === 'win32' ? 'deno.exe' : 'deno'
-  const appPath = app.getAppPath()
-
-  if (!app.isPackaged) {
-    return {
-      denoBin: fs.existsSync(path.join(appPath, 'resources', 'deno', platform, binName))
-        ? path.join(appPath, 'resources', 'deno', platform, binName)
-        : 'deno', // dev 回退系统 deno
-      workerRoot: path.join(appPath, 'src', 'main', 'workflow', 'worker'),
-      nodesRoot: path.join(appPath, 'src', 'renderer', 'src', 'workflow', 'nodes'),
-      dataHandlersRoot: path.join(appPath, 'src', 'renderer', 'src', 'workflow', 'dataHandlers'),
-      nodeModulesRoot: path.join(appPath, 'node_modules')
-    }
-  }
-  const res = process.resourcesPath
-  return {
-    denoBin: path.join(res, 'deno', platform, binName),
-    workerRoot: path.join(res, 'worker'),
-    nodesRoot: path.join(res, 'worker', 'nodes'),
-    dataHandlersRoot: path.join(res, 'worker', 'data-handlers'),
-    nodeModulesRoot: path.join(res, 'worker', 'node_modules')
-  }
-}
+import { resolveWorkflowPaths } from '../paths.js'
 
 class EngineHost extends EventEmitter {
   constructor() {
     super()
-    this.paths = resolveDeno()
+    this.paths = resolveWorkflowPaths()
     this.runningFlows = new Set() // 运行中的工作流 flowId（用于并发上限与状态跟踪）
     this.#proc = null
     this.#pending = new Map()

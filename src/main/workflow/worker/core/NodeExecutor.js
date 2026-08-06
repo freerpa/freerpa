@@ -36,7 +36,9 @@ class NodeExecutor extends EventEmitter {
       this.initialized = true
       return true
     } catch (error) {
+      // 失败：标记 error 后向上抛出，由 execute() 统一处理（避免重复 setState('error')）
       this.setState('error', error.message)
+      throw error
     }
   }
 
@@ -67,6 +69,9 @@ class NodeExecutor extends EventEmitter {
       if (!this.executor || typeof this.executor !== 'function') {
         throw new Error(`Invalid node module for type: ${this.node.type}`)
       }
+      if (this.state === 'error') {
+        throw new Error(`${this.node.name}: ${this.errorMessage || '初始化失败'}`)
+      }
       this.node.inputs = this.inputs
       this.node.store = this.store
       if (this.state !== 'running') {
@@ -76,7 +81,11 @@ class NodeExecutor extends EventEmitter {
         this.queue.push(this.inputs)
       }
     } catch (error) {
-      this.setState('error', error.message)
+      // 已标记 error（init/executor 内部 setState）则不重复触发；统一向上抛出供 WorkflowExecutor 决策
+      if (this.state !== 'error') {
+        this.setState('error', error.message)
+      }
+      throw error
     }
   }
 
@@ -116,8 +125,9 @@ class NodeExecutor extends EventEmitter {
       state: this.state,
       error: error
     })
+    // 记录错误信息（供 execute() 短路抛出；error 状态不再在此 throw，避免同一错误触发两次 error 事件）
     if (this.state === 'error') {
-      throw new Error(`${this.node.name}: ${error}`)
+      this.errorMessage = error
     }
   }
 
@@ -281,7 +291,7 @@ class NodeExecutor extends EventEmitter {
       this.node = null
       this.context = null
     } catch (error) {
-      console.error(`Error during cleanup for node ${this.node.id}:`, error)
+      console.error(`Error during cleanup for node ${this.node?.id}:`, error)
     }
   }
 }

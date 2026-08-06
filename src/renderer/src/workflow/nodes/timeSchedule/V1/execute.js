@@ -78,7 +78,7 @@ const execute = async (node, context) => {
 
     if (enableSchedule) {
       const cronExpr = buildCronExpression(config)
-      console.log('Cron expression:', config, cronExpr)
+      console.error('Cron expression:', config, cronExpr)
 
       cronInstance = new Cron(cronExpr, {
         timezone: 'Asia/Shanghai'

@@ -38,8 +38,9 @@ export const useFlowStore = (id) =>
     const isExecuting = ref(false)
     // 当前激活的节点tab
     const activeNodeTab = ref('流程控制')
-    // 监听状态变化
-    engine.value.on('statusChange', (status, error) => {
+    // 监听状态变化（唯一状态同步点：engine.status → store.workflowStatus / isExecuting）
+    engine.value.on('statusChange', (status) => {
+      workflowStatus.value = status
       isExecuting.value = status === 'running'
       if (status === 'completed') {
         Message.success('工作流执行完成')

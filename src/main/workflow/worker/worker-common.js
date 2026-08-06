@@ -65,10 +65,10 @@ export const safeWriteFileSync = (fs, filePath, data) => {
     const dirPath = path.dirname(filePath)
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true })
-      console.log(`目录已创建: ${dirPath}`)
+      console.error(`目录已创建: ${dirPath}`) // stderr：避免污染 stdout JSON 行协议
     }
     fs.writeFileSync(filePath, data)
-    console.log(`文件已成功写入: ${filePath}`)
+    console.error(`文件已成功写入: ${filePath}`)
   } catch (err) {
     console.error('写入文件时发生错误:', err.message)
   }

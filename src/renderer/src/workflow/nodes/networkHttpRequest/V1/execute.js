@@ -147,7 +147,7 @@ const execute = async ({ config }, context) => {
 
     // 处理json类型的body
     // if (finalHeaders['Content-Type'].includes('json') && typeof finalBody === 'string') {
-    //   console.log('finalBody',finalBody);
+    //   console.error('finalBody',finalBody);
     //   finalBody = JSON.stringify(JSON.parse(finalBody))
     // }
 

@@ -4,18 +4,28 @@
  */
 import EngineHost from './host/index.js'
 import { buildDenoPermissions, getPermissions } from './permissions.js'
+import { getPluginDirs } from '../plugin/store.js'
+import { clearFlowBrowsers } from './host/rpc-handlers.js'
 
-// 同时运行工作流数量上限（worker 侧 WorkflowManager 中保持一致）
+// 同时运行工作流数量上限。
+// ⚠ 与 worker 侧 src/main/workflow/worker/core/WorkflowManager.js 的 WORKFLOW_LIMIT 保持一致（跨进程无法共享常量）
 const MAX_RUNNING = 999
 
-/** 基础设施读路径（引擎/节点/依赖，自动授予 worker） */
-const infraReadPaths = (host) => [
+/** 基础设施读路径（引擎/节点/依赖/插件目录，自动授予 worker） */
+const infraReadPaths = (host, pluginRoots = []) => [
   host.paths.workerRoot,
   host.paths.nodesRoot,
   host.paths.dataHandlersRoot,
-  host.paths.nodeModulesRoot
+  host.paths.nodeModulesRoot,
+  ...pluginRoots // 插件目录：插件 execute.js 及其依赖需可读
 ]
 
+/**
+ * 主进程工作流执行门面：
+ *  - createEngine：编排（数据校验 → 并发上限 → 创建 Worker → init 注入 → 创建引擎），权限组装见 permissions.js
+ *  - startFlow / stopFlow：EngineHost.invoke 的薄透传（真正的执行在 deno worker 内）
+ *  - cleanup：销毁全部工作流 Worker 并清理浏览器归属记录（保留宿主进程，后续自动复用）
+ */
 export const manager = {
   /** 创建工作流引擎（宿主内为 flowId 创建独立 Worker，并按权限规则生成最小权限描述符） */
   createEngine: async (workflow) => {
@@ -27,14 +37,17 @@ export const manager = {
     }
     const flowId = workflow.id
     const effective = getPermissions()
+    // 插件目录随 init 注入 worker（同 nodesRoot 机制），并自动并入读权限白名单
+    const pluginRoots = getPluginDirs()
 
     // 1. 创建 Worker（deno.permissions 描述符按生效权限生成）
-    await EngineHost.createWorker(flowId, buildDenoPermissions(effective, infraReadPaths(EngineHost)))
-    // 2. 初始化 Worker（节点目录 / io roots）
+    await EngineHost.createWorker(flowId, buildDenoPermissions(effective, infraReadPaths(EngineHost, pluginRoots)))
+    // 2. 初始化 Worker（节点目录 / io roots / 插件目录）
     await EngineHost.invoke('init', {
       flowId,
       nodesRoot: EngineHost.paths.nodesRoot,
-      ioRoots: effective.io.roots
+      ioRoots: effective.io.roots,
+      pluginRoots
     }, flowId)
     // 3. 创建工作流引擎
     await EngineHost.invoke('createEngine', { workflow }, flowId)
@@ -51,8 +64,16 @@ export const manager = {
     return await EngineHost.invoke('stopFlow', {}, flowId)
   },
 
-  /** 清理（保留宿主进程，后续自动复用） */
+  /** 清理：销毁全部工作流 Worker + 清理浏览器归属记录（保留宿主进程，后续自动复用） */
   cleanup: async () => {
+    for (const flowId of EngineHost.runningFlows) {
+      clearFlowBrowsers(flowId)
+    }
     EngineHost.runningFlows.clear()
+    try {
+      await EngineHost.invoke('destroyAll', {}, null)
+    } catch {
+      /* 宿主未启动/已退出 */
+    }
   }
 }

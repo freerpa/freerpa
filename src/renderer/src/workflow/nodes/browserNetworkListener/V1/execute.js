@@ -84,7 +84,7 @@ const execute = async (node, context) => {
     // 检查参数匹配
     const checkBody = (data) => {
       if (!body?.rules.length) return true
-      console.log('请求体数据:', data);
+      console.error('请求体数据:', data);
       return body.rules[body.mode == 'any' ? 'some' : 'every']((rule) => {
         const value = rule.name
           ? rule.name.split('.').reduce((obj, key) => obj?.[key], data)
@@ -97,7 +97,7 @@ const execute = async (node, context) => {
       let body = null // 检查请求体参数
       const postData = request.postData()
       if (!postData) {
-        console.log('没有请求体数据')
+        console.error('没有请求体数据')
         return false
       }
       const contentType = request.headers()['content-type'] || ''
@@ -112,7 +112,7 @@ const execute = async (node, context) => {
         try {
           // 转换为JSON对象
           body = querystring.parse(postData)
-          console.log('表单参数值:', body)
+          console.error('表单参数值:', body)
         } catch (err) {
           body = postData
         }
@@ -153,12 +153,12 @@ const execute = async (node, context) => {
         } else if (responseType.includes('application/x-www-form-urlencoded')) {
           responseData = await response.text()
           responseData = querystring.parse(responseData)
-          console.log('表单参数值:', responseData)
+          console.error('表单参数值:', responseData)
         } else if (responseType.includes('application/xml')) {
           responseData = await response.text()
           const parser = new xml2js.Parser()
           responseData = await parser.parseStringPromise(responseData)
-          console.log('XML参数值:', responseData)
+          console.error('XML参数值:', responseData)
         } else if (responseType.startsWith('text/')) {
           responseData = await response.text()
           //如果是sse，则解析成数组
@@ -193,7 +193,7 @@ const execute = async (node, context) => {
       // 检查请求体是否匹配
       const bodyData = await getBodyData(request)
       if (!checkBody(bodyData)) return
-      console.log('检查请求体是否匹配:', !checkBody(bodyData), bodyData)
+      console.error('检查请求体是否匹配:', !checkBody(bodyData), bodyData)
       // 检查请求头是否匹配
       if (!checkHeaders(request.headers())) return
       // 检查状态码是否匹配

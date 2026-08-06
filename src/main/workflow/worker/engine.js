@@ -8,11 +8,13 @@ import { setNodesRoot } from './core/nodeLoader.js'
 
 let flowId = null
 let ioRoots = []
+let pluginRoots = []
 
 // 初始化：宿主创建 Worker 后第一个命令（注入工作流配置）
-bridge.onInvoke('init', ({ flowId: fid, nodesRoot, ioRoots: roots }) => {
+bridge.onInvoke('init', ({ flowId: fid, nodesRoot, ioRoots: roots, pluginRoots: proots }) => {
   flowId = fid
   ioRoots = roots || []
+  pluginRoots = proots || []
   setNodesRoot(nodesRoot)
   return true
 })
@@ -20,7 +22,7 @@ bridge.onInvoke('init', ({ flowId: fid, nodesRoot, ioRoots: roots }) => {
 // 创建工作流引擎
 bridge.onInvoke('createEngine', async ({ workflow }) => {
   flowId = workflow.id
-  const engine = await WorkflowManager.createEngine({ ...workflow, ioRoots })
+  const engine = await WorkflowManager.createEngine({ ...workflow, ioRoots, pluginRoots })
   engine.on('stateChange', (state, error) => {
     bridge.sendEvent(`flowEventBus:stateChange:${flowId}`, { state, error })
     if (['completed', 'stopped', 'error'].includes(state)) {

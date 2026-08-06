@@ -104,7 +104,7 @@ const execute = async (node, context) => {
           filePaths.push(...getAllFiles(filePath))
         }
       } catch (error) {
-        console.log('无效的文件路径:', filePath)
+        console.error('无效的文件路径:', filePath)
       }
     }
     return filePaths

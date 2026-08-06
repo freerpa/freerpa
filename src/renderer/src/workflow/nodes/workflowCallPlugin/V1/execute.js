@@ -4,7 +4,6 @@
  *              插件通过 APIContext 与工作流交互
  *              对外开放 API：complete / next / wait
  */
-import { app } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import { pathToFileURL } from 'url'
@@ -13,21 +12,12 @@ const execute = async (node, context) => {
   const { pluginId } = node.config
   if (!pluginId) throw new Error('未选择插件')
 
-  // 从本地存储读取插件目录列表
-  const userDataPath = app.getPath('userData')
-  const storePath = path.join(userDataPath, 'user-preferences')
-  let pluginDirs = []
-  try {
-    if (fs.existsSync(storePath)) {
-      pluginDirs = JSON.parse(fs.readFileSync(storePath, 'utf-8')).pluginDirs || []
-    }
-  } catch (_) {
-    pluginDirs = []
-  }
+  // 插件目录列表由主进程经 init 注入（engine.pluginRoots），不再直接读取 user-preferences 文件
+  const pluginRoots = context.engine?.pluginRoots || []
 
   // 在所有已注册的插件目录中查找目标插件
   let executePath = null
-  for (const dir of pluginDirs) {
+  for (const dir of pluginRoots) {
     const ep = path.join(dir, pluginId, 'execute.js')
     if (fs.existsSync(ep)) {
       executePath = ep

@@ -5,6 +5,7 @@
     "@dataModule": "./data-bridge.js",
     "electron": "./electron-bridge.js",
     "@renderer/workflow/dataHandlers/": "../../../renderer/src/workflow/dataHandlers/",
+    "@renderer/workflow/utils/paramRefer.js": "../../../renderer/src/workflow/utils/paramRefer.js",
     "path": "node:path",
     "fs": "node:fs",
     "url": "node:url",

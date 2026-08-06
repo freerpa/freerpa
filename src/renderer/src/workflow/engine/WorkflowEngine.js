@@ -1,7 +1,7 @@
 import { storeToRefs } from 'pinia'
 import { useFlowStore } from '../store'
 import { Message } from '@arco-design/web-vue'
-import { getLeafPathMap, locateNode, getNodeGroupBySubFlow, getGlobleNodes, paramReferRegex, deepClone } from '../utils'
+import { getLeafPathMap, locateNode, getNodeGroupBySubFlow, getGlobleNodes, paramReferRegex } from '../utils'
 import nodes from '@nodes-path'
 export class WorkflowEngine {
   constructor(workflowId) {
@@ -26,10 +26,9 @@ export class WorkflowEngine {
     this.eventHandlers.get(event)?.forEach((handler) => handler(...args))
   }
 
-  // 设置工作流状态
+  // 设置工作流状态（状态源：engine.status；store 经 statusChange 事件同步 workflowStatus/isExecuting）
   setStatus(status) {
     this.status = status
-    this.store.workflowStatus = status
     this.emit('statusChange', status)
     if (status === 'stopped' || status === 'error' || status === 'completed') {
       this.emit('beforeStop')
@@ -40,8 +39,8 @@ export class WorkflowEngine {
     }
   }
 
-  // 注册工作流状态事件
-  registerStatusEvent(event, handler) {
+  // 注册工作流状态事件（onFlowEvent 的 stateChange/onNotice 通道）
+  registerStatusEvent() {
     // 监听工作流状态
     this.listener.push(
       window.electronAPI.onFlowEvent('stateChange', this.flowId, null, (event, state) => {

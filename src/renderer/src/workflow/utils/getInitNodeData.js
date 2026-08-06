@@ -32,9 +32,14 @@ export const getNodeDefaultConfig = (fields) => {
   return config
 }
 
-export const getInitNodeData = (type, workflowId, isStore) => {
+/**
+ * 构建节点实例数据（对象形态）：
+ * 取节点定义 → 展开默认 config → 附加元信息（subFlow/version/插件配置快照等）
+ * 节点定义缺失时（如未注册的 plu_ 插件节点）降级为空配置，避免崩溃
+ */
+export const buildNodeData = (type, workflowId, isStore) => {
   const node = nodes[type]
-  //循环初始化配置（节点定义缺失时（如未注册的 plu_ 插件节点）降级为空配置，避免崩溃）
+  // 循环初始化配置
   let config = {}
   if (node?.config) {
     Object.keys(node.config).forEach((group) => {
@@ -63,5 +68,12 @@ export const getInitNodeData = (type, workflowId, isStore) => {
       isStore
     }
   }
-  return JSON.stringify(nodeData)
+  return nodeData
+}
+
+/**
+ * 生成节点实例数据 JSON 字符串（drag/drop 与 chooseNode 的 dataTransfer 载体，对外契约保持字符串）
+ */
+export const getInitNodeData = (type, workflowId, isStore) => {
+  return JSON.stringify(buildNodeData(type, workflowId, isStore))
 }

@@ -13,7 +13,7 @@ const execute = async (node, context) => {
       _columnIndex = worksheet.columnCount + 1
     }
     worksheet.spliceColumns(_columnIndex, 0, [])
-    console.log('worksheet',worksheet.columnCount);
+    console.error('worksheet',worksheet.columnCount);
     complete({
       columnIndex: _columnIndex,
       columnCount: worksheet.columnCount

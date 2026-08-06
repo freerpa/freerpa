@@ -28,7 +28,7 @@ import chat from './components/aiBot/chat.vue'
 import { storeToRefs } from 'pinia'
 import { useFlowStore } from './store'
 import { useStore } from '@/store'
-import { autoLayout, getInitNodeData, ConnectionRules } from '@/workflow/utils'
+import { autoLayout } from '@/workflow/utils'
 import { getShortcuts, findMatch, onChanged } from '@/utils/shortcut'
 import { getActions } from './components/aiBot/functionCalling.js'
 const props = defineProps({
@@ -46,7 +46,6 @@ const props = defineProps({
   }
 })
 provide('workflowId', props.workflowId)
-const { validateConnection, createConnection } = new ConnectionRules(props.workflowId)
 const flowRef = ref(null)
 const flowStore = useFlowStore(props.workflowId)
 const { isCtrl, isExecuting, vueFlowRef } = storeToRefs(flowStore)
@@ -56,14 +55,6 @@ const { clipboard, isMacOS } = storeToRefs(useStore())
 const _isCtrlKey = (e) => (isMacOS.value ? e.metaKey : e.ctrlKey)
 
 const handleKeyUp = async (event) => {
-  if (event.key === 't') {
-    console.log(vueFlowRef.value.getNodes, await toolActions.addEdge({
-        source: 'node-e040cbee-317b-4c10-a9d9-f1cf1a55cc37',
-        sourceHandle: 'next',
-        target: 'node-13103dcd-9d37-4d7a-af78-40421b4729c2',
-        targetHandle: 'prev'
-      }))
-  }
   const isCtrlKey = _isCtrlKey(event)
   isCtrl.value = isCtrlKey
 }
@@ -198,7 +189,7 @@ const removeKeyUpEventListener = addKeyUpEventListener((e) => {
 // 组件卸载时清理
 onUnmounted(() => {
   try {
-    flowRef.value?.handleStop()
+    // 引擎/浏览器清理由 FlowCanvas onUnmounted 的 engine.cleanup() 负责
     removeKeyDownEventListener()
     removeKeyUpEventListener()
     removeOnChanged?.()
@@ -214,133 +205,6 @@ const toggleChat = () => {
 }
 
 const toolActions = getActions(vueFlowRef, flowRef, props.workflowId)
-// const handleToolCalls = {
-//   addNodes: async ({ nodes }) => {
-//     if (!nodes) {
-//       throw new Error('nodes is required')
-//     }
-//     const newNodes = []
-//     for (const node of nodes.filter((node) => node.type !== 'startNode')) {
-//       let initNodeData = getInitNodeData(node.type)
-//       if (initNodeData) {
-//         initNodeData = JSON.parse(initNodeData)
-//         initNodeData.name = node.name
-//         initNodeData.parentNode = node.parentNode
-//         for (const key in initNodeData.config) {
-//           if (node.config[key]) {
-//             initNodeData.config[key] = node.config[key]
-//           }
-//         }
-//         const newNode = await flowRef.value.addNode(initNodeData, { x: 0, y: 0 })
-//         newNodes.push(newNode)
-//       }
-//     }
-//     autoLayout(vueFlowRef.value)
-//     return newNodes.map((node) => ({
-//       id: node.id,
-//       name: node.name,
-//       config: node.data.config
-//     }))
-//   },
-//   editNodes: async ({ nodes }) => {
-//     if (!nodes) {
-//       throw new Error('nodes is required')
-//     }
-//     const editNodes = []
-//     for (const node of nodes) {
-//       try {
-//         const n = vueFlowRef.value.getNode(node.id)
-//         n.data.name = node.name
-//         n.parentNode = node.parentNode
-//         for (const key in n.data.config) {
-//           if (node.config[key]) {
-//             n.data.config[key] = node.config[key]
-//           }
-//         }
-//         editNodes.push({
-//           id: node.id,
-//           status: 'success'
-//         })
-//       } catch (e) {
-//         editNodes.push({
-//           id: node.id,
-//           status: 'error'
-//         })
-//       }
-//     }
-//     autoLayout(vueFlowRef.value)
-//     console.log(editNodes)
-
-//     return editNodes
-//   },
-//   deleteNodes: async ({ nodes }) => {
-//     if (!nodes) {
-//       throw new Error('nodes is required')
-//     }
-//     const nodeIds = nodes.map((node) => node.id)
-//     await vueFlowRef.value.removeNodes(nodeIds, true, true)
-//     autoLayout(vueFlowRef.value)
-//     return nodeIds
-//   },
-//   addEdges: async ({ edges }) => {
-//     if (!edges) {
-//       throw new Error('edges is required')
-//     }
-//     const newEdges = []
-//     for (const edge of edges) {
-//       const newEdge = {
-//         source: edge.source,
-//         target: edge.target,
-//         sourceHandle: edge.sourceHandle,
-//         targetHandle: edge.targetHandle
-//       }
-//       if (validateConnection(newEdge)) {
-//         newEdges.push(createConnection(newEdge))
-//       } else {
-//         newEdges.push({
-//           id: 'invalid',
-//           source: edge.source,
-//           target: edge.target,
-//           sourceHandle: edge.sourceHandle,
-//           targetHandle: edge.targetHandle,
-//           status: `Invalid connection: ${edge.source} -> ${edge.target}`
-//         })
-//       }
-//     }
-//     vueFlowRef.value.addEdges(newEdges.filter((edge) => edge.id !== 'invalid'))
-//     autoLayout(vueFlowRef.value)
-//     return newEdges.map((edge) => ({
-//       id: edge.id,
-//       source: edge.source,
-//       target: edge.target,
-//       sourceHandle: edge.sourceHandle,
-//       targetHandle: edge.targetHandle,
-//       status: edge.status || 'success'
-//     }))
-//   },
-//   deleteEdges: async ({ edges }) => {
-//     if (!edges) {
-//       throw new Error('edges is required')
-//     }
-//     const edgeIds = edges.map((edge) => edge.id)
-//     await vueFlowRef.value.removeEdges(edgeIds)
-//     autoLayout(vueFlowRef.value)
-//     return edgeIds
-//   },
-//   validateWorkflow: async () => {
-//     const flowData = flowStore.engine.getFlowData()
-//     const configErrors = await flowStore.engine.validateNodeConfig()
-//     const noConnectedNodes = flowStore.engine.getUnconnectedNodes(flowData)
-//     const inputsErrors = flowStore.engine.validateNodeInputs(flowData)
-//     const paramReferErrors = flowStore.engine.replaceParamRefer(flowData)
-//     return {
-//       configErrors,
-//       inputsErrors,
-//       paramReferErrors,
-//       noConnectedNodes
-//     }
-//   }
-// }
 </script>
 
 <style lang="less" scoped>

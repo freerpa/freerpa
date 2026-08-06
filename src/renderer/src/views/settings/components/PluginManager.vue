@@ -3,7 +3,6 @@
     <a-card title="本地插件管理" :bordered="false">
       <template #extra>
         <a-space>
-          <a-button type="text" size="small" @click="showTutorial = true">查看开发教程</a-button>
           <a-popover content="通过添加插件目录来安装本地插件。每个插件是一个独立文件夹，文件夹名作为插件唯一 ID，包含 index.js（描述文件）和 execute.js（执行文件）。">
             <icon-info-circle class="info-icon" />
           </a-popover>
@@ -59,6 +58,7 @@
                   <a-tag v-if="plg.hasExecute" size="small" color="green">✓ execute.js</a-tag>
                   <a-tag v-else size="small" color="red">✗ execute.js</a-tag>
                   <a-tag v-if="plg.hasDeps" size="small" color="orange">含依赖</a-tag>
+                  <a-tag v-if="plg.duplicate" size="small" color="red">ID 重复</a-tag>
                   <a-tag v-if="plg.error" size="small" color="red">{{ plg.error }}</a-tag>
                 </div>
                 <div v-if="plg.config && Object.keys(plg.config).length" class="plugin-config-preview">
@@ -81,96 +81,6 @@
         </a-spin>
       </div>
     </a-card>
-
-    <!-- 开发教程 Modal -->
-    <a-modal v-model:visible="showTutorial" title="本地插件开发教程" width="800px" :footer="false">
-      <div class="tutorial-content">
-        <h3>一、插件目录结构</h3>
-        <pre><code>my-plugin/           ← 文件夹名 = 插件全局唯一 ID
-├── index.js          ← 描述文件（必选，JS 模块导出配置）
-├── execute.js        ← 执行文件（必选）
-└── package.json      ← npm 依赖声明（可选）</code></pre>
-
-        <h3>二、index.js 描述文件</h3>
-        <pre><code>/**
- * 插件描述文件
- * 使用 module.exports 导出配置，支持 JS 动态能力
- * 格式参考内置节点的 config / inputs / outputs 规范
- */
-module.exports = {
-  name: '我的插件',
-  version: '1.0.0',
-  description: '插件功能描述',
-  config: {
-    basic: {
-      name: '基础配置',
-      fields: {
-        param1: {
-          id: 'param1',
-          name: '参数一',
-          type: 'text',
-          default: '',
-          description: '参数说明'
-        }
-      }
-    }
-  },
-  inputs: [
-    { id: 'input1', name: '输入数据', type: 'any', required: false }
-  ],
-  outputs: [
-    { id: 'result', name: '执行结果', type: 'any' }
-  ]
-}</code></pre>
-
-        <p><strong>config</strong> 格式与现有节点开发规范完全一致，支持所有字段类型（text/number/select/switch/radio/code/browser…）。<br />
-        <strong>inputs</strong> 定义上游节点传入的数据端口。<br />
-        <strong>outputs</strong> 定义插件输出的数据端口。</p>
-
-        <h3>三、execute.js 执行文件</h3>
-        <pre><code>/**
- * 插件执行入口
- * 使用新签名: execute({ inputs, outputs, config, apiContext })
- * apiContext 提供: complete / next / wait
- */
-async function execute({ inputs, outputs, config, apiContext }) {
-  const { param1 } = config
-  const inputData = inputs?.input1
-
-  // 你的业务逻辑
-  const result = `处理结果: ${param1}`
-
-  // 输出到下一个节点
-  apiContext.complete({ result })
-}
-
-module.exports = execute</code></pre>
-
-        <h3>四、可用的 apiContext API</h3>
-        <ul>
-          <li><code>apiContext.complete(outputs, isNext?)</code> — 完成节点并输出数据</li>
-          <li><code>apiContext.next(outputs?)</code> — 执行下一个节点</li>
-          <li><code>apiContext.wait(ms)</code> — 异步延迟</li>
-        </ul>
-        <p><strong>注意</strong>：文件系统、全局存储、子流程等 API 仅对内置节点开放，本地插件不可使用。</p>
-
-        <h3>五、Node.js 环境</h3>
-        <p>插件在完整 Node.js 环境中运行，<strong>无沙箱限制</strong>。可以直接使用 <code>require()</code> 引入任意模块，包括文件系统、子进程、网络请求等。</p>
-
-        <h3>六、创建与打包</h3>
-        <ol>
-          <li>创建一个文件夹，文件夹名作为插件唯一 ID</li>
-          <li>编写 <code>index.js</code> 定义插件名称、版本、配置项和输入输出</li>
-          <li>编写 <code>execute.js</code> 实现业务逻辑（必须 module.exports 导出 async function）</li>
-          <li>如需 npm 依赖，在 <code>package.json</code> 中声明并在插件目录运行 <code>npm install</code></li>
-          <li>将插件文件夹放入插件搜索目录，应用自动发现</li>
-          <li>打包分发：直接打包整个插件文件夹为 zip</li>
-        </ol>
-
-        <h3>七、使用方法</h3>
-        <p>在工作流编辑器中，从节点面板的「流程控制」分类拖入<strong>「调用插件」</strong>节点，选择对应的本地插件即可使用。</p>
-      </div>
-    </a-modal>
   </div>
 </template>
 
@@ -178,18 +88,19 @@ module.exports = execute</code></pre>
 import { ref, onMounted } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { IconPlus, IconDelete, IconRefresh, IconInfoCircle } from '@arco-design/web-vue/es/icon'
+import { loadPluginNodes } from '@/workflow/nodes'
 
 const dirs = ref([])
 const plugins = ref([])
 const loading = ref(false)
-const showTutorial = ref(false)
 
 const refresh = async () => {
   loading.value = true
   try {
     dirs.value = await window.electronAPI.plugin.getDirs()
-    plugins.value = await window.electronAPI.plugin.list()
-  } catch (e) {
+    // 复用 loadPluginNodes 单次扫描：同步 plu_ 节点注册并返回插件列表
+    plugins.value = await loadPluginNodes()
+  } catch {
     Message.error('加载失败')
   } finally {
     loading.value = false

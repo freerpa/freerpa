@@ -140,6 +140,8 @@ export const availableNodesForAIBot = nodes
 // ═══════════════════════════════════════════════════
 // 4. 本地插件节点动态注册
 // ═══════════════════════════════════════════════════
+/** 本地插件节点类型前缀（与 worker 端 nodeLoader.js 的 PLUGIN_NODE_PREFIX 约定一致） */
+export const PLUGIN_NODE_PREFIX = 'plu_'
 const registeredPluginTypes = new Set()
 
 /** 根据插件 manifest 生成 plu_<插件id> 节点定义 */
@@ -191,7 +193,7 @@ const buildPluginNodeDef = (plugin) => {
   }
 
   return markRaw({
-    type: `plu_${plugin.id}`,
+    type: `${PLUGIN_NODE_PREFIX}${plugin.id}`,
     name: plugin.name || plugin.id,
     icon: RiPlugLine,
     description: plugin.description || '本地插件节点，执行本地安装的插件',
@@ -207,24 +209,29 @@ const buildPluginNodeDef = (plugin) => {
 /** 注册/更新单个本地插件节点（同一插件幂等；加载失败的插件不注册） */
 export const registerPluginNode = (plugin) => {
   if (!plugin?.id || plugin.error) return
-  const type = `plu_${plugin.id}`
+  const type = `${PLUGIN_NODE_PREFIX}${plugin.id}`
   nodes[type] = buildPluginNodeDef(plugin)
   registeredPluginTypes.add(type)
 }
 
-/** 扫描并注册全部本地插件节点；已移除插件的节点定义同步清理 */
+/**
+ * 扫描并注册全部本地插件节点；已移除插件的节点定义同步清理。
+ * 返回插件列表（含解析失败的 error 项），供列表 UI 复用，避免各消费方重复调用 plugin.list。
+ */
 export const loadPluginNodes = async () => {
   try {
     const plugins = (await window.electronAPI.plugin.list()) || []
     const pluginIds = new Set(plugins.map((p) => p.id))
     for (const type of [...registeredPluginTypes]) {
-      if (!pluginIds.has(type.slice(4))) {
+      if (!pluginIds.has(type.slice(PLUGIN_NODE_PREFIX.length))) {
         delete nodes[type]
         registeredPluginTypes.delete(type)
       }
     }
     plugins.forEach(registerPluginNode)
+    return plugins
   } catch (_) {
     // 插件 API 不可用时静默失败，仅保留已注册节点
+    return []
   }
 }

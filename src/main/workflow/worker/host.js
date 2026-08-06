@@ -40,6 +40,12 @@ async function handleMain(msg) {
         for (const flowId of workers.keys()) await destroyWorker(flowId)
         Deno.exit(0)
       }
+      // 销毁全部工作流 Worker，但保留宿主进程（后续自动复用；对应主进程 manager.cleanup）
+      if (msg.method === 'destroyAll') {
+        for (const flowId of [...workers.keys()]) await destroyWorker(flowId)
+        out({ type: MSG.RESULT, id: msg.id, ok: true })
+        return
+      }
       forward(msg)
       break
     case MSG.RPC_RESULT:
