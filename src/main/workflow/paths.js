@@ -7,8 +7,7 @@
  *
  * 布局约定（与 scripts/build-worker.mjs 保持同步）：
  *  - workerRoot        → worker 源码（host.js / engine.js / core/）
- *  - nodesRoot         → 节点执行器目录（{type}/{version}/execute.js）
- *  - dataHandlersRoot  → 数据处理 handler 目录（双端复用）
+ *  - nodesRoot         → 节点执行器目录（{type}/{version}/execute.js，含节点自包含相对依赖）
  *  - nodeModulesRoot   → 节点裸依赖的 node_modules（deno --node-modules-dir）
  */
 import path from 'node:path'
@@ -28,7 +27,6 @@ export function resolveWorkflowPaths() {
         : 'deno', // dev 回退系统 deno
       workerRoot: path.join(appPath, 'src', 'main', 'workflow', 'worker'),
       nodesRoot: path.join(appPath, 'src', 'renderer', 'src', 'workflow', 'nodes'),
-      dataHandlersRoot: path.join(appPath, 'src', 'renderer', 'src', 'workflow', 'dataHandlers'),
       nodeModulesRoot: path.join(appPath, 'node_modules')
     }
   }
@@ -37,7 +35,6 @@ export function resolveWorkflowPaths() {
     denoBin: path.join(res, 'deno', platform, binName),
     workerRoot: path.join(res, 'worker'),
     nodesRoot: path.join(res, 'worker', 'nodes'),
-    dataHandlersRoot: path.join(res, 'worker', 'data-handlers'),
     nodeModulesRoot: path.join(res, 'worker', 'node_modules')
   }
 }

@@ -13,14 +13,13 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const denoBin = process.env.DENO_BIN || path.join(root, 'resources/deno', `${process.platform}-${process.arch}`, process.platform === 'win32' ? 'deno.exe' : 'deno')
 const workerRoot = path.resolve(process.env.WORKER_ROOT || path.join(root, 'src/main/workflow/worker'))
 const nodesRoot = process.env.WORKER_ROOT ? path.join(workerRoot, 'nodes') : path.join(root, 'src/renderer/src/workflow/nodes')
-const dataHandlers = process.env.WORKER_ROOT ? path.join(workerRoot, 'data-handlers') : path.join(root, 'src/renderer/src/workflow/dataHandlers')
 const nodeModules = process.env.WORKER_ROOT ? path.join(workerRoot, 'node_modules') : path.join(root, 'node_modules')
 
 const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'freerpa-perm-'))
 
 // 每个场景一个独立 Worker（权限描述符固定：仅 tmpRoot 可写、仅 example.com 可访问、禁止子进程）
 const PERMISSIONS = {
-  read: [workerRoot, nodesRoot, dataHandlers, nodeModules, tmpRoot],
+  read: [workerRoot, nodesRoot, nodeModules, tmpRoot],
   write: [tmpRoot],
   net: ['example.com'],
   run: [],

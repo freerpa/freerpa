@@ -33,7 +33,7 @@ class EngineHost extends EventEmitter {
   }
 
   #spawn() {
-    const { denoBin, workerRoot, nodesRoot, dataHandlersRoot, nodeModulesRoot } = this.paths
+    const { denoBin, workerRoot, nodesRoot, nodeModulesRoot } = this.paths
     const args = [
       'run',
       '-A', // 宿主为可信守护（自身不执行用户代码）；实际权限隔离由各 Worker 的 deno.permissions 描述符实现（最小权限）

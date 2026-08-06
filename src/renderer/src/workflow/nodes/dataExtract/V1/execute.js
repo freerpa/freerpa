@@ -3,7 +3,7 @@
  * @author: dabao
  * @date: 2024-03-15
  */
-import { formatValue } from '@renderer/workflow/dataHandlers/formatValue.js'
+import { formatValue } from './formatValue.js'
 
 let runCode = null
 

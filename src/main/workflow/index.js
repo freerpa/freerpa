@@ -15,7 +15,6 @@ const MAX_RUNNING = 999
 const infraReadPaths = (host, pluginRoots = []) => [
   host.paths.workerRoot,
   host.paths.nodesRoot,
-  host.paths.dataHandlersRoot,
   host.paths.nodeModulesRoot,
   ...pluginRoots // 插件目录：插件 execute.js 及其依赖需可读
 ]

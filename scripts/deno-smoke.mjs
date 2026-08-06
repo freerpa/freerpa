@@ -11,7 +11,6 @@ const denoBin = process.env.DENO_BIN || path.join(root, 'resources/deno', `${pro
 // WORKER_ROOT 指向生产布局（resources/worker）时验证生产产物；默认 dev 布局（源码）
 const workerRoot = path.resolve(process.env.WORKER_ROOT || path.join(root, 'src/main/workflow/worker'))
 const nodesRoot = process.env.WORKER_ROOT ? path.join(workerRoot, 'nodes') : path.join(root, 'src/renderer/src/workflow/nodes')
-const dataHandlers = process.env.WORKER_ROOT ? path.join(workerRoot, 'data-handlers') : path.join(root, 'src/renderer/src/workflow/dataHandlers')
 const nodeModules = process.env.WORKER_ROOT ? path.join(workerRoot, 'node_modules') : path.join(root, 'node_modules')
 
 const args = [
@@ -74,7 +73,7 @@ try {
   await invoke('createWorker', {
     flowId: workflow.id,
     permissions: {
-      read: [workerRoot, nodesRoot, dataHandlers, nodeModules],
+      read: [workerRoot, nodesRoot, nodeModules],
       write: [],
       net: [],
       run: [],

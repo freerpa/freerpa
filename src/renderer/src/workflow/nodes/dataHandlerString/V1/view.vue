@@ -7,7 +7,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import FormView from '@/workflow/components/nodes/FormView.vue'
-import { getTypes, getHandlersByType, getHandler } from '@/workflow/dataHandlers'
+import { HANDLERS } from './handlers.js'
 const props = defineProps({
   node: {
     type: Object,
@@ -17,26 +17,16 @@ const props = defineProps({
 
 const formData = ref(props.node.config)
 
-const types = {
-  id: 'type',
-  name: '类型',
-  description: '选择要处理的数据类型',
-  type: 'select',
-  props: {
-    allowClear: false
-  },
-  quickConfig: true,
-  options: getTypes(),
-  show: false,
-  default: 'string'
-}
+// 单类型收敛：本节点只处理 文本 类型，操作下拉直接用节点内 HANDLERS（不再有类型下拉）
+const handleOptions = Object.entries(HANDLERS).map(([value, h]) => ({
+  label: h.label,
+  value
+}))
+
 const fields = computed(() => {
-  const type = formData.value.type
   const handle = formData.value.handle
-  const handler = getHandler(type, handle)
+  const handler = HANDLERS[handle]
   const fields = [
-    types,
-    // 数组操作配置
     {
       id: 'handle',
       name: '操作',
@@ -49,9 +39,8 @@ const fields = computed(() => {
       options: []
     },
     // 操作参数配置
-    ...handler.params
+    ...(handler?.params || [])
   ]
-  const handleOptions = getHandlersByType(type)
   if (handleOptions.length) {
     if (
       formData.value.handle === '' ||
@@ -59,18 +48,18 @@ const fields = computed(() => {
     ) {
       formData.value.handle = handleOptions[0].value
     }
-    fields[1].options = handleOptions
+    fields[0].options = handleOptions
   } else {
     formData.value.handle = ''
-    fields[1].show = false
+    fields[0].show = false
   }
   return fields
 })
 
 watch(
-  () => [formData.value.type, formData.value.handle],
+  () => formData.value.handle,
   () => {
-    const handler = getHandler(formData.value.type, formData.value.handle)
+    const handler = HANDLERS[formData.value.handle]
     if (handler) {
       handler.params.forEach((param) => {
         formData.value[param.id] = param.default

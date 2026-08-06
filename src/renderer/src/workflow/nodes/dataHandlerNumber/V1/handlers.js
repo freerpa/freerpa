@@ -1,6 +1,6 @@
-export default {
-  label: '数字',
-  handlers: {
+// number 类型 handler 集合
+// 单类型收敛：自 dataHandlers/types/number.js 迁入（boolean/time 已删除），节点自包含
+export const HANDLERS = {
     calculate: {
       label: '运算',
       input: ['number'],
@@ -189,5 +189,4 @@ export default {
         return Math.min(...data)
       }
     }
-  }
 }

@@ -1,6 +1,6 @@
-export default {
-  label: '文本',
-  handlers: {
+// string 类型 handler 集合
+// 单类型收敛：自 dataHandlers/types/string.js 迁入（boolean/time 已删除），节点自包含
+export const HANDLERS = {
     length: {
       label: '取长度',
       input: ['string'],
@@ -205,5 +205,4 @@ export default {
       }
     }
 
-  }
 }

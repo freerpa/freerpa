@@ -86,24 +86,8 @@ export const getCorrectDirectorySync = (fs, targetPath) => {
 }
 
 // ═══════════ 数据处理 handler ═══════════
-export { getHandler } from '@renderer/workflow/dataHandlers/index.js'
+// executeDataHandler 与 getHandler 已随 dataHandler 单类型收敛内联进各节点 V1/execute.js（不再依赖全局 dataHandlers 目录）
 export { getHttpServer } from './core/http-server.js'
-
-/**
- * dataHandler{String,Number,Object,Array} 四节点公共执行器（逻辑单点，四份 execute.js re-export 本函数）
- */
-export const executeDataHandler = async (node, context) => {
-  const { inputs, config } = node
-  const { complete } = context
-  const { type, handle } = config
-  let result = inputs.data
-  const handler = getHandler(type, handle)
-  if (handler) {
-    result = handler.handler(result, config)
-  }
-  // 返回处理结果
-  complete({ result })
-}
 
 /**
  * fileCopy / fileMove 公共执行器（operation: 'copy' | 'move'）

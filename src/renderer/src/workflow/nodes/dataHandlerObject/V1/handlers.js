@@ -1,6 +1,6 @@
-export default {
-  label: '对象',
-  handlers: {
+// object 类型 handler 集合
+// 单类型收敛：自 dataHandlers/types/object.js 迁入（boolean/time 已删除），节点自包含
+export const HANDLERS = {
     length: {
       label: '取长度',
       input: ['object'],
@@ -138,5 +138,4 @@ export default {
         return JSON.stringify(data)
       }
     }
-  }
 }

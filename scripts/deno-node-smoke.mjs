@@ -11,11 +11,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const denoBin = process.env.DENO_BIN || path.join(root, 'resources/deno', `${process.platform}-${process.arch}`, process.platform === 'win32' ? 'deno.exe' : 'deno')
 const workerRoot = path.resolve(process.env.WORKER_ROOT || path.join(root, 'src/main/workflow/worker'))
 const nodesRoot = path.join(root, 'src/renderer/src/workflow/nodes')
-const dataHandlers = path.join(root, 'src/renderer/src/workflow/dataHandlers')
 const nodeModules = path.join(root, 'node_modules')
 
 // net: true 允许 HTTP server 监听 127.0.0.1（默认权限 allow-all 等价）
-const PERMISSIONS = { read: [workerRoot, nodesRoot, dataHandlers, nodeModules], write: [], net: true, run: [], env: true, sys: [] }
+const PERMISSIONS = { read: [workerRoot, nodesRoot, nodeModules], write: [], net: true, run: [], env: true, sys: [] }
 
 const scenarios = [
   {

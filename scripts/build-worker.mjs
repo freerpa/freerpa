@@ -6,7 +6,7 @@
  * 产出 resources/worker/：
  *   - host.js / engine.js / bridge.js / worker-common.js / data-bridge.js /
  *     electron-bridge.js / import-map.json / core/**           （worker 源码）
- *   - nodes/<type>/V<n>/execute.js + data-handlers/**          （节点执行器）
+ *   - nodes/<type>/V<n>/execute.js（含同目录相对依赖）        （节点执行器）
  *   - node_modules/**                                          （deno cache 预填充的依赖闭包）
  *   - version.json
  *
@@ -21,7 +21,6 @@ const SRC = path.join(root, 'src', 'main', 'workflow', 'worker')
 const NODES_SRC = path.join(root, 'src', 'renderer', 'src', 'workflow', 'nodes')
 const OUT = path.join(root, 'resources', 'worker')
 const NODES_OUT = path.join(OUT, 'nodes')
-const DATA_HANDLERS_SRC = path.join(NODES_SRC, '..', 'dataHandlers') // nodes 上一级 workflow/dataHandlers
 const isDev = process.argv.includes('--dev')
 
 // ═══════════ 复制 worker 源码 ═══════════
@@ -40,7 +39,7 @@ fs.rmSync(OUT, { recursive: true, force: true })
 copyDir(SRC, OUT)
 console.log('✓ worker 源码 → resources/worker/')
 
-// ═══════════ 复制节点执行器与 dataHandlers ═══════════
+// ═══════════ 复制节点执行器（含同目录相对依赖，节点自包含） ═══════════
 /**
  * 遍历节点目录，收集全部 {type, ver, execute}（布局约定：nodes/{type}/{ver}/execute.js）
  * 复制 / import-map 扫描 / deno cache 入口三处共用，避免遍历逻辑各自实现
@@ -56,6 +55,18 @@ function collectNodeExecutors(dir) {
     }
   }
   return list
+}
+
+/** 扫描 execute.js 的同目录相对 import（如 './handlers.js'），用于把节点自包含的本地模块一并复制 */
+function collectRelativeImports(file) {
+  const src = fs.readFileSync(file, 'utf-8')
+  const deps = []
+  const re = /from\s+['"](\.[^'"]+)['"]/g
+  let m
+  while ((m = re.exec(src))) {
+    if (m[1].startsWith('./')) deps.push(m[1])
+  }
+  return deps
 }
 
 /** 解析节点定义 index.js 的 view 标志（default 导出对象中的字面量 view: true/false） */
@@ -99,19 +110,24 @@ function assertNodeLayout(dir) {
 assertNodeLayout(NODES_SRC)
 let nodeCount = 0
 for (const { type, ver, execute } of collectNodeExecutors(NODES_SRC)) {
-  const dest = path.join(NODES_OUT, type, ver, 'execute.js')
-  fs.mkdirSync(path.dirname(dest), { recursive: true })
-  fs.copyFileSync(execute, dest)
+  const destDir = path.join(NODES_OUT, type, ver)
+  fs.mkdirSync(destDir, { recursive: true })
+  fs.copyFileSync(execute, path.join(destDir, 'execute.js'))
+  // 复制 execute.js 的同目录相对依赖（如 ./handlers.js、./formatValue.js）——节点自包含的本地模块
+  for (const dep of collectRelativeImports(execute)) {
+    const depFile = path.join(path.dirname(execute), dep)
+    if (fs.existsSync(depFile)) {
+      fs.copyFileSync(depFile, path.join(destDir, dep))
+    }
+  }
   nodeCount++
 }
-// dataHandlers 相对 import（types/*）随目录复制
-copyDir(DATA_HANDLERS_SRC, path.join(OUT, 'data-handlers'))
 // paramRefer 双端复用：复制渲染端唯一实现（worker core/paramRefer.js re-export 它）
 fs.copyFileSync(path.join(NODES_SRC, '..', 'utils', 'paramRefer.js'), path.join(OUT, 'param-refer.js'))
-console.log(`✓ 节点执行器 ${nodeCount} 个 + dataHandlers → resources/worker/nodes|data-handlers/`)
+console.log(`✓ 节点执行器 ${nodeCount} 个 → resources/worker/nodes/`)
 console.log('✓ 参数引用工具 param-refer.js（渲染端唯一实现）→ resources/worker/')
 
-// 生成生产 import map：dataHandlers 指向复制后的目录 + 裸依赖映射为 npm:（离线闭包由 deno cache 填充）
+// 生成生产 import map：paramRefer 指向复制后的文件 + 裸依赖映射为 npm:（离线闭包由 deno cache 填充）
 fs.writeFileSync(path.join(OUT, 'import-map.json'), JSON.stringify(buildProdImportMap(), null, 2))
 console.log('✓ 生产 import map 已生成')
 
@@ -128,7 +144,6 @@ fs.writeFileSync(path.join(OUT, 'package.json'), JSON.stringify({ name: 'freerpa
 function buildProdImportMap() {
   const base = JSON.parse(fs.readFileSync(path.join(SRC, 'import-map.json'), 'utf-8')).imports
   const prodMap = { ...base }
-  prodMap['@renderer/workflow/dataHandlers/'] = './data-handlers/'
   prodMap['@renderer/workflow/utils/paramRefer.js'] = './param-refer.js'
 
   // 扫描 worker 全部源码 + 节点 execute.js 的裸说明符，映射为 npm:（版本取自项目 node_modules 实际安装版本）
