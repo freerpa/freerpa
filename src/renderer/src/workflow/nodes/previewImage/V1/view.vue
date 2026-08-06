@@ -98,7 +98,6 @@ const handlePointerMove = (e) => {
 const onNodeEvent = async (params) => {
   if (params.type === 'preview') {
     // 添加记录
-    console.log(params.data)
     image.value = params.data.image
     compareImage.value = params.data.compareImage
   }

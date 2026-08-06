@@ -3,14 +3,16 @@
  * @author: Auto Generated
  * @date: 2024-03-15
  */
-import { processParams } from '@/common'
+import { processParams, getHttpServer } from '@/common'
+
 const execute = async ({ config, inputs }, context) => {
   try {
     const { route = '/' } = config
-    const { next, onBeforeDestroy, executeSubFlow, sendNodeEvent, runCode } = context
+    const { next, onBeforeDestroy, executeSubFlow, sendNodeEvent, runCode, global } = context
     const handler = async (req) => {
-      const reqParams = req.url.searchParams.keys().reduce((prev, cur) => {
-        prev[cur] = req.url.searchParams.get(cur)
+      const reqUrl = new URL(req.url, 'http://localhost')
+      const reqParams = reqUrl.searchParams.keys().reduce((prev, cur) => {
+        prev[cur] = reqUrl.searchParams.get(cur)
         return prev
       }, {})
 
@@ -30,15 +32,17 @@ const execute = async ({ config, inputs }, context) => {
       })
       return result
     }
-    global.httpServer.createRouter('GET', route, handler)
-    
-    const url = `http://localhost:${global.httpServer.port}${route}`
+    // worker 内自建共享 HTTP server（挂 engine.global.httpServer，跨节点共享；替代原未注入的 global.httpServer）
+    const httpServer = await getHttpServer(global)
+    httpServer.createRouter('GET', route, handler)
+
+    const url = `http://localhost:${httpServer.port}${route}`
     // 发送输出事件到渲染进程
     sendNodeEvent(url)
     next({ url })
 
     onBeforeDestroy(() => {
-      global.httpServer.removeRouter('GET', route, handler)
+      httpServer.removeRouter('GET', route)
     })
   } catch (error) {
     throw error

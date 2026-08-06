@@ -7,17 +7,18 @@
 const execute = async (node, context) => {
   const { dirPath } = node.config
   const { complete, fs } = context
+  let resultPath = dirPath // catch 内需要改写，不能用 const
   try {
     // 保存文件
     try {
       fs.mkdirSync(dirPath, { recursive: true })
       // 使用 complete 方法返回结果并继续执行
     } catch (error) {
-      dirPath = ''
+      resultPath = ''
     }
 
     complete({
-      result: dirPath
+      result: resultPath
     })
   } catch (error) {
     throw error

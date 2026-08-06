@@ -11,6 +11,10 @@ const execute = async (node, context) => {
 
   try {
     const { message = '', delay = 0 } = config
+    // 发送前延迟（此前 delay 解构了但未生效）
+    if (delay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
     // 发送消息
     try {
       socket.send(message)

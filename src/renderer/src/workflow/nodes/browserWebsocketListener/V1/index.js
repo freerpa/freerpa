@@ -9,7 +9,7 @@ export default {
   type: 'browserWebsocketListener',
   name: 'WebSocket监听',
   icon: IconThunderbolt,
-  description: '监听WebSocket通信',
+  description: '监听WebSocket通信（常驻监听，需 workflowEnd 或手动停止结束流程）',
   config: {
     basic: {
       name: '基础配置',

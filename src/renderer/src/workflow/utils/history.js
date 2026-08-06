@@ -52,11 +52,11 @@ class History {
               y: node.position.y
             }
           }
-          // 子流程节点不记录尺寸变化（本身就是动态计算的会冲突）
+          // 子流程容器节点（vue-flow type='subFlow'）不记录尺寸变化（本身就是动态计算的会冲突）
           if (
             (oldNode.dimensions.width !== node.dimensions.width ||
               oldNode.dimensions.height !== node.dimensions.height) &&
-            oldNode.data.type !== 'subFlow' &&
+            oldNode.type !== 'subFlow' &&
             (oldNode.dimensions.width || oldNode.dimensions.height)
           ) {
             before.dimensions = {

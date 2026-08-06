@@ -28,6 +28,13 @@ export default {
           description: '文件名（无需扩展名 默认.xlsx）',
           quickConfig: true,
           required: true
+        },
+        overwrite: {
+          id: 'overwrite',
+          name: '覆盖已存在文件',
+          type: 'switch',
+          default: true,
+          description: '文件已存在时是否覆盖'
         }
       }
     }

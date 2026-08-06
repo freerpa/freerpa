@@ -26,12 +26,12 @@ const execute = async (node, context) => {
       await new Promise((resolve) => setTimeout(resolve, delay))
     }
 
-    // 计算点击位置
+    // 计算元素绝对位置中心点（与 wheel 分支一致；此前只返回宽高一半，导致 drag 落点错误）
     const calculateClickPosition = async (element) => {
       const box = await element.boundingBox()
       if (!box) return null
-      const x = Number(box.width) / 2
-      const y = Number(box.height) / 2
+      const x = Number(box.x) + Number(box.width) / 2
+      const y = Number(box.y) + Number(box.height) / 2
       return { x: Math.round(x), y: Math.round(y) }
     }
 

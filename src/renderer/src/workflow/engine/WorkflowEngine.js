@@ -181,7 +181,10 @@ export class WorkflowEngine {
     const flowData = {
       id: this.flowId,
       debug: this.store.debug,
-      nodes: this.store.vueFlowRef.getNodes.filter((node) => node.type !== 'comment' && !node.data.deactivate).map((node) => ({
+      nodes: this.store.vueFlowRef.getNodes.filter(
+        // 排除 comment 与 subFlow 容器节点：容器只作画布分组（子节点经 parentNode 关联），不参与执行
+        (node) => node.type !== 'comment' && node.type !== 'subFlow' && !node.data.deactivate
+      ).map((node) => ({
         id: node.id,
         name: node.data.name,
         type: node.data.type,

@@ -12,7 +12,7 @@ const execute = async (node, context) => {
       modelId,
       conditions = [],
       startPage = 1,
-      batchSize = 100,
+      batchSize = 10,
       random = false,
       sort = [],
       readFields = []

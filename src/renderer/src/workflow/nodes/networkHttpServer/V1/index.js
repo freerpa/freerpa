@@ -9,7 +9,7 @@ export default {
   type: 'networkHttpServer',
   name: 'HTTP服务',
   icon: IconWifi,
-  description: '创建一个HTTP服务来处理请求',
+  description: '创建一个HTTP服务来处理请求（常驻监听，需 workflowEnd 或手动停止结束流程）',
   view: true,
   subFlow: {
     name: '处理流程',

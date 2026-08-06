@@ -1,26 +1,10 @@
 /**
- * @file: 工作流节点执行器
+ * @file: 子流程节点执行器
  * @author: dabao
  * @date: 2024-03-29
+ *
+ * 与 workFlow（工作流）执行器逻辑完全一致：都经 executeSubFlow 分发到子流程
+ * （子节点按 parentNode === '{id}-subFlow' 关联，见 WorkflowExecutor.executeSubFlow）。
+ * 统一复用 workFlow 实现，避免双份代码漂移；dev/prod 布局相对路径一致。
  */
-import { processParams } from '@/common'
-const execute = async (node, context) => {
-  const { inputs, config } = node
-  const { complete, executeSubFlow, runCode } = context
-  try {
-    const { params = [], config: configParams = [] } = config
-    //输入处理（没有输入参数，直接使用默认值）
-    const inputsOutputs = processParams(params, inputs, runCode)
-    //配置参数处理（取对应类型值）
-    const configOutputs = configParams.reduce((acc, param) => {
-      acc[param.name] = param[param.type + 'Value']
-      return acc
-    }, {})
-    const outputs = await executeSubFlow({ ...inputsOutputs, ...configOutputs })
-    complete(outputs)
-  } catch (error) {
-    throw error
-  }
-}
-
-export default execute
+export { default } from '../../workFlow/V1/execute.js'

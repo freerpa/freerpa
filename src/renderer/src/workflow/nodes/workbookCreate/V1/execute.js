@@ -18,8 +18,7 @@ const execute = async (node, context) => {
       worksheet = workbook.addWorksheet('Sheet1')
     }
 
-    worksheet.utils = {
-      /**
+    worksheet.utils = {      /**
     * @description: 获取列号 AA、AB 等
     * @param {number} columnIndex 列号索引
     * @return {string} 列号
@@ -48,6 +47,9 @@ const execute = async (node, context) => {
         return columnIndex
       }
     }
+
+    // 显式挂载 workbook 引用（供 workbookSave 等下游节点保存；替代 exceljs 私有 _workbook hack）
+    worksheet.workbook = workbook
 
     complete({
       worksheet: worksheet

@@ -9,7 +9,7 @@ export default {
   type: 'networkWebsocketConnect',
   name: 'WebSocket连接',
   icon: IconThunderbolt,
-  description: '建立WebSocket连接',
+  description: '建立WebSocket连接（常驻监听，需 workflowEnd 或手动停止结束流程）',
   config: {
     basic: {
       name: '基础配置',

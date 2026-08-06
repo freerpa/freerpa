@@ -775,9 +775,6 @@ const isOverNodeLimit = (_addNodeCount = 1) => false
 
 // 添加节点
 const addNode = async (nodeData, position) => {
-  if (nodeData.type === 'subFlow') {
-    return
-  }
   if (isExecuting.value) {
     Message.warning('当前工作流正在执行,不允许添加节点')
     return
@@ -877,8 +874,8 @@ const addSubFlowNode = async (node, workFlow) => {
     },
     data: {
       user_id: node.user_id || '',
-      type: 'subFlow',
-      name: node.data.type === 'workFlow' ? workFlow.name : '工作流',
+      type: node.data.type, // 业务 type 与父节点一致（workFlow / workflowSubWorkflow），避免 getFlowData 收集到注册表不存在的 'subFlow'
+      name: nodes[node.data.type]?.subFlow?.name || '工作流',
       inputs: [],
       outputs: [],
       config: {}, // 初始化空配置

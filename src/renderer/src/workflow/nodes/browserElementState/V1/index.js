@@ -10,7 +10,7 @@ export default {
   type: 'browserElementState',
   name: '元素状态',
   icon: RiNewsLine,
-  description: '获取指定元素的状态信息',
+  description: '获取指定元素的状态信息（常驻监听，需 workflowEnd 或手动停止结束流程）（一次性状态快照；持续监听请用「DOM 监听」节点）',
   view: false,
   config: {
     basic: {

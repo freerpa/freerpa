@@ -4,6 +4,9 @@
  * @date: 2025-07-30
  */
 
+import path from 'path'
+import { minimatch } from 'minimatch'
+
 // 递归遍历目录
 const traverseDirectory = async (
   dirPath,
@@ -142,8 +145,6 @@ const sortResults = (results, sortBy, sortOrder) => {
     }
   })
 }
-import path from 'path';
-import { minimatch } from 'minimatch';
 
 const execute = async (node, context) => {
   const { config } = node
@@ -176,11 +177,14 @@ const execute = async (node, context) => {
       throw new Error(`目录访问失败: ${error.message}`)
     }
 
+    // 安全深度上限：maxDepth<=0 视为仅遍历顶层（原实现 0 表示无限制 → 大目录树意外无限递归/栈溢出）
+    const depthLimit = isDeep ? Math.max(1, Number(maxDepth) || 1) : 1
+
     // 遍历目录
     const results = await traverseDirectory(directoryPath, fs, path, minimatch, {
       traverseType,
       isDeep,
-      maxDepth,
+      maxDepth: depthLimit,
       includePattern,
       excludePattern,
       currentDepth: 0

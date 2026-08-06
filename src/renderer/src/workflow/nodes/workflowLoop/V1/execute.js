@@ -26,11 +26,9 @@ const loopHandlers = {
         index: indexType === 'zero' ? i : i + 1,
         totalTimes: data.length
       }
-      try {
-        await iterator(result)
-      } catch (error) {
-        console.error('循环节点执行错误:', error)
-      }
+      // 循环体异常不再吞掉：上抛使 workflowThrowException/workflowEnd 可中断循环
+      // （此前被 console.error 吞掉 → 错误静默且可能死循环）
+      await iterator(result)
     }
     return result
   },
@@ -43,11 +41,8 @@ const loopHandlers = {
         index: indexType === 'zero' ? i : i + 1,
         totalTimes: times
       }
-      try {
-        await iterator(result)
-      } catch (error) {
-        console.error('循环节点执行错误:', error)
-      }
+      // 同上：循环体异常上抛，可中断循环
+      await iterator(result)
     }
     return result
   }
@@ -59,36 +54,32 @@ const execute = async (node, context) => {
 
   const { complete, executeSubFlow, runCode } = context
   const { type, times, indexType } = config
-  try {
-    const { params = [], config: configParams = [] } = config
-    //输入处理（没有输入参数，直接使用默认值）
-    const inputsOutputs = processParams(params, inputs, runCode)
-    //配置参数处理（取对应类型值）
-    const configOutputs = configParams.reduce((acc, param) => {
-      acc[param.name] = param[param.type + 'Value']
-      return acc
-    }, {})
-    const iterator = async (result) => {
-      await executeSubFlow({
-        ...inputsOutputs,
-        ...configOutputs,
-        ...result
-      })
-    }
-    let data = inputs.data
-    if (type === 'times') {
-      data = Number(times) || 0
-    }
-    // 执行循环
-    const handler = loopHandlers[type]
-    if (handler) {
-      await handler(data, iterator, indexType)
-      complete()
-    } else {
-      throw new Error('不支持的数据类型')
-    }
-  } catch (error) {
-    throw error
+  const { params = [], config: configParams = [] } = config
+  //输入处理（没有输入参数，直接使用默认值）
+  const inputsOutputs = processParams(params, inputs, runCode)
+  //配置参数处理（取对应类型值）
+  const configOutputs = configParams.reduce((acc, param) => {
+    acc[param.name] = param[param.type + 'Value']
+    return acc
+  }, {})
+  const iterator = async (result) => {
+    await executeSubFlow({
+      ...inputsOutputs,
+      ...configOutputs,
+      ...result
+    })
+  }
+  let data = inputs.data
+  if (type === 'times') {
+    data = Number(times) || 0
+  }
+  // 执行循环
+  const handler = loopHandlers[type]
+  if (handler) {
+    await handler(data, iterator, indexType)
+    complete()
+  } else {
+    throw new Error('不支持的数据类型')
   }
 }
 

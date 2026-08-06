@@ -9,7 +9,7 @@ export default {
   type: 'browserDomListener',
   name: '元素监听',
   icon: IconEye,
-  description: '监听DOM元素的变化',
+  description: '监听DOM元素的变化（常驻监听，需 workflowEnd 或手动停止结束流程）（持续监听元素状态变化；一次性快照请用「元素状态」节点）',
   view: false,
   config: {
     basic: {

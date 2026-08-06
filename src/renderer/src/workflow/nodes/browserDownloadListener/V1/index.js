@@ -13,7 +13,7 @@ export default {
   // 节点图标
   icon: IconCloudDownload,
   // 节点描述
-  description: '监听页面下载事件',
+  description: '监听页面下载事件（常驻监听，需 workflowEnd 或手动停止结束流程）',
   // 节点分类
   view: true,
   // 节点配置

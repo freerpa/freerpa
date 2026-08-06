@@ -4,7 +4,7 @@ export default {
   type: 'browserMonitor',
   name: '网页监控',
   icon: RiComputerLine,
-  description: '实时抓取网页画面并支持交互,常用于无头模式下的状态监控和操作干预',
+  description: '实时抓取网页画面并支持交互,常用于无头模式下的状态监控和操作干预（常驻监听，需 workflowEnd 或手动停止结束流程）',
   view: true,
   config: {
     basic: {

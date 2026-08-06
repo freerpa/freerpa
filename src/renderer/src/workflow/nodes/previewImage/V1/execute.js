@@ -4,13 +4,15 @@
  * @date: 2025-07-31
  */
 
+import { Buffer } from 'node:buffer' // deno/node 显式导入，避免 ESM 内引用未定义全局 Buffer
+
 const execute = async (node, context) => {
   const { inputs } = node
   const { sendNodeEvent, complete, fs } = context
 
   try {
     let image = inputs.image
-    //判断是否为buffer
+    //判断是否为buffer（worker 内上游输出保持 Buffer 引用）
     if (image && image instanceof Buffer) {
       image = 'data:image/png;base64,' + image.toString('base64')
     } else if (image && !image.startsWith('http') && !image.startsWith('data:image')) {

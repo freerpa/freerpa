@@ -22,7 +22,8 @@ export const processParams = (params, data, runCode) => {
       if (Array.isArray(param.type)) {
         type = param.type[0]
       }
-      let value = data[param.name] || param[type + 'Value']
+      // ?? 而非 ||：上游传 0/false/'' 时不再被默认值覆盖（null/undefined 才取默认）
+      let value = data[param.name] ?? param[type + 'Value']
 
       // 数组/对象/任意类型：字符串值解析为对应类型
       if (
@@ -86,6 +87,67 @@ export const getCorrectDirectorySync = (fs, targetPath) => {
 
 // ═══════════ 数据处理 handler ═══════════
 export { getHandler } from '@renderer/workflow/dataHandlers/index.js'
+export { getHttpServer } from './core/http-server.js'
+
+/**
+ * dataHandler{String,Number,Object,Array} 四节点公共执行器（逻辑单点，四份 execute.js re-export 本函数）
+ */
+export const executeDataHandler = async (node, context) => {
+  const { inputs, config } = node
+  const { complete } = context
+  const { type, handle } = config
+  let result = inputs.data
+  const handler = getHandler(type, handle)
+  if (handler) {
+    result = handler.handler(result, config)
+  }
+  // 返回处理结果
+  complete({ result })
+}
+
+/**
+ * fileCopy / fileMove 公共执行器（operation: 'copy' | 'move'）
+ * overwrite 语义统一：目标已存在且未开启覆盖时显式报错（此前 fileCopy 的 overwrite 因 afs copy 忽略参数而失效）
+ */
+const executeFileTransfer = async (node, context, operation) => {
+  const { config } = node
+  const { complete, fs } = context
+  const typeKey = operation === 'copy' ? 'copyType' : 'moveType'
+  const { [typeKey]: transferType, sourcePath, sourceDirPath, targetPath, overwrite } = config
+
+  // 获取实际的源路径
+  const realSourcePath = transferType === 'file' ? sourcePath : sourceDirPath
+  // 检查源路径是否存在
+  if (!fs.existsSync(realSourcePath)) {
+    throw new Error(`源路径不存在: ${realSourcePath}`)
+  }
+  // 获取目标路径
+  let realTargetPath = path.join(targetPath, path.basename(realSourcePath))
+  // 创建目标目录（如果需要）
+  const sourceStats = fs.statSync(realSourcePath)
+  const isDirectory = sourceStats.isDirectory()
+  const targetDir = isDirectory ? realTargetPath : path.dirname(realTargetPath)
+  if (!fs.existsSync(targetDir)) {
+    await fs.mkdir(targetDir, { recursive: true })
+  }
+  // 目标已存在且不允许覆盖 → 显式报错
+  if (fs.existsSync(realTargetPath) && !overwrite) {
+    throw new Error(`目标已存在且未开启覆盖: ${realTargetPath}`)
+  }
+  // 复制 / 移动
+  if (operation === 'copy') {
+    await fs.copy(realSourcePath, realTargetPath)
+  } else {
+    await fs.move(realSourcePath, realTargetPath)
+  }
+  // 返回结果
+  complete({
+    targetPath: realTargetPath
+  })
+}
+
+export const executeFileCopy = (node, context) => executeFileTransfer(node, context, 'copy')
+export const executeFileMove = (node, context) => executeFileTransfer(node, context, 'move')
 
 // ═══════════ 页面代码执行 ═══════════
 export const page_eval = async (page, code, ...args) => {

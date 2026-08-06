@@ -3,8 +3,8 @@
  * @author: FreeRPA
  * @date: 2025-07-31
  */
-const path = require('path')
-const { URL } = require('url')
+import path from 'node:path'
+import { URL } from 'node:url'
 
 const execute = async (node, context) => {
   const { inputs } = node

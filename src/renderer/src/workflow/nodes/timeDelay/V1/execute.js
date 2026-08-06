@@ -7,7 +7,7 @@
 const execute = async (node, context) => {
   const { config } = node
   const { complete, sendNodeEvent, wait } = context
-  const { mode = 'fiexd', duration = 1000, minDuration = 1000, maxDuration = 1000 } = config
+  const { mode = 'fixed', duration = 1000, minDuration = 1000, maxDuration = 1000 } = config
   let finalDuration = duration
   if (mode === 'random') {
     const randomDuration = Math.floor(Math.random() * (maxDuration - minDuration + 1)) + minDuration

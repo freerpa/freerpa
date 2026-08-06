@@ -31,6 +31,7 @@ const execute = async (node, context) => {
   let retryCount = 0
   let heartbeatTimer = null
   let reconnectTimer = null
+  let connectTimeoutTimer = null
   let isDestroyed = false
 
   // 清理函数
@@ -42,6 +43,10 @@ const execute = async (node, context) => {
     if (reconnectTimer) {
       clearTimeout(reconnectTimer)
       reconnectTimer = null
+    }
+    if (connectTimeoutTimer) {
+      clearTimeout(connectTimeoutTimer)
+      connectTimeoutTimer = null
     }
     if (ws) {
       ws.close()
@@ -124,6 +129,12 @@ const execute = async (node, context) => {
       const onError = (error) => {
         console.error('WebSocket连接错误:', error)
         cleanup()
+        // 失败出口：确保节点不挂起（此前 reconnect=false 时无任何 next/complete → 工作流卡死）
+        next({
+          websocket: null,
+          connected: false,
+          message: error?.message || String(error)
+        })
         reconnectWebSocket()
       }
 
@@ -176,11 +187,10 @@ const execute = async (node, context) => {
       // 接收消息
       ws.on('message', onMessage)
 
-      // 连接超时处理
-      setTimeout(() => {
+      // 连接超时处理（不在回调内 throw——回调内 throw 无效且触发 unhandled error；terminate 触发 close → onClose 失败出口）
+      connectTimeoutTimer = setTimeout(() => {
         if (ws && ws.readyState === WebSocket.CONNECTING) {
           ws.terminate()
-          throw new Error(`连接超时 (${timeout}ms)`)
         }
       }, timeout)
 

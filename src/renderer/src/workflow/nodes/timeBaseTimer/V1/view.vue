@@ -34,7 +34,6 @@ const stopTimer = () => {
 
 // 处理节点事件
 const onNodeEvent = ({ type, data }) => {
-  console.log(type, data)
   switch (type) {
     case 'start':
       startTimer()
