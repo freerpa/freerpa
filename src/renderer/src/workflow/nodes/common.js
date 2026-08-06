@@ -719,3 +719,94 @@ export const format = {
     }
   }
 }
+
+/**
+ * 构建节点「执行配置」（错误处理）分组
+ * useNodeConfig 与 FlowCanvas.getNodeConfigFields 共用，消除双份定义漂移
+ * @param {Function} [remoteMethod] errorHandleSpecifyNode 的远程选项加载器（(keyword)=>Promise<[{label,value}]>；可空，runtime 场景由调用方注入）
+ * @returns {{name:string, fields:Object}} 配置分组
+ */
+export const buildErrorHandleGroup = (remoteMethod) => ({
+  name: '执行配置',
+  fields: {
+    errorHandleType: {
+      id: 'errorHandleType',
+      name: '错误处理',
+      type: 'select',
+      description: '节点遇到错误时的处理方式',
+      default: 'stop',
+      paramRef: false,
+      options: [
+        { label: '忽略错误', value: 'ignore' },
+        { label: '重试节点', value: 'retry' },
+        { label: '指定节点', value: 'specify' },
+        { label: '重试流程', value: 'retryFlow' },
+        { label: '终止流程', value: 'stop' }
+      ]
+    },
+    errorHandleRetryCount: {
+      id: 'errorHandleRetryCount',
+      name: '重试次数',
+      type: 'number',
+      description: '重试次数',
+      show: "${errorHandleType}==='retry'",
+      default: 3,
+      paramRef: false
+    },
+    errorHandleRetryInterval: {
+      id: 'errorHandleRetryInterval',
+      name: '重试间隔',
+      type: 'number',
+      description: '重试间隔（毫秒）',
+      show: "${errorHandleType}==='retry'",
+      default: 1000,
+      paramRef: false
+    },
+    errorHandleRetryFailed: {
+      id: 'errorHandleRetryFailed',
+      name: '重试失败',
+      type: 'select',
+      description: '重试次数超过最大重试次数时的处理方式',
+      default: 'stop',
+      show: "${errorHandleType}==='retry'",
+      paramRef: false,
+      options: [
+        { label: '忽略错误', value: 'ignore' },
+        { label: '指定节点', value: 'specify' },
+        { label: '终止流程', value: 'stop' },
+        { label: '重试流程', value: 'retryFlow' }
+      ]
+    },
+    errorHandleSpecifyNode: {
+      id: 'errorHandleSpecifyNode',
+      name: '指定节点',
+      type: 'select',
+      description: '指定要跳转的节点',
+      show: "${errorHandleType}==='specify' || ${errorHandleRetryFailed}==='specify'",
+      paramRef: false,
+      remote: true,
+      options: [],
+      remoteMethod: remoteMethod || null,
+      default: ''
+    }
+  }
+})
+
+/**
+ * 将节点定义的 config 分组转换为 { groupName: [field, ...] } 扁平结构
+ * useNodeConfig.allConfigFieldsWithGroup 与 FlowCanvas.getNodeConfigFields 共用
+ * @param {{config?:Object}} nodeDefinition 节点定义（含 config 分组结构）
+ * @returns {Object<string, Array>} groupName → 字段数组
+ */
+export const getConfigFieldGroups = (nodeDefinition) => {
+  const groups = {}
+  const config = nodeDefinition?.config
+  if (!config) return groups
+  Object.values(config).forEach((group) => {
+    groups[group.name] = []
+    Object.values(group.fields || {}).forEach((field) => {
+      groups[group.name].push(field)
+    })
+  })
+  return groups
+}

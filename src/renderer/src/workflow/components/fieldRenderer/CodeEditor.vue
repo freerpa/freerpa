@@ -105,7 +105,7 @@
 </template>
 
 <script setup>
-import { watch, inject, ref } from 'vue'
+import { watch, inject, ref, computed } from 'vue'
 import { IconCodeSquare } from '@arco-design/web-vue/es/icon'
 import { Codemirror } from 'vue-codemirror'
 import { javascript } from '@codemirror/lang-javascript'
@@ -157,11 +157,14 @@ const languageExtension = () => {
   }
 }
 
-// 编辑器扩展配置
-const extensions = ref([languageExtension(), EditorView.lineWrapping])
-if (props.field.theme === 'dark') {
-  extensions.value.push(oneDark)
-}
+// 编辑器扩展：按字段 language/theme 响应式构建（切换字段/主题时 vue-codemirror 自动 reconfigure，取代一次性初始化）
+const extensions = computed(() => {
+  const list = [languageExtension(), EditorView.lineWrapping]
+  if (props.field.theme === 'dark') {
+    list.push(oneDark)
+  }
+  return list
+})
 
 let editorView = null
 // 编辑器初始化完成

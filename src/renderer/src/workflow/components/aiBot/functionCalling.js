@@ -98,7 +98,7 @@ Object.keys(availableNodesForAIBot).forEach((key) => {
     nodeTools.push(nodeTool)
 })
 
-export const getActions = (vueFlowRef, flowRef, workflowId) => {
+export const getActions = (vueFlowRef, flowRef, workflowId, flowStore) => {
     const { validateConnection, createConnection } = new ConnectionRules(workflowId)
     const actions = {}
     nodeTools.forEach((tool) => {
@@ -123,6 +123,8 @@ export const getActions = (vueFlowRef, flowRef, workflowId) => {
                         n.data.config[key] = config[key]
                     }
                 }
+                // AI 修改节点后触发 data change：进入历史（undo/redo 可回退）并标记未保存
+                flowStore?.onNodesChange([{ id: nodeId, type: 'data' }])
                 result = {
                     id: nodeId,
                     status: 'success'
@@ -140,7 +142,6 @@ export const getActions = (vueFlowRef, flowRef, workflowId) => {
                         }
                     }
                     newNode = await flowRef.value.addNode(initNodeData, { x: 0, y: 0 })
-                    console.log('newNode', newNode)
                 }
                 autoLayout(vueFlowRef.value)
                 result = {
@@ -155,7 +156,13 @@ export const getActions = (vueFlowRef, flowRef, workflowId) => {
         if (!nodeId) {
             throw new Error('nodeId is required')
         }
-        await vueFlowRef.value.removeNodes(nodeId, true, true)
+        // 走受管 API：handleNodeDelete 含起始节点保护、容器重算与历史记录；未就绪时回退直接移除
+        const node = vueFlowRef.value.getNode(nodeId)
+        if (flowRef.value?.handleNodeDelete && node) {
+            flowRef.value.handleNodeDelete(node)
+        } else {
+            await vueFlowRef.value.removeNodes(nodeId, true, true)
+        }
         autoLayout(vueFlowRef.value)
         return 'success'
     }

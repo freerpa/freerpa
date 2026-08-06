@@ -46,9 +46,6 @@ export function useNodeActions(props, flowStore, emit) {
         nodeName.value = props.data.name
         renameMode.value = true
         break
-      case 'detail':
-        emit('openWorkflowDetail', props.data?.workFlow?.id)
-        break
       case 'deactivate':
         props.data.deactivate = true
         break

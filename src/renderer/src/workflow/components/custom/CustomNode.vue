@@ -15,7 +15,6 @@
       :global="data?.global"
       :disabled="data?.deactivate"
       :is-executing="isExecuting"
-      :show-detail="nodeDefinition.subFlow && data?.workFlow?.store"
       @action="actionSelect"
     />
 
@@ -186,8 +185,7 @@ const emit = defineEmits([
   'addNode',
   'action',
   'addNodeToSubFlow',
-  'showQuickConnect',
-  'openWorkflowDetail'
+  'showQuickConnect'
 ])
 
 // ── Provides ────────────────────────────────────

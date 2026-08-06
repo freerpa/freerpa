@@ -29,6 +29,7 @@ import { ref, watch, inject, onMounted } from 'vue'
 import { debounce } from 'lodash-es'
 import { unDoReDoInterceptor } from '@/workflow/utils'
 import { useFieldWatch } from './composables/useFieldValue'
+import { useRemoteOptions } from './composables/useRemoteOptions'
 
 const props = defineProps({
   field: {
@@ -40,8 +41,8 @@ const props = defineProps({
 const formData = inject('formData')
 const value = defineModel()
 useFieldWatch(props, value)
-const loading = ref(false)
-const options = ref([])
+// 远程加载统一（useRemoteOptions）；Select 的静态 options 支持 async 函数，由 resolveOptions 处理
+const { loading, options, loadOptions: loadRemote } = useRemoteOptions(props.field, (kw) => kw, formData)
 
 // 解析 options：支持数组、async 函数
 const resolveOptions = async (rawOptions) => {
@@ -79,15 +80,14 @@ const loadOptions = async (keyword = '') => {
   }
 }
 
-// 组件挂载时自动加载选项
+// 组件挂载时自动加载选项（静态：resolveOptions；远程：useRemoteOptions 的 loadRemote）
 onMounted(() => {
-  loadOptions().then(() => valueValid())
+  if (!props.field.remote || typeof props.field.remoteMethod !== 'function') {
+    resolveOptions(props.field.options).then(() => valueValid())
+  } else {
+    loadRemote().then(() => valueValid())
+  }
 })
-
-// 远程加载选项
-if (props.field.remote) {
-  loadOptions().then(() => valueValid())
-}
 
 const valueValid = debounce(() => {
   if (props.field.multiple) {

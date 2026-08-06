@@ -118,14 +118,6 @@ import { Background } from '@vue-flow/background'
 import { MiniMap } from '@vue-flow/minimap'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
-import {
-  IconFullscreen,
-  IconSave,
-  IconPlayCircle,
-  IconPauseCircle,
-  IconUndo,
-  IconRedo
-} from '@arco-design/web-vue/es/icon'
 import { useFlowStore } from '../store'
 import { useStore } from '@/store'
 import { Message } from '@arco-design/web-vue'
@@ -155,8 +147,13 @@ import {
   rebuildElementIds,
   adjustParentSize,
   isTouchpadEvent,
-  getAllSuccessorNodes
+  getAllSuccessorNodes,
+  handleWheel,
+  dispatchMouseDown
 } from '../utils'
+import { useNodeSelection } from '../composables/useNodeSelection.js'
+import { useNodeCrud } from '../composables/useNodeCrud.js'
+import { useNodeDragDrop } from '../composables/useNodeDragDrop.js'
 // 工作流ID
 const workflowId = inject('workflowId')
 const { workflow: workflowAPI } = window.electronAPI
@@ -174,267 +171,47 @@ provide('isExecuting', isExecuting)
 //关闭预览模式
 provide('isPreview', ref(false))
 
-// ── 选中节点追踪 ──────────────────────────────────
-const selectedNodes = ref([])
-
-/** 包装 store 的 onNodesChange，在节点增删或选择变化后同步选中状态 */
-const handleNodesChange = (changes) => {
-  flowStore.onNodesChange(changes)
-  if (changes.length === 0) return
-  const type = changes[0]?.type
-  if (type === 'select' || type === 'remove' || type === 'add') {
-    nextTick(() => {
-      selectedNodes.value = vueFlowRef.value?.getSelectedNodes || []
-    })
-  }
-}
-
-/** 选中的自定义节点（排除 comment/subFlow 类型） */
-const selectedCustomNodes = computed(() => {
-  return selectedNodes.value.filter(
-    (n) => n.type === 'custom' && n.data?.type
-  )
-})
-
-/** 有且仅有一个可配置节点选中时才显示抽屉 */
-const configDrawerVisible = computed(() => {
-  if (selectedCustomNodes.value.length !== 1) return false
-  const node = selectedCustomNodes.value[0]
-  const def = nodes[node.data?.type]
-  if (!def) return false
-  // 检查是否有配置字段
-  const groups = getNodeConfigFields(node.data?.type)
-  return Object.keys(groups).length > 0
-})
-
-/** 缓存最后有效节点 ID — 确保关闭时 key 不变，让 Transition 正常触发 leave 动画 */
-const _cachedNodeId = ref('')
-
-/** 当前选中的节点 ID */
-const selectedNodeId = computed(() => {
-  const id = configDrawerVisible.value ? selectedCustomNodes.value[0]?.id : ''
-  if (id) _cachedNodeId.value = id
-  return id || _cachedNodeId.value
-})
-
-/** 当前选中节点的 data 对象 */
-const selectedNodeData = computed(() => {
-  return configDrawerVisible.value ? selectedCustomNodes.value[0]?.data : { config: {} }
-})
-
-/** 选中节点的配置字段分组 */
-const selectedNodeConfigFields = computed(() => {
-  if (!configDrawerVisible.value) return {}
-  const nodeId = selectedCustomNodes.value[0]?.id
-  const fields = getNodeConfigFields(selectedCustomNodes.value[0]?.data?.type)
-
-  // 为 errorHandleSpecifyNode 注入可用的 remoteMethod
-  if (fields['执行配置']) {
-    const specifyField = fields['执行配置'].find((f) => f.id === 'errorHandleSpecifyNode')
-    if (specifyField) {
-      specifyField.remoteMethod = async (keyword = '') => {
-        const node = vueFlowRef.value?.findNode(nodeId)
-        if (!node) return []
-        let nodesList = vueFlowRef.value?.getNodes.filter(
-          (n) => n.parentNode === node.parentNode && n.id !== node.id
-        ) || []
-        if (keyword) {
-          nodesList = nodesList.filter((n) => n.data.name.includes(keyword))
-        }
-        return nodesList.map((el) => ({
-          label: el.data.name,
-          value: el.id
-        }))
-      }
-    }
-  }
-
-  return fields
-})
-
-/**
- * 获取节点类型的配置字段分组（含错误处理注入）
- * 返回 { groupName: [field1, field2, ...] }
- */
-const getNodeConfigFields = (type) => {
-  const def = nodes[type]
-  if (!def) return {}
-
-  const config = { ...def.config }
-
-  // 为非 start/end 节点注入错误处理配置
-  if (type !== 'workflowStart' && type !== 'workflowEnd') {
-    config.errorHandle = {
-      name: '执行配置',
-      fields: {
-        errorHandleType: {
-          id: 'errorHandleType',
-          name: '错误处理',
-          type: 'select',
-          description: '节点遇到错误时的处理方式',
-          default: 'stop',
-          paramRef: false,
-          options: [
-            { label: '忽略错误', value: 'ignore' },
-            { label: '重试节点', value: 'retry' },
-            { label: '指定节点', value: 'specify' },
-            { label: '重试流程', value: 'retryFlow' },
-            { label: '终止流程', value: 'stop' }
-          ]
-        },
-        errorHandleRetryCount: {
-          id: 'errorHandleRetryCount',
-          name: '重试次数',
-          type: 'number',
-          description: '重试次数',
-          show: "${errorHandleType}==='retry'",
-          default: 3,
-          paramRef: false
-        },
-        errorHandleRetryInterval: {
-          id: 'errorHandleRetryInterval',
-          name: '重试间隔',
-          type: 'number',
-          description: '重试间隔（毫秒）',
-          show: "${errorHandleType}==='retry'",
-          default: 1000,
-          paramRef: false
-        },
-        errorHandleRetryFailed: {
-          id: 'errorHandleRetryFailed',
-          name: '重试失败',
-          type: 'select',
-          description: '重试次数超过最大重试次数时的处理方式',
-          default: 'stop',
-          show: "${errorHandleType}==='retry'",
-          paramRef: false,
-          options: [
-            { label: '忽略错误', value: 'ignore' },
-            { label: '指定节点', value: 'specify' },
-            { label: '终止流程', value: 'stop' },
-            { label: '重试流程', value: 'retryFlow' }
-          ]
-        },
-        errorHandleSpecifyNode: {
-          id: 'errorHandleSpecifyNode',
-          name: '指定节点',
-          type: 'select',
-          description: '指定要跳转的节点',
-          show: "${errorHandleType}==='specify' || ${errorHandleRetryFailed}==='specify'",
-          paramRef: false,
-          remote: true,
-          options: [],
-          remoteMethod: null, // runtime 不适用
-          default: ''
-        }
-      }
-    }
-  }
-
-  // 转换为分组格式
-  const groups = {}
-  Object.values(config).forEach((group) => {
-    groups[group.name] = []
-    Object.values(group.fields || {}).forEach((field) => {
-      groups[group.name].push(field)
-    })
-  })
-  return groups
-}
+// ── 选中节点追踪与配置字段（提取至 useNodeSelection） ───────
+const {
+  handleNodesChange,
+  configDrawerVisible,
+  selectedNodeId,
+  selectedNodeData,
+  selectedNodeConfigFields
+} = useNodeSelection(flowStore, vueFlowRef)
 // 连线规则
 const { validateConnection, createConnection } = new ConnectionRules(workflowId)
-// 触摸板处理：平移画布
-function handleTouchpadWheel(e) {
-  const { x, y, zoom } = vueFlowRef.value.viewport
-  vueFlowRef.value.setViewport({
-    x: x - e.deltaX,
-    y: y - e.deltaY,
-    zoom
-  })
-}
 
-// --------------------------
-// 1. 新增：判断鼠标下元素是否需要 no-wheel
-// --------------------------
-function isNoWheelElement(e) {
-  // 获取鼠标当前位置的元素
-  const targetElement = document.elementFromPoint(e.clientX, e.clientY)
-  if (!targetElement) return false
+// ── 节点增删改查与剪贴板（提取至 useNodeCrud） ───────
+const { addStartNode, addNode, addSubFlowNode, handleNodeAction, handleNodeDelete, isOverNodeLimit } = useNodeCrud({
+  vueFlowRef,
+  isExecuting,
+  clipboard,
+  createConnection
+})
 
-  // 检查元素本身或其父元素是否包含 no-wheel 类
-  let currentElement = targetElement
-  while (currentElement) {
-    if (currentElement.classList.contains('no-wheel')) {
-      return true // 找到 no-wheel 元素，返回需要禁用
-    }
-    currentElement = currentElement.parentElement // 向上遍历父元素
-  }
-  return false // 未找到，允许滚轮
-}
-
-// 鼠标滚轮处理：缩放画布
-const handleMouseWheel = (e) => {
-  const zoom = vueFlowRef.value.viewport.zoom
-  let zoomStep = 0
-  if (e.deltaY > 0) {
-    zoomStep = Math.min(e.deltaY, 30)
-  } else {
-    zoomStep = Math.max(e.deltaY, -30)
-  }
-  vueFlowRef.value.zoomTo(zoom - zoomStep * 0.002)
-}
-
-// 新增：判断元素是否为“可滚动元素”（需要自身响应滚轮）
-const isScrollableElement = (element) => {
-  if (!element) return false
-
-  // 1. 输入框类元素：本身可滚动（如多行文本框）或不需要画布响应
-  const inputTypes = ['INPUT', 'TEXTAREA', 'SELECT']
-  if (inputTypes.includes(element.tagName) || element.isContentEditable) {
-    return true
-  }
-
-  // 2. 可滚动容器：overflow 为 auto/scroll 且内容超出容器
-  const styles = window.getComputedStyle(element)
-  const isScrollable =
-    (styles.overflow === 'auto' ||
-      styles.overflow === 'scroll' ||
-      styles.overflowX === 'auto' ||
-      styles.overflowX === 'scroll' ||
-      styles.overflowY === 'auto' ||
-      styles.overflowY === 'scroll') &&
-    // 内容高度 > 容器高度（垂直可滚动），或内容宽度 > 容器宽度（水平可滚动）
-    (element.scrollHeight > element.clientHeight || element.scrollWidth > element.clientWidth)
-
-  return isScrollable
-}
-
-// 新增：检查事件目标或其祖先是否为可滚动元素
-const isInScrollableElement = (e) => {
-  let currentElement = e.target
-  // 向上遍历至 body，检查是否有可滚动元素
-  while (currentElement && currentElement !== document.body) {
-    if (isScrollableElement(currentElement)) {
-      return true
-    }
-    currentElement = currentElement.parentElement
-  }
-  return false
-}
-
-// 点击处理：向文档发送 mousedown 事件，触发select的popup
-const dispatchMouseDown = (e) => {
-  document.documentElement.dispatchEvent(new Event('mousedown'))
-}
-
-// 处理滚轮事件
-const handleWheel = (e) => {
-  if (isTouchpadEvent(e) && !isInScrollableElement(e)) {
-    handleTouchpadWheel(e)
-  } else if (!isNoWheelElement(e) && !isInScrollableElement(e)) {
-    handleMouseWheel(e)
-  }
-}
+// ── 节点拖拽归属与快速连接（提取至 useNodeDragDrop） ───────
+const {
+  onNodeDrag,
+  onNodeDragStop,
+  onDragOver,
+  addNodeToSubFlow,
+  addNodeFromEdge,
+  addNodeFromNode,
+  nodeListVisible,
+  quickConnectStyle,
+  quickConnect,
+  showQuickConnect,
+  quickConnectChooseNode
+} = useNodeDragDrop({
+  vueFlowRef,
+  isCtrl,
+  isDragging,
+  IntersectingNode,
+  isExecuting,
+  addNode,
+  createConnection
+})
 
 // 悬停边ID
 const hoverEdgeId = ref(null)
@@ -451,242 +228,6 @@ const edgeDoubleClick = ({ edge }) => {
   vueFlowRef.value.removeEdges(edge.id)
 }
 
-// 处理节点拖拽
-const onNodeDrag = (data) => {
-  if (!isCtrl.value) return
-
-  const position = vueFlowRef.value.screenToFlowCoordinate({
-    x: data.event.clientX,
-    y: data.event.clientY
-  })
-  const subFlowNodes = vueFlowRef.value.getNodes.filter(
-    (node) => node.type === 'subFlow' && !node.hidden
-  )
-  if (subFlowNodes.length === 0) return
-  // 获取当前节点与子流程节点的交集
-  IntersectingNode.value = vueFlowRef.value
-    .getIntersectingNodes(
-      {
-        x: position.x,
-        y: position.y,
-        width: 1,
-        height: 1
-      },
-      false,
-      subFlowNodes
-    )
-    .pop()
-}
-
-// 处理节点拖拽停止
-const onNodeDragStop = (data) => {
-  isDragging.value = false
-  if (!isCtrl.value) return
-  let parentPosition = null
-  let parentNode = undefined
-  if (IntersectingNode.value) {
-    parentPosition = getFlowCoordinate(IntersectingNode.value, vueFlowRef.value)
-    parentNode = IntersectingNode.value.id
-  }
-  const oldParentNode = []
-  data.nodes
-    .filter(
-      (node) =>
-        !['comment', 'subFlow'].includes(node.type) &&
-        node.data.type !== 'workflowStart' &&
-        node.data.type !== 'workflowEnd' &&
-        node.parentNode !== parentNode
-    )
-    .forEach((node) => {
-      const position = getFlowCoordinate(node, vueFlowRef.value)
-      if (parentPosition) {
-        position.x = position.x - parentPosition.x
-        position.y = position.y - parentPosition.y
-      }
-      node.parentNode && oldParentNode.push(node.parentNode)
-      vueFlowRef.value.updateNode(node.id, (node) => {
-        //同级名称查重
-        node.data.name = getNodeName(
-          vueFlowRef.value.getNodes.filter((n) => n.parentNode === parentNode && n.id !== node.id),
-          node.data.name
-        )
-        node.parentNode = parentNode
-        node.position = position
-      })
-    })
-  //获取所有和交叉节点关联的边
-  const edges = vueFlowRef.value.getEdges.filter(
-    (edge) => edge.sourceNode.parentNode === parentNode || edge.targetNode.parentNode === parentNode
-  )
-  const childNodeIds = vueFlowRef.value.getNodes
-    .filter((node) => (parentNode ? node.parentNode === parentNode : !node.parentNode))
-    .map((node) => node.id)
-
-  IntersectingNode.value = null
-  //如果边不在当前节点中,则删除
-  edges.forEach((edge) => {
-    if (!childNodeIds.includes(edge.source) || !childNodeIds.includes(edge.target)) {
-      vueFlowRef.value.removeEdges([edge.id])
-    }
-  })
-  if (oldParentNode.length > 0) {
-    oldParentNode.forEach((parentNode) => {
-      const childNode = vueFlowRef.value.getNodes.find((node) => node.parentNode === parentNode)
-      if (childNode) {
-        adjustParentSize([childNode], vueFlowRef.value)
-      }
-    })
-  }
-  adjustParentSize(data.nodes, vueFlowRef.value)
-}
-
-// 处理节点拖放
-const onDragOver = (event) => {
-  event.preventDefault()
-  event.dataTransfer.dropEffect = 'move'
-}
-
-// 添加节点到子流程
-const addNodeToSubFlow = async ({ nodeData, fromNode, position }) => {
-  nodeData = JSON.parse(nodeData)
-  fromNode = vueFlowRef.value.getNode(fromNode)
-  nodeData.parentNode = fromNode.id
-  const parentPosition = getFlowCoordinate(fromNode, vueFlowRef.value)
-  const realPosition = {
-    x: position.x - parentPosition.x,
-    y: position.y - parentPosition.y
-  }
-  addNode(nodeData, realPosition)
-}
-
-// 从边添加节点
-const addNodeFromEdge = async ({ fromEdge, nodeData }) => {
-  nodeData = JSON.parse(nodeData)
-  const edge = vueFlowRef.value.findEdge(fromEdge)
-  const sourceNode = edge.sourceNode
-  const targetNode = edge.targetNode
-  let position = {
-    x: sourceNode.position.x + sourceNode.dimensions.width + 200,
-    y: targetNode.position.y
-  }
-  if (sourceNode.position.x > targetNode.position.x) {
-    // 添加新节点
-    position = {
-      x: sourceNode.position.x + sourceNode.dimensions.width + 200,
-      y: sourceNode.position.y
-    }
-  }
-  nodeData.parentNode = sourceNode.parentNode
-  const newNode = await addNode(nodeData, position)
-  // 删除原来的边
-  vueFlowRef.value.removeEdges(fromEdge)
-  await nextTick()
-  autoConnect(vueFlowRef.value, createConnection, sourceNode, newNode, edge.sourceHandle)
-  autoConnect(vueFlowRef.value, createConnection, newNode, targetNode)
-  await nextTick()
-  if (newNode) {
-    if (sourceNode.position.x < targetNode.position.x) {
-      const nextNodes = getAllSuccessorNodes(
-        vueFlowRef.value.getEdges,
-        vueFlowRef.value.getNodes.filter((node) => node.parentNode === sourceNode.parentNode),
-        targetNode.id
-      )
-      // 更新节点位置为新节点让出位置
-      vueFlowRef.value.updateNodePositions(
-        [
-          {
-            id: targetNode.id,
-            position: {
-              x: targetNode.position.x + 350,
-              y: targetNode.position.y
-            }
-          },
-          ...nextNodes
-            .filter((node) => node.position.x > sourceNode.position.x)
-            .map((node) => ({
-              id: node.id,
-              position: {
-                x: node.position.x + 350,
-                y: node.position.y
-              }
-            }))
-        ],
-        true
-      )
-    }
-  }
-}
-
-// 节点列表弹窗
-const nodeListVisible = ref(false)
-// 快速连接样式
-const quickConnectStyle = ref({
-  position: 'fixed',
-  top: '0',
-  right: '0'
-})
-// 快速连接节点ID
-const quickConnect = ref(null)
-
-// 显示快速连接
-const showQuickConnect = ({ e, edgeId, handleId, nodeId, position }) => {
-  if (isExecuting.value) {
-    return
-  }
-  nodeListVisible.value = true
-  quickConnect.value = {
-    edgeId,
-    handleId,
-    nodeId,
-    position
-  }
-  quickConnectStyle.value = {
-    position: 'fixed',
-    top: `${e.clientY}px`,
-    left: `${e.clientX}px`
-  }
-}
-
-// 快速连接节点
-const quickConnectChooseNode = (nodeData) => {
-  if (!quickConnect.value.edgeId) {
-    addNodeFromNode({
-      fromNode: quickConnect.value.nodeId,
-      nodeData,
-      handleId: quickConnect.value.handleId,
-      position: quickConnect.value.position
-    })
-  } else {
-    addNodeFromEdge({
-      fromEdge: quickConnect.value.edgeId,
-      nodeData
-    })
-  }
-  nodeListVisible.value = false
-}
-// 从节点添加节点
-const addNodeFromNode = async ({ nodeData, fromNode, handleId, position }) => {
-  nodeData = JSON.parse(nodeData)
-  fromNode = vueFlowRef.value.getNode(fromNode)
-  nodeData.parentNode = fromNode.parentNode
-  let newPosition = {}
-  if (position) {
-    newPosition = getRelativeCoordinate(fromNode.parentNode, position, vueFlowRef.value)
-  } else {
-    newPosition = {
-      x: fromNode.position.x + fromNode.dimensions.width / 2 + fromNode.dimensions.width + 50,
-      y: fromNode.position.y
-    }
-  }
-  if (handleId == 'next-false') {
-    newPosition.y = newPosition.y + 45
-  }
-  const newNode = await addNode(nodeData, newPosition)
-  if (newNode) {
-    await nextTick()
-    autoConnect(vueFlowRef.value, createConnection, fromNode, newNode, handleId)
-  }
-}
 
 // 处理节点拖放
 const onDrop = async (event) => {
@@ -753,251 +294,6 @@ onMounted(async () => {
   })
 })
 
-const addStartNode = (parentNode) => {
-  let startNodeData = getInitNodeData('workflowStart')
-  if (startNodeData) {
-    startNodeData = JSON.parse(startNodeData)
-  }
-  // startNodeData.selectable = false
-  startNodeData.deletable = false
-  startNodeData.focusable = false
-  startNodeData.extent = 'parent'
-  startNodeData.parentNode = parentNode
-  addNode(startNodeData, {
-    x: 180,
-    y: 60
-  })
-}
-
-// 判断节点数量限制
-// 节点数量不再限制
-const isOverNodeLimit = (_addNodeCount = 1) => false
-
-// 添加节点
-const addNode = async (nodeData, position) => {
-  if (isExecuting.value) {
-    Message.warning('当前工作流正在执行,不允许添加节点')
-    return
-  }
-
-  // 如果节点是结束节点,则需要查重
-  if (nodeData.type === 'workflowEnd') {
-    const endNode = vueFlowRef.value.getNodes
-      .filter((node) => node.parentNode === nodeData.parentNode)
-      .find((node) => node.data.type === 'workflowEnd')
-    if (endNode) {
-      locateNode(vueFlowRef.value, [endNode.id])
-      Message.error('当前流程已存在结束节点,禁止重复添加')
-      return
-    }
-  }
-
-  let workflow = null
-  if (nodeData.workflow) {
-    const localWf = await workflowAPI.getWorkflow(nodeData.workflow.id)
-    if (localWf) {
-      let graph = {}
-      try { graph = typeof localWf.graph === 'string' ? JSON.parse(localWf.graph) : (localWf.graph || {}) } catch (e) {}
-      workflow = {
-        id: localWf.id,
-        name: localWf.name,
-        description: localWf.description,
-        cover: '',
-        only_node: false,
-        elements: typeof localWf.graph === 'string' ? localWf.graph : JSON.stringify(localWf.graph || {}),
-        nodes_count: (graph.nodes || []).length
-      }
-    }
-  }
-
-  const nodes_count = workflow ? workflow.nodes_count : 0
-  if (isOverNodeLimit(nodes_count)) {
-    return
-  }
-  const newNode = {
-    id: `node-${uuidv4()}`,
-    type: 'custom',
-    position: {
-      x: position.x - 150,
-      y: position.y
-    },
-    parentNode: nodeData.parentNode,
-    selectable: nodeData.selectable,
-    deletable: nodeData.deletable,
-    focusable: nodeData.focusable,
-    extent: nodeData.extent,
-    // expandParent: !!nodeData.parentNode,
-    // extent: { range: 'parent', padding: [20, 20, 20, 20] },
-    data: {
-      user_id: nodeData.user_id || '',
-      type: nodeData.type,
-      name: getNodeName(
-        vueFlowRef.value.getNodes.filter((n) => n.parentNode === nodeData.parentNode),
-        workflow ? workflow.name : nodeData.name
-      ),
-      icon: workflow?.cover,
-      description: workflow?.description,
-      inputs: nodeData.inputs,
-      outputs: nodeData.outputs,
-      config: nodeData.config || {}, // 初始化空配置
-      status: 'pending', // 初始状态
-      view: nodeData.view,
-      version: nodeData.version || 'V1'
-    },
-    focusable: true
-  }
-  if (workflow) {
-    newNode.data.workFlow = {
-      id: workflow.id,
-      only_node: workflow.only_node,
-      store: nodeData.workflow.isStore
-    }
-  }
-  vueFlowRef.value.addNodes([newNode])
-  if (nodeData.subFlow) {
-    addSubFlowNode(newNode, workflow)
-  }
-  return newNode
-}
-
-// 添加子流程节点
-const addSubFlowNode = async (node, workFlow) => {
-  const subFlowNode = {
-    id: node.id + '-subFlow',
-    type: 'subFlow',
-    parentNode: node.id,
-    hidden: node.data.type === 'workFlow',
-    deletable: false,
-    position: {
-      x: -30,
-      y: 150
-    },
-    data: {
-      user_id: node.user_id || '',
-      type: node.data.type, // 业务 type 与父节点一致（workFlow / workflowSubWorkflow），避免 getFlowData 收集到注册表不存在的 'subFlow'
-      name: nodes[node.data.type]?.subFlow?.name || '工作流',
-      inputs: [],
-      outputs: [],
-      config: {}, // 初始化空配置
-      status: 'pending', // 初始状态
-      view: false
-    }
-  }
-  let elements = null
-  // 如果子流程有工作流，则获取工作流节点并预计算子流程的宽度
-  if (workFlow) {
-    let elementsData = workFlow.elements
-    // 本地工作流：elements 已是纯 JSON，远程工作流需要解密
-    if (typeof elementsData === 'string') {
-      try {
-        // 先尝试直接解析（本地模式）
-        elements = JSON.parse(elementsData)
-      } catch (e) {
-        // 解密后再解析（远程模式）
-        const decryptedElements = await decryptedData(elementsData)
-        elements = JSON.parse(decryptedElements)
-      }
-    } else if (typeof elementsData === 'object') {
-      elements = elementsData
-    }
-    // 预计算子流程的宽度
-    let minX = Infinity
-    let maxX = -Infinity
-    elements.nodes
-      .filter((node) => !node.parentNode)
-      .forEach((node) => {
-        minX = Math.min(minX, node.position.x)
-        maxX = Math.max(maxX, node.position.x)
-      })
-    subFlowNode.position.x = -((maxX - minX) / 2) - 30
-  }
-
-  //延迟10毫秒等待高度渲染完成
-  setTimeout(() => {
-    //获取父节点尺寸
-    const dimensions = vueFlowRef.value.getNode(node.id).dimensions
-    //更新子流程容器节点位置为父节点高度加上原始位置避免节点覆盖
-    vueFlowRef.value.updateNode(subFlowNode.id, (node) => {
-      return {
-        position: {
-          x: node.position.x,
-          y: node.position.y + dimensions.height
-        }
-      }
-    })
-  }, 10)
-
-  // 添加子流程容器节点
-  vueFlowRef.value.addNodes([subFlowNode])
-  // 添加子流程容器连线
-  vueFlowRef.value.addEdges([
-    createConnection({
-      source: node.id,
-      target: subFlowNode.id,
-      sourceHandle: 'subFlow',
-      targetHandle: 'subFlow',
-      selectable: false,
-      deletable: false,
-      label: nodes[node.data.type]?.subFlow?.name || ''
-    })
-  ])
-
-  // 如果子流程有工作流，则添加工作流节点
-  if (elements && elements?.nodes?.length > 0) {
-    elements.nodes.map((node) => {
-      node.hidden = true
-      if (!node.parentNode) {
-        node.parentNode = subFlowNode.id
-      }
-      return node
-    })
-    //重建元素ID
-    elements = rebuildElementIds(vueFlowRef.value, elements)
-    vueFlowRef.value.addNodes(elements.nodes)
-    vueFlowRef.value.addEdges(elements.edges)
-  } else {
-    // 如果子流程没有工作流，则添加一个起始节点
-    addStartNode(subFlowNode.id)
-  }
-}
-
-// 处理节点操作
-const handleNodeAction = (action, nodeId) => {
-  const node = vueFlowRef.value.getNode(nodeId)
-  if (action === 'delete') {
-    handleNodeDelete(node)
-  } else if (action === 'copy') {
-    handleNodeCopy(vueFlowRef.value, clipboard, [node])
-    handleNodePaste(vueFlowRef.value, clipboard.value, isOverNodeLimit)
-    clipboard.value = null
-  }
-}
-
-// 处理节点删除
-const handleNodeDelete = (elements) => {
-  if (isExecuting.value) {
-    Message.warning('当前工作流正在执行,不允许删除节点')
-    return
-  }
-  // 支持单个ID或ID数组
-  const elementsToDelete = Array.isArray(elements) ? elements : [elements]
-  const nodeIds = []
-  const edgeIds = []
-  elementsToDelete.forEach((el) => {
-    if (el.id.startsWith('node-')) {
-      // 开始节点不允许删除,清空配置
-      if (el.data.type === 'workflowStart') {
-        el.data.config = {}
-      } else {
-        nodeIds.push(el.id)
-      }
-    } else if (el.id.startsWith('edge-')) {
-      edgeIds.push(el.id)
-    }
-  })
-  nodeIds && vueFlowRef.value.removeNodes(nodeIds, true, true)
-  edgeIds && vueFlowRef.value.removeEdges(edgeIds)
-}
 
 // 待连接的节点
 const pendingConnection = ref(null)

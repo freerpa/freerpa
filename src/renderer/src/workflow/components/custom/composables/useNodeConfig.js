@@ -1,6 +1,7 @@
 import { computed, watch, ref } from 'vue'
 import nodes from '@nodes-path'
 import { IconExclamationCircle } from '@arco-design/web-vue/es/icon'
+import { buildErrorHandleGroup, getConfigFieldGroups } from '../../../nodes/common.js'
 
 /**
  * 占位节点定义：当工作流中的节点类型（如 plu_<插件id>）未注册时兜底，
@@ -43,83 +44,21 @@ export function useNodeConfig(props, flowStore, isPreview) {
     nodeDefinition.type !== 'workflowEnd'
   ) {
     nodeDefinition.config = nodeDefinition.config || {}
-    nodeDefinition.config.errorHandle = {
-      name: '执行配置',
-      fields: {
-        errorHandleType: {
-          id: 'errorHandleType',
-          name: '错误处理',
-          type: 'select',
-          description: '节点遇到错误时的处理方式',
-          default: 'stop',
-          paramRef: false,
-          options: [
-            { label: '忽略错误', value: 'ignore' },
-            { label: '重试节点', value: 'retry' },
-            { label: '指定节点', value: 'specify' },
-            { label: '重试流程', value: 'retryFlow' },
-            { label: '终止流程', value: 'stop' }
-          ]
-        },
-        errorHandleRetryCount: {
-          id: 'errorHandleRetryCount',
-          name: '重试次数',
-          type: 'number',
-          description: '重试次数',
-          show: "${errorHandleType}==='retry'",
-          default: 3,
-          paramRef: false
-        },
-        errorHandleRetryInterval: {
-          id: 'errorHandleRetryInterval',
-          name: '重试间隔',
-          type: 'number',
-          description: '重试间隔（毫秒）',
-          show: "${errorHandleType}==='retry'",
-          default: 1000,
-          paramRef: false
-        },
-        errorHandleRetryFailed: {
-          id: 'errorHandleRetryFailed',
-          name: '重试失败',
-          type: 'select',
-          description: '重试次数超过最大重试次数时的处理方式',
-          default: 'stop',
-          show: "${errorHandleType}==='retry'",
-          paramRef: false,
-          options: [
-            { label: '忽略错误', value: 'ignore' },
-            { label: '指定节点', value: 'specify' },
-            { label: '终止流程', value: 'stop' },
-            { label: '重试流程', value: 'retryFlow' }
-          ]
-        },
-        errorHandleSpecifyNode: {
-          id: 'errorHandleSpecifyNode',
-          name: '指定节点',
-          type: 'select',
-          description: '指定要跳转的节点',
-          show: "${errorHandleType}==='specify' || ${errorHandleRetryFailed}==='specify'",
-          paramRef: false,
-          remote: true,
-          options: [],
-          remoteMethod: async (keyword = '') => {
-            const node = flowStore.vueFlowRef.findNode(props.id)
-            let nodesList = flowStore.vueFlowRef.getNodes.filter(
-              (n) => n.parentNode === node.parentNode && n.id !== node.id
-            )
-            if (keyword) {
-              nodesList = nodesList.filter((n) => n.data.name.includes(keyword))
-            }
-            return nodesList.map((el) => ({
-              label: el.data.name,
-              value: el.id
-            }))
-          },
-          default: ''
+    nodeDefinition.config.errorHandle = buildErrorHandleGroup(
+      async (keyword = '') => {
+        const node = flowStore.vueFlowRef.findNode(props.id)
+        let nodesList = flowStore.vueFlowRef.getNodes.filter(
+          (n) => n.parentNode === node.parentNode && n.id !== node.id
+        )
+        if (keyword) {
+          nodesList = nodesList.filter((n) => n.data.name.includes(keyword))
         }
+        return nodesList.map((el) => ({
+          label: el.data.name,
+          value: el.id
+        }))
       }
-    }
+    )
   }
 
   // Node config data with getter/setter
@@ -133,18 +72,7 @@ export function useNodeConfig(props, flowStore, isPreview) {
   })
 
   // All config fields grouped by config group name
-  const allConfigFieldsWithGroup = computed(() => {
-    const groups = {}
-    const config = nodeDefinition?.config
-    if (!config) return groups
-    Object.values(config).forEach((group) => {
-      groups[group.name] = []
-      Object.values(group.fields || {}).forEach((field) => {
-        groups[group.name].push(field)
-      })
-    })
-    return groups
-  })
+  const allConfigFieldsWithGroup = computed(() => getConfigFieldGroups(nodeDefinition))
 
   // Quick config fields (marked as quickConfig or required)
   const quickConfigFields = computed(() => {

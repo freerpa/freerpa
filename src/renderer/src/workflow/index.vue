@@ -204,7 +204,7 @@ const toggleChat = () => {
   aiBotVisible.value = !aiBotVisible.value
 }
 
-const toolActions = getActions(vueFlowRef, flowRef, props.workflowId)
+const toolActions = getActions(vueFlowRef, flowRef, props.workflowId, flowStore)
 </script>
 
 <style lang="less" scoped>

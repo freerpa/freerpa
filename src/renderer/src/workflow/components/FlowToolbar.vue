@@ -170,15 +170,13 @@
           <template #icon><icon-message size="20" /></template>
         </a-button>
       </a-tooltip>
-      <a-popover trigger="hover" :duration="100" position="top" :popup-visible="showStoreWorkflows">
+      <a-popover trigger="hover" :duration="100" position="top">
         <a-button type="primary" size="small">
           <template #icon><icon-plus /></template>
           添加节点
         </a-button>
         <template #content>
           <NodeList
-            @dragStart="$emit('dragStart', $event, node)"
-            @showStoreWorkflows="showStoreWorkflows = $event"
             :disabled="isExecuting"
           />
         </template>
@@ -201,17 +199,13 @@ import {
   IconUndo,
   IconRedo,
   IconPlus,
-  IconLayout,
   IconMinus,
   IconMessage,
-  IconExclamationPolygonFill,
   IconNotification,
   IconDelete,
-  IconNotificationClose,
-  IconBug,
-  IconRobot
+  IconBug
 } from '@arco-design/web-vue/es/icon'
-import { RiDashboardLine, RiPencilAiLine } from '@remixicon/vue'
+import { RiDashboardLine } from '@remixicon/vue'
 import NodeList from './NodeList.vue'
 import IconSwitch from './custom/components/iconSwitch.vue'
 import { useFlowStore } from '../store'
@@ -226,7 +220,6 @@ const { isExecuting, isSaved, saveIng, debug, noticeNum, notices, playAudio } =
   storeToRefs(flowStore)
 import { debounce } from 'lodash-es'
 const store = useStore()
-const showStoreWorkflows = ref(null)
 // 节点数量
 const nodeCount = computed(() => {
   return getValidNodesCount(flowStore.vueFlowRef?.getNodes)

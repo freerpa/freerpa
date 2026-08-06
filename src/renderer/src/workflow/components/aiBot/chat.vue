@@ -61,7 +61,6 @@ const props = defineProps({
     required: true
   }
 })
-console.log(props.toolActions)
 const flowStore = useFlowStore(props.workflowId)
 const emit = defineEmits(['send', 'close', 'workflow'])
 
@@ -209,7 +208,6 @@ const handleSend = async ({ id: messageId, model, role, content }) => {
     })
     const lastMessage = messages.value[messages.value.length - 1]
     scrollToBottom()
-    console.log(flowStore.vueFlowRef.getNodes)
     const workflow = {
       nodes: flowStore.vueFlowRef.getNodes.map((node) => ({
         id: node.id,

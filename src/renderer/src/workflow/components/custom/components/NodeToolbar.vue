@@ -24,9 +24,6 @@
           <a-tooltip content="停用节点">
             <icon-stop @click="$emit('action', 'deactivate')" />
           </a-tooltip>
-          <a-tooltip content="节点详情" v-if="showDetail">
-            <icon-file @click="$emit('action', 'detail')" />
-          </a-tooltip>
         </template>
         <a-tooltip content="删除节点">
           <icon-delete @click="$emit('action', 'delete')" />
@@ -42,7 +39,6 @@ import {
   IconCopy,
   IconDelete,
   IconStop,
-  IconFile,
   IconPublic
 } from '@arco-design/web-vue/es/icon'
 import IconSwitch from './iconSwitch.vue'
@@ -54,7 +50,6 @@ defineProps({
   global: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
   isExecuting: { type: Boolean, default: false },
-  showDetail: { type: Boolean, default: false },
   alwaysVisible: { type: Boolean, default: false }
 })
 </script>

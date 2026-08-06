@@ -10,7 +10,7 @@
     <FlowHandles
       v-if="!node.parentNode"
       :id="id"
-      :node-type="data.type"
+      :node="data"
       @showQuickConnect="$emit('showQuickConnect', $event)"
       @addNode="$emit('addNode', $event)"
     />
