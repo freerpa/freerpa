@@ -22,6 +22,10 @@
           <template #icon><RiCommandLine /></template>
           快捷键
         </a-menu-item>
+        <a-menu-item key="network">
+          <template #icon><RiServerLine /></template>
+          网络服务
+        </a-menu-item>
       </a-menu>
     </div>
     <div class="content">
@@ -30,18 +34,23 @@
       <PermissionManager v-if="activeTab === 'security'" />
       <DataManager v-if="activeTab === 'data'" />
       <ShortcutManager v-if="activeTab === 'shortcut'" />
+      <NetworkServerManager v-if="activeTab === 'network'" />
     </div>
   </div>
 </template>
 
 <script setup>
+// 显式组件名（规避 vue/multi-word-component-names 对 index.vue 的规则警告）
+defineOptions({ name: 'SettingsCenter' })
+
 import { ref } from 'vue'
-import { RiArchiveStackLine, RiPlugLine, RiShieldKeyholeLine, RiDatabase2Line, RiCommandLine } from '@remixicon/vue'
+import { RiArchiveStackLine, RiPlugLine, RiShieldKeyholeLine, RiDatabase2Line, RiCommandLine, RiServerLine } from '@remixicon/vue'
 import CacheManager from './components/CacheManager.vue'
 import PluginManager from './components/PluginManager.vue'
 import PermissionManager from './components/PermissionManager.vue'
 import DataManager from './components/DataManager.vue'
 import ShortcutManager from './components/ShortcutManager.vue'
+import NetworkServerManager from './components/NetworkServerManager.vue'
 
 // initialTab：设置中心打开时指定的初始选项卡（如「去安装」→ 本地插件）
 const props = defineProps({

@@ -9,7 +9,7 @@
  */
 import http from 'node:http'
 
-/** 获取全局 HTTP server（懒创建，随机端口监听 127.0.0.1，首次创建后缓存于 global） */
+/** 获取全局 HTTP server（懒创建，按 engine.global.networkServerPort 监听 127.0.0.1，未配置回退随机端口；首次创建后缓存于 global） */
 export const getHttpServer = async (global) => {
   if (global.httpServer) return global.httpServer
 
@@ -33,9 +33,12 @@ export const getHttpServer = async (global) => {
     }
   })
 
+  // 默认端口：engine.global.networkServerPort（主进程经 init 注入，设置中心可配；0 防御性回退随机端口）
+  const listenPort = global?.networkServerPort || 0
   await new Promise((resolve, reject) => {
     server.once('error', reject)
-    server.listen(0, '127.0.0.1', resolve)
+    // 指定端口被占用时 listen 抛 EADDRINUSE（提示用户更换默认端口）；0 时由系统分配随机端口
+    server.listen(listenPort, '127.0.0.1', resolve)
   })
 
   const port = server.address().port

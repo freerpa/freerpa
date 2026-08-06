@@ -1,4 +1,8 @@
-/** * @file: 流程图画布组件 * @author: dabao * @date: 2024-03-15 */
+/**
+ * @file: 流程图画布组件
+ * @author: dabao
+ * @date: 2024-03-15
+ */
 <template>
   <a-spin style="width: 100%; height: calc(100% - 10px)" :loading="loading" tip="加载中...">
     <div class="flow-canvas" tabindex="0">
@@ -39,7 +43,7 @@
         @edgeMouseLeave="edgeMouseLeave"
         @paneMouseEnter="edgeMouseLeave"
         @edgeDoubleClick="edgeDoubleClick"
-        @wheel="handleWheel"
+        @wheel="onCanvasWheel"
         @click="dispatchMouseDown"
         @moveStart="dispatchMouseDown"
         :zoom-on-scroll="false"
@@ -112,7 +116,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, provide, inject, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, provide, inject, nextTick } from 'vue'
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { MiniMap } from '@vue-flow/minimap'
@@ -120,7 +124,6 @@ import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import { useFlowStore } from '../store'
 import { useStore } from '@/store'
-import { Message } from '@arco-design/web-vue'
 import ModalPopover from './ModalPopover.vue'
 import NodeList from './NodeList.vue'
 import CustomNode from './custom/CustomNode.vue'
@@ -129,25 +132,12 @@ import CommentNode from './custom/CommentNode.vue'
 import CustomEdge from './custom/CustomEdge.vue'
 import CustomConnectionLine from './custom/CustomConnectionLine.vue'
 import NodeConfigDrawer from './NodeConfigDrawer.vue'
-import { v4 as uuidv4 } from 'uuid'
 import { storeToRefs } from 'pinia'
-import nodes from '@nodes-path'
 import {
   ConnectionRules,
   autoConnect,
-  getNodeName,
   handleNodeCopy,
   handleNodePaste,
-  getFlowCoordinate,
-  getRelativeCoordinate,
-  locateNode,
-  decryptedData,
-  getInitNodeData,
-  getValidNodesCount,
-  rebuildElementIds,
-  adjustParentSize,
-  isTouchpadEvent,
-  getAllSuccessorNodes,
   handleWheel,
   dispatchMouseDown
 } from '../utils'
@@ -171,6 +161,10 @@ provide('isExecuting', isExecuting)
 //关闭预览模式
 provide('isPreview', ref(false))
 
+// 画布滚轮（缩放/平移）：handleWheel 按 vueFlowRef.value 访问实例，
+// 模板中 ref 已自动解包（传出去是实例），故在此包装传入 script 作用域的 ref
+const onCanvasWheel = (e) => handleWheel(e, vueFlowRef)
+
 // ── 选中节点追踪与配置字段（提取至 useNodeSelection） ───────
 const {
   handleNodesChange,
@@ -183,7 +177,7 @@ const {
 const { validateConnection, createConnection } = new ConnectionRules(workflowId)
 
 // ── 节点增删改查与剪贴板（提取至 useNodeCrud） ───────
-const { addStartNode, addNode, addSubFlowNode, handleNodeAction, handleNodeDelete, isOverNodeLimit } = useNodeCrud({
+const { addStartNode, addNode, handleNodeAction, handleNodeDelete, isOverNodeLimit } = useNodeCrud({
   vueFlowRef,
   isExecuting,
   clipboard,
@@ -257,7 +251,7 @@ onMounted(async () => {
     const result = await workflowAPI.getWorkflow(workflowId)
     if (result && result.graph) {
       let elements
-      try { elements = typeof result.graph === 'string' ? JSON.parse(result.graph) : result.graph } catch (e) { elements = result.graph }
+      try { elements = typeof result.graph === 'string' ? JSON.parse(result.graph) : result.graph } catch { elements = result.graph }
       result.elements = elements
     }
 

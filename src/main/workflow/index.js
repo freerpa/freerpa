@@ -5,6 +5,7 @@
 import EngineHost from './host/index.js'
 import { buildDenoPermissions, getPermissions } from './permissions.js'
 import { getPluginDirs } from '../plugin/store.js'
+import { get } from '../store/index.js'
 import { clearFlowBrowsers } from './host/rpc-handlers.js'
 
 // 同时运行工作流数量上限。
@@ -38,15 +39,20 @@ export const manager = {
     const effective = getPermissions()
     // 插件目录随 init 注入 worker（同 nodesRoot 机制），并自动并入读权限白名单
     const pluginRoots = getPluginDirs()
+    // 本地网络服务默认端口（user-preferences.networkServer.port；未配置默认 9264）
+    const networkServer = get('networkServer') || {}
+    const networkServerPort =
+      Number.isInteger(networkServer.port) && networkServer.port > 0 ? networkServer.port : 9264
 
     // 1. 创建 Worker（deno.permissions 描述符按生效权限生成）
     await EngineHost.createWorker(flowId, buildDenoPermissions(effective, infraReadPaths(EngineHost, pluginRoots)))
-    // 2. 初始化 Worker（节点目录 / io roots / 插件目录）
+    // 2. 初始化 Worker（节点目录 / io roots / 插件目录 / 网络服务端口）
     await EngineHost.invoke('init', {
       flowId,
       nodesRoot: EngineHost.paths.nodesRoot,
       ioRoots: effective.io.roots,
-      pluginRoots
+      pluginRoots,
+      networkServerPort
     }, flowId)
     // 3. 创建工作流引擎
     await EngineHost.invoke('createEngine', { workflow }, flowId)

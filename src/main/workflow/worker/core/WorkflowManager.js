@@ -1,89 +1,83 @@
-import WorkflowExecutor from './WorkflowExecutor.js'
+import WorkflowExecutor from './WorkflowExecutor.js';
 
 class WorkflowManager {
   constructor() {
-    this.engines = new Map()
+    this.engines = new Map();
   }
 
   // 获取运行中的工作流数量（仅统计，不清理——避免误删刚 createEngine 尚未 start 的引擎）
   getRunningWorkflowCount() {
-    let count = 0
+    let count = 0;
     this.engines.forEach((engine) => {
       if (engine.state === 'running') {
-        count++
+        count++;
       }
-    })
-    return count
+    });
+    return count;
   }
 
   // 创建工作流引擎
   async createEngine(workflow) {
-    try {
-      // 免登录模式：不再从远程获取限制，使用高默认值。
-      // ⚠ 与主进程 src/main/workflow/index.js 的 MAX_RUNNING 保持一致（跨进程无法共享常量）
-      const WORKFLOW_LIMIT = 999
+    // 免登录模式：不再从远程获取限制，使用高默认值。
+    // ⚠ 与主进程 src/main/workflow/index.js 的 MAX_RUNNING 保持一致（跨进程无法共享常量）
+    const WORKFLOW_LIMIT = 999;
 
-      if (WORKFLOW_LIMIT <= this.getRunningWorkflowCount()) {
-        throw new Error(`同时运行的工作流数量超过限制：${WORKFLOW_LIMIT} 个`)
-      }
-      // 验证工作流数据
-      if (!workflow || typeof workflow !== 'object') {
-        throw new Error('Invalid workflow data')
-      }
-      if (!Array.isArray(workflow.nodes)) {
-        throw new Error('Workflow nodes must be an array')
-      }
-      if (!Array.isArray(workflow.edges)) {
-        throw new Error('Workflow edges must be an array')
-      }
-
-      const id = workflow.id
-      if (!id) {
-        throw new Error('Workflow id is required')
-      }
-
-      if (this.engines.has(id)) {
-        await this.removeEngine(id)
-      }
-
-      const engine = new WorkflowExecutor({
-        id,
-        debug: workflow.debug,
-        allNodes: workflow.nodes,
-        allEdges: workflow.edges,
-        nodes: workflow.nodes,
-        edges: workflow.edges,
-        pluginRoots: workflow.pluginRoots || []
-      })
-      this.engines.set(id, engine)
-      return engine
-    } catch (error) {
-      // 保留原始 Error（含 stack），不做 Error → String → Error 的丢失转换
-      throw error
+    if (WORKFLOW_LIMIT <= this.getRunningWorkflowCount()) {
+      throw new Error(`同时运行的工作流数量超过限制：${WORKFLOW_LIMIT} 个`);
     }
+    // 验证工作流数据
+    if (!workflow || typeof workflow !== 'object') {
+      throw new Error('Invalid workflow data');
+    }
+    if (!Array.isArray(workflow.nodes)) {
+      throw new Error('Workflow nodes must be an array');
+    }
+    if (!Array.isArray(workflow.edges)) {
+      throw new Error('Workflow edges must be an array');
+    }
+
+    const id = workflow.id;
+    if (!id) {
+      throw new Error('Workflow id is required');
+    }
+
+    if (this.engines.has(id)) {
+      await this.removeEngine(id);
+    }
+
+    const engine = new WorkflowExecutor({
+      id,
+      debug: workflow.debug,
+      allNodes: workflow.nodes,
+      allEdges: workflow.edges,
+      nodes: workflow.nodes,
+      edges: workflow.edges,
+      pluginRoots: workflow.pluginRoots || [],
+      networkServerPort: workflow.networkServerPort || 0,
+    });
+    this.engines.set(id, engine);
+    return engine;
   }
 
   // 获取工作流引擎
   getEngine(id) {
-    return this.engines.get(id)
+    return this.engines.get(id);
   }
 
   // 移除工作流引擎
   async removeEngine(id) {
-    const engine = this.engines.get(id)
+    const engine = this.engines.get(id);
     if (engine) {
-      await engine.cleanup()
-      this.engines.delete(id)
+      await engine.cleanup();
+      this.engines.delete(id);
     }
   }
 
   // 清理工作流引擎
   async cleanup() {
-    await Promise.all(
-      Array.from(this.engines.values()).map((engine) => engine.cleanup())
-    )
-    this.engines.clear()
+    await Promise.all(Array.from(this.engines.values()).map((engine) => engine.cleanup()));
+    this.engines.clear();
   }
 }
 
-export default new WorkflowManager()
+export default new WorkflowManager();

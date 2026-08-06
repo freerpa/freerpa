@@ -21,6 +21,9 @@ class WorkflowExecutor extends EventEmitter {
       opendBitBrowser: [],
       opendCdpBrowser: []
     }
+    // 本地网络服务默认端口（主进程 init 注入，设置中心可配）：挂 global 供 http-server.js 创建共享服务时监听，
+    // 执行器无需感知端口（getHttpServer 返回的 server 对象自带 .port）
+    this.global.networkServerPort = options.networkServerPort || 9264
     this.debug = options.debug || false
     this.isSubFlow = options.isSubFlow || false
     this.ioRoots = options.ioRoots || []
