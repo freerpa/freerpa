@@ -49,9 +49,10 @@ export const createWindow = () => {
   win.on('enter-full-screen', () => view.webContents.send('window-fullscreen-change', true))
   win.on('leave-full-screen', () => view.webContents.send('window-fullscreen-change', false))
 
-  // 关闭拦截：用户主动关闭（红点/关闭按钮/Cmd+W）一律隐藏到托盘后台运行，不退出软件；
-  // 软件退出统一走 before-quit 拦截（Dock Quit/托盘退出 → 确认框），app.exit 不触发 close
+  // 关闭拦截：用户主动关闭（红点/关闭按钮/Cmd+W）隐藏到托盘后台运行（仅生产模式）；
+  // 开发模式直接放行（点关闭即退出，便于调试；Ctrl+C 由 before-quit 放行跟随）
   win.on('close', (event) => {
+    if (is.dev) return
     event.preventDefault()
     win.hide()
   })

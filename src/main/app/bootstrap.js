@@ -54,9 +54,11 @@ export const bootstrap = async () => {
   // 系统托盘（后台运行入口：单击展开状态小窗 / 右键菜单退出）
   createTray()
 
-  // 退出拦截（Dock 右键 Quit / Cmd+Q / 菜单退出 / 托盘退出统一入口）：
-  // 不直接退出，恢复主窗口并触发渲染端确认框（与托盘「退出软件」一致），确认后走 app.exit(0)
+  // 退出拦截（生产模式：Dock 右键 Quit / Cmd+Q / 菜单退出 / 托盘退出统一入口）：
+  // 不直接退出，恢复主窗口并触发渲染端确认框（与托盘「退出软件」一致），确认后走 app.exit(0)。
+  // 开发模式直接放行：Ctrl+C / Cmd+Q 跟随退出，便于调试
   app.on('before-quit', (event) => {
+    if (is.dev) return
     event.preventDefault()
     if (global.mainWindow && !global.mainWindow.isDestroyed()) {
       if (global.mainWindow.isMinimized()) global.mainWindow.restore()
@@ -82,9 +84,10 @@ export const bootstrap = async () => {
   registerDecryptIpc()
   registerIPC()
 
-  // 所有窗口关闭不退出（后台常驻：主窗口与小窗均为隐藏语义，托盘常驻）
+  // 所有窗口关闭：生产模式保持后台常驻（主窗口与小窗均为隐藏语义，托盘常驻）；
+  // 开发模式窗口关闭即退出（配合 close 放行，点关闭按钮 = 直接退出）
   app.on('window-all-closed', () => {
-    // 空处理：覆盖 Electron 默认退出行为，保持后台运行
+    if (is.dev) app.quit()
   })
 
   // macOS 激活事件：隐藏时恢复主窗口；无窗口才重建

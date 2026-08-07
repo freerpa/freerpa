@@ -217,9 +217,10 @@ const maximizeWindow = () => {
   windowAPI.maximize()
 }
 
-// 关闭按钮：隐藏到后台运行（不弹确认、不退出；从托盘小窗恢复）
+// 关闭按钮：开发模式直接退出（便于调试）；生产模式隐藏到托盘后台运行（从托盘恢复）
 const hideWindow = () => {
-  windowAPI.hide()
+  if (import.meta.env.DEV) windowAPI.close()
+  else windowAPI.hide()
 }
 
 const confirmModalVisible = ref(false)
