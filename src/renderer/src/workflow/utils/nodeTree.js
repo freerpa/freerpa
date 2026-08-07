@@ -64,7 +64,6 @@ export const getGlobleNodes = (nodes) => {
     while (isHasParent) {
       if (nodesMap.get(nowNode.parentNode)) {
         nowNode = nodesMap.get(nowNode.parentNode)
-        console.log(nowNode);
         if (nowNode.id.includes('subFlow')) {
           continue
         }

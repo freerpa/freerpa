@@ -201,7 +201,7 @@ export const useFlowStore = (id) =>
         sound: 'system',
       }, (params) => {
         if (params.action === 'click') {
-          console.log('点击了通知')
+          // 通知点击：暂无附加动作（原仅调试输出，已移除）
         }
       })
     }

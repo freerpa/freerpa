@@ -277,7 +277,6 @@ export const tools = [
         }
     }
 ]
-console.log(tools)
 /**
  * 流结束后：解析出完整的工具调用
  * @returns {Array} 完整的tool_calls数组（支持多工具）

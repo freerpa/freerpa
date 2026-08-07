@@ -193,8 +193,8 @@ onUnmounted(() => {
     removeKeyDownEventListener()
     removeKeyUpEventListener()
     removeOnChanged?.()
-  } catch (e) {
-    console.log(e)
+  } catch {
+    // 卸载清理失败不影响组件销毁
   }
 })
 

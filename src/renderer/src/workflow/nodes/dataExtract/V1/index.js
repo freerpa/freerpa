@@ -29,7 +29,6 @@ export default {
           description: '自动获取数据表中的字段',
           remote: true,
           remoteMethod: async (keyword = '') => {
-            console.log('keyword', keyword);
             const result = await window.electronAPI.data.getModels({
               page: 1,
               pageSize: 1000,

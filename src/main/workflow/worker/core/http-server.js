@@ -33,11 +33,11 @@ export const getHttpServer = async (global) => {
     }
   })
 
-  // 默认端口：engine.global.networkServerPort（主进程经 init 注入，设置中心可配；0 防御性回退随机端口）
-  const listenPort = global?.networkServerPort || 0
+  // 默认端口：engine.global.networkServerPort（主进程经 init 注入，设置中心可配；未注入时回退默认 9264）
+  const listenPort = global?.networkServerPort || 9264
   await new Promise((resolve, reject) => {
     server.once('error', reject)
-    // 指定端口被占用时 listen 抛 EADDRINUSE（提示用户更换默认端口）；0 时由系统分配随机端口
+    // 指定端口被占用时 listen 抛 EADDRINUSE（提示用户更换默认端口）
     server.listen(listenPort, '127.0.0.1', resolve)
   })
 

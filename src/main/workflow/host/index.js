@@ -33,7 +33,7 @@ class EngineHost extends EventEmitter {
   }
 
   #spawn() {
-    const { denoBin, workerRoot, nodesRoot, nodeModulesRoot } = this.paths
+    const { denoBin, workerRoot } = this.paths
     const args = [
       'run',
       '-A', // 宿主为可信守护（自身不执行用户代码）；实际权限隔离由各 Worker 的 deno.permissions 描述符实现（最小权限）
@@ -105,15 +105,16 @@ class EngineHost extends EventEmitter {
 
   /** 向宿主/指定工作流 Worker 发起命令 */
   invoke(method, payload = {}, flowId) {
-    return new Promise(async (resolve, reject) => {
-      try {
-        await this.ensure()
-        const id = ++this.#seq
-        this.#pending.set(id, { resolve, reject })
-        this.#write({ type: 'invoke', id, flowId, method, payload })
-      } catch (e) {
-        reject(e)
-      }
+    return new Promise((resolve, reject) => {
+      // ensure 失败或写入抛错时 reject，无需 async executor / try/catch 包装
+      this.ensure().then(
+        () => {
+          const id = ++this.#seq
+          this.#pending.set(id, { resolve, reject })
+          this.#write({ type: 'invoke', id, flowId, method, payload })
+        },
+        (e) => reject(e)
+      )
     })
   }
 

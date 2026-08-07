@@ -148,7 +148,6 @@ const onModalOpen = async () => {
 const treeRef = ref(null)
 const onTreeSelect = (keys, { node }) => {
   if (!node?.isLeaf || !node?._elementData){
-    console.log('expandNode', node)
     treeRef.value?.expandNode(node.key,!node.isExpanded)
     node.isExpanded = !node.isExpanded
     return

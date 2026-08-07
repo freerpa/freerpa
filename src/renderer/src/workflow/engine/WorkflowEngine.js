@@ -49,7 +49,6 @@ export class WorkflowEngine {
     )
     this.listener.push(
       window.electronAPI.onFlowEvent('onNotice', this.flowId, null, (event, data) => {
-        console.log('this.store', this.store)
         this.store.onNotice(data)
       })
     )
@@ -105,7 +104,7 @@ export class WorkflowEngine {
             const result = {};
             // 遍历原始对象的每个字段
             for (const key in errors) {
-              if (errors.hasOwnProperty(key)) {
+              if (Object.prototype.hasOwnProperty.call(errors, key)) {
                 // 直接取出 message 赋值给对应 key
                 result[key] = errors[key].message;
               }
@@ -119,8 +118,8 @@ export class WorkflowEngine {
               errors: formatErrorMessages(res)
             })
           }
-        } catch (error) {
-          console.log(error)
+        } catch {
+          // 节点校验失败：错误已通过 event 上报，此处静默
         }
       }
     }
@@ -273,18 +272,14 @@ export class WorkflowEngine {
     await new Promise((resolve) => setTimeout(resolve, 100))
     this.cleanup()
     this.emit('beforeStart')
-    try {
-      // 注册工作流状态事件
-      this.registerStatusEvent()
-      // 开始工作流
-      await window.electronAPI.emitFlowEvent('startFlow', null, null, this.flowId)
-      // 设置工作流状态为运行中
-      this.setStatus('running')
-      // 返回工作流id
-      return this.flowId
-    } catch (error) {
-      throw error
-    }
+    // 注册工作流状态事件
+    this.registerStatusEvent()
+    // 开始工作流
+    await window.electronAPI.emitFlowEvent('startFlow', null, null, this.flowId)
+    // 设置工作流状态为运行中
+    this.setStatus('running')
+    // 返回工作流id
+    return this.flowId
   }
 
   // 停止工作流

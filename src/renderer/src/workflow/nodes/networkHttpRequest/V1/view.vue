@@ -84,7 +84,6 @@ const handleCodeEditorOk = (done) => {
     }
     done()
   } catch (error) {
-    console.log(error)
     showErr.value = true
   }
 }

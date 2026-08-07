@@ -1,7 +1,9 @@
 import { isTouchpadEvent } from './isTouchpadEvent.js'
 
 /**
- * 画布滚轮/DOM 交互工具——从 FlowCanvas 提取（纯函数，无状态）
+ * 画布滚轮/DOM 交互工具——从 FlowCanvas 提取。
+ * 注意：isTouchpadEvent 内部为模块级爆发状态（lastWheelTime/burstIsWheel），
+ * 其余导出为无状态纯函数。
  */
 
 // 触摸板处理：平移画布
@@ -88,9 +90,11 @@ export const dispatchMouseDown = () => {
 
 // 处理滚轮事件（触摸板平移 / 鼠标缩放 / no-wheel 与可滚动元素豁免）
 export const handleWheel = (e, vueFlowRef) => {
-  if (isTouchpadEvent(e) && !isInScrollableElement(e)) {
+  // 可滚动元素判定一次即可（向上遍历 DOM + getComputedStyle，避免同一事件重复计算）
+  const inScrollable = isInScrollableElement(e)
+  if (isTouchpadEvent(e) && !inScrollable) {
     handleTouchpadWheel(e, vueFlowRef)
-  } else if (!isNoWheelElement(e) && !isInScrollableElement(e)) {
+  } else if (!isNoWheelElement(e) && !inScrollable) {
     handleMouseWheel(e, vueFlowRef)
   }
 }

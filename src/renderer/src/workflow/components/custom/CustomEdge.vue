@@ -45,7 +45,6 @@ import { BaseEdge, EdgeLabelRenderer, getBezierPath, getSmoothStepPath } from '@
 import { computed, inject, ref, watch } from 'vue'
 import { IconPlus } from '@arco-design/web-vue/es/icon'
 import { useFlowStore } from '../../store'
-import { getAllSuccessorNodes } from '../../utils'
 import { storeToRefs } from 'pinia'
 const workflowId = inject('workflowId')
 const flowStore = useFlowStore(workflowId)
@@ -141,16 +140,9 @@ watch(
 
 const emit = defineEmits(['showQuickConnect'])
 
-const edgeStatus = ref('initializing')
 //判断是否连接了自己的前代节点
 const isLoopback = computed(() => {
-  // const successorNodes = getAllSuccessorNodes(
-  //   flowStore.vueFlowRef?.getEdges,
-  //   flowStore.vueFlowRef?.getNodes,
-  //   props.targetNode.id
-  // )
   return (
-    // successorNodes.includes(props.sourceNode) &&
     props.sourceX > props.targetX + props.targetNode.dimensions.width
   )
 })

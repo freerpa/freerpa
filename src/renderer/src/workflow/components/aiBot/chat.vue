@@ -295,7 +295,6 @@ const handleSend = async ({ id: messageId, model, role, content }) => {
           }
           loading.value = false
           if (callResults.length > 0 && !isFinish) {
-            console.log('callResults', callResults)
             toolCallsBuffer.length = 0
             handleSend({
               id: messageId,
