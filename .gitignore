@@ -12,3 +12,4 @@ resources/worker
 deno.lock
 engine.bin
 .env
+scripts

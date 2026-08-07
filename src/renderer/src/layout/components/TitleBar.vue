@@ -86,7 +86,7 @@
         <a-button type="text" @click="maximizeWindow">
           <icon-fullscreen />
         </a-button>
-        <a-button type="text" @click="closeWindow">
+        <a-button type="text" @click="hideWindow">
           <icon-close />
         </a-button>
       </div>
@@ -118,8 +118,7 @@
 </template>
 
 <script setup>
-import { onMounted, computed, ref, watch } from 'vue'
-import { Modal } from '@arco-design/web-vue'
+import { computed, ref, watch } from 'vue'
 
 import {
   IconMinus,
@@ -218,39 +217,9 @@ const maximizeWindow = () => {
   windowAPI.maximize()
 }
 
-onMounted(() => {
-  windowAPI.onClose(closeWindow)
-})
-
-let confirmModal = null
-
-const closeWindow = () => {
-    let content = '确认关闭软件吗？'
-    if (Object.keys(openedTabs.value).length > 0) {
-      content = '确认关闭软件吗？\n当前有未关闭的标签，退出后将丢失未保存的数据。'
-    }
-    confirmModal?.close()
-    confirmModal = Modal.confirm({
-      title: '关闭软件',
-      width: 350,
-      content: content,
-      okText: '关闭',
-      okButtonProps: {
-        status: 'danger',
-        type: 'primary',
-        style: {
-          width: '135px'
-        }
-      },
-      cancelButtonProps: {
-        style: {
-          width: '135px'
-        }
-      },
-      onOk() {
-        windowAPI.close()
-      }
-    })
+// 关闭按钮：隐藏到后台运行（不弹确认、不退出；从托盘小窗恢复）
+const hideWindow = () => {
+  windowAPI.hide()
 }
 
 const confirmModalVisible = ref(false)

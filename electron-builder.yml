@@ -28,6 +28,9 @@ extraResources:
   # 依赖闭包单独复制（deno 布局已实体化，打包必须包含，否则运行时无法解析节点依赖）
   - from: resources/worker/node_modules
     to: worker/node_modules
+  # 托盘图标（build/ 是 buildResources，electron-builder 会排除出 asar，故经 extraResources 分发）
+  - from: build/tray.png
+    to: tray.png
 win:
   executableName: FreeRPA
 nsis:

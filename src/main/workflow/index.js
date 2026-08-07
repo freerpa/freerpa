@@ -8,8 +8,9 @@ import { getPluginDirs } from '../plugin/store.js'
 import { get } from '../store/index.js'
 import { clearFlowBrowsers } from './host/rpc-handlers.js'
 
-// 同时运行工作流数量上限。
-// ⚠ 与 worker 侧 src/main/workflow/worker/core/WorkflowManager.js 的 WORKFLOW_LIMIT 保持一致（跨进程无法共享常量）
+/** 同时运行工作流数量上限。
+ * ⚠ 与 worker 侧 src/main/workflow/worker/core/WorkflowManager.js 的 WORKFLOW_LIMIT 保持一致（跨进程无法共享常量）
+ */
 const MAX_RUNNING = 999
 
 /** 基础设施读路径（引擎/节点/依赖/插件目录，自动授予 worker） */

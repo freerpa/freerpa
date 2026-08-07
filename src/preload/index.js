@@ -5,10 +5,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   window: {
     minimize: () => ipcRenderer.send('window-min'),
     maximize: (forceMax = false) => ipcRenderer.send('window-max', forceMax),
+    hide: () => ipcRenderer.send('window-hide'),
     close: () => ipcRenderer.send('window-close'),
     onClose: (callback) => {
       ipcRenderer.removeAllListeners('window-close')
       ipcRenderer.on('window-close', callback)
+    },
+    onRequestExit: (callback) => {
+      ipcRenderer.removeAllListeners('request-exit')
+      ipcRenderer.on('request-exit', callback)
     },
     onFullscreenChange: (callback) => ipcRenderer.on('window-fullscreen-change', callback)
   },

@@ -1,8 +1,9 @@
-import { app, BaseWindow } from 'electron'
+import { app, powerSaveBlocker } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import '../menu'
 import pkg from '../../../package.json'
 import { createWindow } from './window'
+import { createTray } from './tray'
 import { register as workflowRegisterIPC } from '../workflow/ipc'
 import { register as dataRegisterIPC } from '../data'
 import { register as envRegisterIPC } from '../browser/ipc'
@@ -23,6 +24,9 @@ export const bootstrap = async () => {
 
   await app.whenReady()
 
+  // 后台保活：防止系统挂起/优化回收（配合 disable-renderer-backgrounding 防渲染进程降频）
+  powerSaveBlocker.start('prevent-app-suspension')
+
   // 单实例锁
   const gotTheLock = app.requestSingleInstanceLock()
   if (!gotTheLock) {
@@ -34,6 +38,7 @@ export const bootstrap = async () => {
     try {
       if (global.mainWindow) {
         if (global.mainWindow.isMinimized()) global.mainWindow.restore()
+        global.mainWindow.show()
         global.mainWindow.focus()
       }
     } catch {
@@ -46,16 +51,24 @@ export const bootstrap = async () => {
   global.mainWindow = win
   global.mainView = view
 
-  // 退出时清理所有浏览器与引擎宿主
-  app.on('before-quit', async () => {
+  // 系统托盘（后台运行入口：单击展开状态小窗 / 右键菜单退出）
+  createTray()
+
+  // 退出拦截（Dock 右键 Quit / Cmd+Q / 菜单退出 / 托盘退出统一入口）：
+  // 不直接退出，恢复主窗口并触发渲染端确认框（与托盘「退出软件」一致），确认后走 app.exit(0)
+  app.on('before-quit', (event) => {
+    event.preventDefault()
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
+      if (global.mainWindow.isMinimized()) global.mainWindow.restore()
+      global.mainWindow.show()
+      global.mainWindow.focus()
+    }
     try {
-      const { closeAllBrowsers } = await import('../browser/manager')
-      await closeAllBrowsers()
-    } catch (_) {}
-    try {
-      const { default: EngineHost } = await import('../workflow/host/index')
-      await EngineHost.shutdown()
-    } catch (_) {}
+      global.mainView?.webContents.send('request-exit')
+    } catch {
+      // 渲染进程不可用时直接退出
+      app.exit(0)
+    }
   })
 
   // 注册所有 IPC 处理
@@ -69,12 +82,20 @@ export const bootstrap = async () => {
   registerDecryptIpc()
   registerIPC()
 
-  // macOS 激活事件
+  // 所有窗口关闭不退出（后台常驻：主窗口与小窗均为隐藏语义，托盘常驻）
+  app.on('window-all-closed', () => {
+    // 空处理：覆盖 Electron 默认退出行为，保持后台运行
+  })
+
+  // macOS 激活事件：隐藏时恢复主窗口；无窗口才重建
   app.on('activate', () => {
-    if (BaseWindow.getAllWindows().length === 0) {
-      const { win: newWin, view: newView } = createWindow()
-      global.mainWindow = newWin
-      global.mainView = newView
+    if (global.mainWindow && !global.mainWindow.isDestroyed()) {
+      global.mainWindow.show()
+      global.mainWindow.focus()
+      return
     }
+    const { win: newWin, view: newView } = createWindow()
+    global.mainWindow = newWin
+    global.mainView = newView
   })
 }

@@ -1,4 +1,4 @@
-import { BaseWindow, WebContentsView, session, globalShortcut, ipcMain } from 'electron'
+import { BaseWindow, WebContentsView, session, globalShortcut } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import path from 'path'
 
@@ -49,14 +49,11 @@ export const createWindow = () => {
   win.on('enter-full-screen', () => view.webContents.send('window-fullscreen-change', true))
   win.on('leave-full-screen', () => view.webContents.send('window-fullscreen-change', false))
 
-  // 关闭拦截
+  // 关闭拦截：用户主动关闭（红点/关闭按钮/Cmd+W）一律隐藏到托盘后台运行，不退出软件；
+  // 软件退出统一走 before-quit 拦截（Dock Quit/托盘退出 → 确认框），app.exit 不触发 close
   win.on('close', (event) => {
     event.preventDefault()
-    if (!is.dev) {
-      view.webContents.send('window-close')
-    } else {
-      ipcMain.emit('window-close')
-    }
+    win.hide()
   })
 
   // 阻挡 F11 全屏

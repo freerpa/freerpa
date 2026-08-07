@@ -2,11 +2,16 @@ import { ipcMain, screen, dialog, shell, app, Notification } from 'electron'
 import { sendToRenderer } from './workflow/host/rendererUtils'
 import { manager as workflowManager } from './workflow/index'
 import { get } from './store/index'
+import { destroyTray } from './app/tray'
 import fs from 'fs'
 import path from 'path'
 export const register = () => {
   // 窗口控制
   ipcMain.on('window-min', () => global.mainWindow.minimize())
+  // 隐藏到后台（关闭按钮/系统关闭：后台运行不退出）
+  ipcMain.on('window-hide', () => {
+    global.mainWindow.hide()
+  })
   ipcMain.on('window-max', (event, forceMax = false) => {
     if (forceMax) {
       global.mainWindow.maximize()
@@ -18,8 +23,16 @@ export const register = () => {
       }
     }
   })
-  ipcMain.on('window-close', async () => {
-    await workflowManager.cleanup()
+  ipcMain.on('window-close', () => {
+    // 确认退出：立即真正退出（app.exit 不触发 before-quit，不会与确认框拦截死循环）。
+    // 清理全部尽力而为且不阻塞：destroyAll 可能因 worker 卡住而挂起、destroyTray 可能抛错，
+    // 都不能影响退出 —— 之前 await 清理导致确认后"没反应"
+    try {
+      destroyTray()
+    } catch {
+      /* 托盘清理失败不影响退出 */
+    }
+    workflowManager.cleanup().catch(() => {})
     app.exit(0)
   })
   // 注册路径选择对话框处理
@@ -61,7 +74,7 @@ export const register = () => {
     shell.openPath(path)
   })
 
-  ipcMain.handle('app:getMousePos', (event) => {
+  ipcMain.handle('app:getMousePos', () => {
     const pos = screen.getCursorScreenPoint()
     return pos
   })

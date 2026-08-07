@@ -48,7 +48,7 @@ export const register = () => {
   })
 
   // 清理工作流（解密 IPC 见 src/main/crypto.js，与工作流执行解耦）
-  ipcMain.handle(CHANNELS.cleanup, async (event) => {
+  ipcMain.handle(CHANNELS.cleanup, async () => {
     manager.cleanup()
     return { success: true }
   })
