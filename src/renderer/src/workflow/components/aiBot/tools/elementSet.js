@@ -5,7 +5,7 @@
 const elementSet = () => window.electronAPI.elementSet
 
 // 工具结果注入 LLM 上下文的大小上限（head/tail 截断，见 guard.js）
-import { limitText } from './guard.js'
+import { limitText, assertArgs } from './guard.js'
 
 const toText = (res) => limitText(res)
 
@@ -104,8 +104,9 @@ export const createElementSetTools = () => [
 ]
 
 export const createElementSetExecutors = () => ({
-  createElementSet: async ({ title, description = '', category_id = '', elements = [] } = {}) => {
-    if (!title) throw new Error('title 必填')
+  createElementSet: async (args) => {
+    const { title, description = '', category_id = '', elements = [] } = args || {}
+    assertArgs(args, ['title'])
     if (!Array.isArray(elements)) throw new Error('elements 必须为数组')
     // 校验元素/选择器结构（与真实三表结构一致：elements[].selectors[].type/expression）
     for (const el of elements) {
@@ -118,8 +119,8 @@ export const createElementSetExecutors = () => ({
   },
   listElementSets: async ({ keyword = '', page = 1, pageSize = 20 } = {}) =>
     toText(await elementSet().getElementSets({ keyword, page, pageSize })),
-  getElementSet: async ({ id }) => {
-    if (!id) throw new Error('id is required')
-    return toText(await elementSet().getElementSet(id))
+  getElementSet: async (args) => {
+    assertArgs(args, ['id'])
+    return toText(await elementSet().getElementSet(args.id))
   }
 })

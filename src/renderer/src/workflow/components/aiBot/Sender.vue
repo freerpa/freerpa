@@ -3,12 +3,7 @@
     <div class="input-card">
       <!-- 附件展示区 -->
       <div class="attachments-area" v-if="attachments.length > 0">
-        <div
-          v-for="(att, index) in attachments"
-          :key="index"
-          class="ai-attach-chip attachment-item"
-          :class="{ 'attachment-item--accent': att.type === 'workflow' }"
-        >
+        <div v-for="(att, index) in attachments" :key="index" class="ai-attach-chip attachment-item">
           <component :is="attMeta(att.type).icon" :size="12" />
           <span class="attachment-item__name">{{ att.name }}</span>
           <a-button class="attachment-item__del" type="secondary" size="mini" @click="attachments.splice(index, 1)">
@@ -31,7 +26,13 @@
       <div class="toolbar">
         <div class="toolbar-left">
           <!-- 模型选择 -->
-          <a-select class="model-select" v-model="selectedModel" :options="modelOptions" placeholder="选择模型" />
+          <a-select
+            class="model-select"
+            size="small"
+            v-model="selectedModel"
+            :options="modelOptions"
+            placeholder="选择模型"
+          />
 
           <div class="dropup">
             <!-- 添加文件 -->
@@ -40,68 +41,20 @@
             </a-button>
             <input ref="fileInput" type="file" multiple class="hidden-input" @change="handleFiles" />
           </div>
-          <!-- 引用工作流 -->
-          <div class="dropup">
-            <a-button class="ai-icon-btn" type="secondary" title="引用工作流" @click.stop="toggleMenu('workflow')">
-              <RiFlowChart :size="15" />
+          <!-- 资源引用（工作流/浏览器/数据表/元素集，配置见 resources） -->
+          <div class="dropup" v-for="res in resources" :key="res.key">
+            <a-button class="ai-icon-btn" type="secondary" :title="res.btnTitle" @click.stop="toggleMenu(res.key)">
+              <component :is="res.icon" :size="15" />
             </a-button>
             <ResourcePicker
-              v-if="openMenu === 'workflow'"
+              v-if="openMenu === res.key"
               class="resource-picker"
-              title="工作流"
-              :loader="loadWorkflows"
-              @pick="(item) => pick('workflow', item)"
+              :title="res.title"
+              :name-key="res.nameKey || 'name'"
+              :loader="res.loader"
+              @pick="(item) => pick(res.key, item)"
             >
-              <template #icon><RiFlowChart :size="12" /></template>
-            </ResourcePicker>
-          </div>
-
-          <!-- 浏览器实例 -->
-          <div class="dropup">
-            <a-button class="ai-icon-btn" type="secondary" title="选择浏览器" @click.stop="toggleMenu('browser')">
-              <RiGlobalLine :size="15" />
-            </a-button>
-            <ResourcePicker
-              v-if="openMenu === 'browser'"
-              class="resource-picker"
-              title="浏览器实例"
-              :loader="loadBrowsers"
-              @pick="(item) => pick('browser', item)"
-            >
-              <template #icon><RiGlobalLine :size="12" /></template>
-            </ResourcePicker>
-          </div>
-
-          <!-- 数据表 -->
-          <div class="dropup">
-            <a-button class="ai-icon-btn" type="secondary" title="数据表" @click.stop="toggleMenu('table')">
-              <RiDatabase2Line :size="15" />
-            </a-button>
-            <ResourcePicker
-              v-if="openMenu === 'table'"
-              class="resource-picker"
-              title="数据表"
-              :loader="loadTables"
-              @pick="(item) => pick('table', item)"
-            >
-              <template #icon><RiDatabase2Line :size="12" /></template>
-            </ResourcePicker>
-          </div>
-
-          <!-- 元素集 -->
-          <div class="dropup">
-            <a-button class="ai-icon-btn" type="secondary" title="元素集" @click.stop="toggleMenu('element')">
-              <RiStackLine :size="15" />
-            </a-button>
-            <ResourcePicker
-              v-if="openMenu === 'element'"
-              class="resource-picker"
-              title="元素集"
-              name-key="title"
-              :loader="loadElements"
-              @pick="(item) => pick('element', item)"
-            >
-              <template #icon><RiStackLine :size="12" /></template>
+              <template #icon><component :is="res.icon" :size="12" /></template>
             </ResourcePicker>
           </div>
         </div>
@@ -123,7 +76,6 @@
   import {
     RiCloseLine,
     RiAttachmentLine,
-    RiFileLine,
     RiFlowChart,
     RiGlobalLine,
     RiDatabase2Line,
@@ -134,6 +86,7 @@
   import { getModels } from '@/api/aiModels';
   import { v4 as uuidv4 } from 'uuid';
   import ResourcePicker from './ResourcePicker.vue';
+  import { attMeta } from './attachMeta';
 
   const props = defineProps({
     placeholder: {
@@ -202,14 +155,6 @@
 
   // ---- 附件 ----
   const attachments = ref([]); // [{ type, name, id }]
-  const ATTACH_META = {
-    file: { icon: RiFileLine, label: '文件' },
-    workflow: { icon: RiFlowChart, label: '工作流' },
-    browser: { icon: RiGlobalLine, label: '浏览器' },
-    table: { icon: RiDatabase2Line, label: '数据表' },
-    element: { icon: RiStackLine, label: '元素集' },
-  };
-  const attMeta = (type) => ATTACH_META[type] || ATTACH_META.file;
 
   // 文件
   const fileInput = ref(null);
@@ -231,22 +176,39 @@
 
   const listData = (res) => (Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []);
 
-  const loadWorkflows = async () => {
-    const res = await window.electronAPI.workflow.getWorkflows({ page: 1, pageSize: 100 });
-    return listData(res);
-  };
-  const loadBrowsers = async () => {
-    const res = await window.electronAPI.browserLocal.getBrowsers({ page: 1, pageSize: 100 });
-    return listData(res);
-  };
-  const loadTables = async () => {
-    const res = await window.electronAPI.data.getModels({ page: 1, pageSize: 100 });
-    return listData(res);
-  };
-  const loadElements = async () => {
-    const res = await window.electronAPI.elementSet.getElementSets({ page: 1, pageSize: 100 });
-    return listData(res);
-  };
+  // 资源下拉配置（工作流/浏览器/数据表/元素集）：loader 由 makeLoader 工厂化生成
+  const makeLoader = (ipcFn) => async () => listData(await ipcFn({ page: 1, pageSize: 100 }));
+  const resources = [
+    {
+      key: 'workflow',
+      title: '工作流',
+      btnTitle: '引用工作流',
+      icon: RiFlowChart,
+      loader: makeLoader((p) => window.electronAPI.workflow.getWorkflows(p)),
+    },
+    {
+      key: 'browser',
+      title: '浏览器实例',
+      btnTitle: '选择浏览器',
+      icon: RiGlobalLine,
+      loader: makeLoader((p) => window.electronAPI.browserLocal.getBrowsers(p)),
+    },
+    {
+      key: 'table',
+      title: '数据表',
+      btnTitle: '数据表',
+      icon: RiDatabase2Line,
+      loader: makeLoader((p) => window.electronAPI.data.getModels(p)),
+    },
+    {
+      key: 'element',
+      title: '元素集',
+      btnTitle: '元素集',
+      icon: RiStackLine,
+      nameKey: 'title',
+      loader: makeLoader((p) => window.electronAPI.elementSet.getElementSets(p)),
+    },
+  ];
 
   const pick = (type, item) => {
     attachments.value.push({ type, name: item.name || item.title || item.id, id: item.id });
@@ -394,8 +356,8 @@
   }
 
   .send-btn {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     transition: background 0.15s ease;
     flex-shrink: 0;
     &:hover {

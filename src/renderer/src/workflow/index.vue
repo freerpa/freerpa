@@ -229,7 +229,7 @@ const toggleChat = () => {
   overflow: hidden;
   transition: right 0.3s ease-in-out;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
-  border-radius: 12px;
+  border-radius: var(--border-radius-small);
 }
 
 .ai-assistant-btn {

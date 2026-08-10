@@ -140,6 +140,12 @@ const clearParamRefe = (fieldId) => {
 
 // 设置表单数据
 props.fields.forEach((field) => {
+  // 防御：formData 若被污染成字符串/非对象（历史数据把 array 字段包成「数组包字符串」，
+  // 或直接赋了参数引用串），跳过字段初始化，避免对字符串赋属性报
+  // 「Cannot create property 'xxx' on string」
+  if (!formData.value || typeof formData.value !== 'object') {
+    return
+  }
   if (!formData.value.hasOwnProperty(field.id)) {
     // console.error(formData.value, field)
 

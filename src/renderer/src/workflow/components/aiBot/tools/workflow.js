@@ -7,14 +7,15 @@
  * - 删除节点属于危险操作：执行器内弹确认框，用户确认后才执行
  * 执行器依赖画布上下文（vueFlowRef/flowStore），由 workflow/index.vue 注入。
  */
-import { availableNodesForAIBot } from '@nodes-path'
+import nodes from '@nodes-path'
 import { nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 import { autoLayout, autoConnect, getInitNodeData, ConnectionRules } from '@/workflow/utils'
 import { useFlowStore } from '@/workflow/store'
-import { configToJsonSchema } from './schema.js'
-import { limitText } from './guard.js'
+import { buildNodeMeta } from './schema.js'
+import { limitText, maskSensitive } from './guard.js'
+import { quickValidateWorkflow } from '@/workflow/engine/validate'
 
 /** 扁平化节点 config 字段定义：{ [fieldId]: { type, default, options } }（供容错合并） */
 const flattenConfigFields = (configGroups = {}) => {
@@ -40,6 +41,10 @@ const coerceValue = (value, field) => {
   if (type === 'array') {
     if (Array.isArray(value)) return value
     if (typeof value === 'string') {
+      // 参数引用（{{路径}} 或 {{路径}}--!@#$%freerpa-refer%$#@!--"旧值"）：保持字符串让引用穿透——
+      // 若走 JSON.parse 失败后包成 [value]，渲染层 Array 组件会拿到「数组包字符串」，
+      // 子字段赋值报「Cannot create property 'rowIndex' on string」
+      if (value.includes('{{') && value.includes('}}')) return value
       try {
         return JSON.parse(value)
       } catch {
@@ -77,27 +82,7 @@ const mergeConfig = (targetConfig, input, fields) => {
   return targetConfig
 }
 
-const SENSITIVE_KEYS = /api[_-]?key|password|passwd|token|secret|authorization|cookie|appid|app[_-]?secret/i
-
-/** 敏感字段值打码（与 chat.vue buildSystem 一致，用于 getWorkflow(s) 返回前脱敏，防明文配置发给第三方模型） */
-const maskSensitive = (config) => {
-  if (!config || typeof config !== 'object') return config
-  if (Array.isArray(config)) return config.map(maskSensitive)
-  const out = {}
-  Object.keys(config).forEach((k) => {
-    const v = config[k]
-    if (typeof v === 'string' && v && SENSITIVE_KEYS.test(k)) {
-      out[k] = v.length > 8 ? `${v.slice(0, 4)}****${v.slice(-2)}` : '****'
-    } else if (v && typeof v === 'object') {
-      out[k] = maskSensitive(v)
-    } else {
-      out[k] = v
-    }
-  })
-  return out
-}
-
-/** 工作流数据脱敏：graph（JSON 字符串或对象）中 nodes 的 data.config 敏感字段打码 */
+/** 工作流数据脱敏：graph（JSON 字符串或对象）中 nodes 的 data.config 敏感字段打码（脱敏实现见 guard.js） */
 const maskWorkflow = (wf) => {
   if (!wf) return wf
   const copy = { ...wf }
@@ -296,6 +281,16 @@ export const createWorkflowExecutors = ({ workflowId }) => {
   const { createConnection, validateConnection } = new ConnectionRules(workflowId)
   const executors = {}
 
+  // AI 改动后附加工作流可执行性检测（同步快速检测，低开销）：
+  // 检测失败时以 warning 返回给模型，让模型感知问题并自我修正（与系统提示「warning 请修正后重试」一致）
+  const attachValidation = (result) => {
+    const { ok, errors } = quickValidateWorkflow(flowStore)
+    if (!ok) {
+      result.warning = `工作流当前无法正常执行：${errors.map((e) => e.message).join('；')}`
+    }
+    return result
+  }
+
   // 自愈：清理画布中两端节点不存在的损坏连线（历史数据遗留，
   // 会让 autoLayout/连线校验读 null 崩溃，表现为"添加任何节点都报错"）
   try {
@@ -314,42 +309,34 @@ export const createWorkflowExecutors = ({ workflowId }) => {
   }
 
   /** 取节点 config 扁平字段定义（用于容错合并） */
-  const nodeFields = (type) => flattenConfigFields(availableNodesForAIBot[type]?.config)
+  const nodeFields = (type) => flattenConfigFields(nodes[type]?.config)
 
   executors.listNodeTypes = async ({ keyword = '' } = {}) => {
     const kw = String(keyword || '').trim().toLowerCase()
-    const list = Object.keys(availableNodesForAIBot)
+    const list = Object.keys(nodes)
       .map((type) => ({
         type,
-        name: availableNodesForAIBot[type].name,
-        description: (availableNodesForAIBot[type].description || '').slice(0, 80)
+        name: nodes[type].name,
+        description: (nodes[type].description || '').slice(0, 80)
       }))
       .filter((n) => !kw || n.type.toLowerCase().includes(kw) || n.name.toLowerCase().includes(kw))
     return { ok: true, data: { total: list.length, nodes: list.slice(0, 200) } }
   }
 
   executors.getNodeConfig = async ({ type }) => {
-    const nodeDef = availableNodesForAIBot[type]
-    if (!nodeDef) {
+    // 返回 AI 友好的完整元信息（config 字段说明目录/端口/版本），内置节点与插件节点均支持；
+    // 每个 type 只构建一次（schema.js 内缓存，取最高版本定义）
+    const meta = buildNodeMeta(type)
+    if (!meta) {
       throw new Error(`节点类型 ${type} 不存在，请先用 listNodeTypes 查询可用类型`)
     }
-    return {
-      ok: true,
-      data: {
-        type,
-        name: nodeDef.name,
-        description: nodeDef.description,
-        inputs: nodeDef.inputs || [],
-        outputs: nodeDef.outputs || [],
-        configSchema: configToJsonSchema(nodeDef.config)
-      }
-    }
+    return { ok: true, data: meta }
   }
 
   executors.addNode = async ({ type, name, connectTo, handleId, config } = {}) => {
     if (!type) throw new Error('type 必填（用 listNodeTypes 查询可用类型）')
     if (!name) throw new Error('name 必填')
-    const nodeDef = availableNodesForAIBot[type]
+    const nodeDef = nodes[type]
     if (!nodeDef) throw new Error(`节点类型 ${type} 不存在，请先用 listNodeTypes 查询可用类型`)
     const vf = vueFlowRef.value
     if (!vf) throw new Error('画布尚未就绪，请稍等片刻再试')
@@ -404,6 +391,81 @@ export const createWorkflowExecutors = ({ workflowId }) => {
       }
     }
     vf.addNodes([newNode])
+    // 子流程节点（subFlow: true，如 workflowLoop）：补建子流程容器 + 容器内起始节点 + 容器连线。
+    // 画布手动添加由 useNodeCrud.addSubFlowNode 完成；AI 直连 Vue Flow 实例缺此步骤会导致
+    // 容器内 workflowStart 缺失，子流程 view.vue 读 startNode.data 崩溃（Cannot read properties of undefined）
+    if (nodeDef.subFlow) {
+      const subFlowNode = {
+        id: newNode.id + '-subFlow',
+        type: 'subFlow',
+        parentNode: newNode.id,
+        hidden: initNodeData.type === 'workFlow',
+        deletable: false,
+        position: { x: -30, y: 150 },
+        data: {
+          type: initNodeData.type,
+          name: nodeDef.subFlow?.name || '工作流',
+          inputs: [],
+          outputs: [],
+          config: {},
+          status: 'pending',
+          view: false
+        }
+      }
+      vf.addNodes([subFlowNode])
+      // 子流程容器连线（source: 父节点 subFlow 端口 → target: 容器 subFlow 端口）
+      vf.addEdges([
+        createConnection({
+          source: newNode.id,
+          target: subFlowNode.id,
+          sourceHandle: 'subFlow',
+          targetHandle: 'subFlow',
+          selectable: false,
+          deletable: false,
+          label: nodeDef.subFlow?.name || ''
+        })
+      ])
+      // 容器内添加 workflowStart 起始节点（与 useNodeCrud.addStartNode 等价，extent 约束在容器内）
+      const startData = JSON.parse(getInitNodeData('workflowStart') || '{}')
+      if (startData.type) {
+        startData.deletable = false
+        startData.focusable = false
+        startData.extent = 'parent'
+        startData.parentNode = subFlowNode.id
+        vf.addNodes([
+          {
+            id: `node-${uuidv4()}`,
+            type: 'custom',
+            position: { x: 180, y: 60 },
+            parentNode: subFlowNode.id,
+            extent: 'parent',
+            selectable: true,
+            deletable: false,
+            focusable: false,
+            data: {
+              type: startData.type,
+              name: startData.name,
+              description: startData.description,
+              inputs: startData.inputs,
+              outputs: startData.outputs,
+              config: startData.config || {},
+              status: 'pending',
+              view: startData.view,
+              version: startData.version || 'V1'
+            }
+          }
+        ])
+      }
+      // 容器位置：父节点高度下方（等待渲染完成后再移动，避免节点覆盖）
+      setTimeout(() => {
+        const dims = vf.getNode(newNode.id)?.dimensions
+        if (dims) {
+          vf.updateNode(subFlowNode.id, (n) => ({
+            position: { x: n.position.x, y: n.position.y + dims.height }
+          }))
+        }
+      }, 10)
+    }
     // 规则化连接：connectTo 指定前驱节点，端口由 autoConnect 按类型规则自动计算
     if (connectTo) {
       const fromNode = vf.getNode(connectTo)
@@ -416,7 +478,7 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     // 否则 autoLayout 遍历到未渲染节点可能读 null/undefined 崩溃
     await nextTick()
     autoLayout(vf)
-    return { ok: true, data: { id: newNode.id, status: 'created' } }
+    return attachValidation({ ok: true, data: { id: newNode.id, status: 'created' } })
   }
 
   executors.connect = async ({ source, target }) => {
@@ -439,7 +501,7 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     await nextTick()
     autoConnect(vueFlowRef.value, createConnection, sourceNode, targetNode, 'next')
     autoLayout(vueFlowRef.value)
-    return { ok: true, data: { status: 'connected' } }
+    return attachValidation({ ok: true, data: { status: 'connected' } })
   }
 
   executors.updateNode = async ({ nodeId, name, config } = {}) => {
@@ -449,7 +511,7 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     if (name) node.data.name = String(name)
     mergeConfig(node.data.config, config, nodeFields(node.data.type))
     flowStore?.onNodesChange([{ id: nodeId, type: 'data' }])
-    return { ok: true, data: { id: nodeId, status: 'updated' } }
+    return attachValidation({ ok: true, data: { id: nodeId, status: 'updated' } })
   }
 
   executors.deleteNode = async ({ nodeId }) => {
@@ -473,14 +535,14 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     vf.removeNodes(nodeId, true, true)
     await nextTick()
     autoLayout(vf)
-    return { ok: true, data: { id: nodeId, status: 'deleted' } }
+    return attachValidation({ ok: true, data: { id: nodeId, status: 'deleted' } })
   }
 
   executors.deleteEdge = async ({ edgeId }) => {
     if (!edgeId) throw new Error('edgeId 必填')
     await vueFlowRef.value?.removeEdges([edgeId])
     autoLayout(vueFlowRef.value)
-    return { ok: true, data: { id: edgeId, status: 'deleted' } }
+    return attachValidation({ ok: true, data: { id: edgeId, status: 'deleted' } })
   }
 
   executors.getWorkflows = async ({ keyword = '', page = 1, pageSize = 10 } = {}) => {

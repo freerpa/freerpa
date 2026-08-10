@@ -5,7 +5,7 @@
 const data = () => window.electronAPI.data
 
 // 工具结果注入 LLM 上下文的大小上限（head/tail 截断，见 guard.js）
-import { limitText } from './guard.js'
+import { limitText, assertArgs } from './guard.js'
 
 const toText = (res) => limitText(res)
 
@@ -199,12 +199,13 @@ export const createDataTableTools = () => [
 export const createDataTableExecutors = () => ({
   listTables: async ({ keyword = '', page = 1, pageSize = 20 } = {}) =>
     toText(await data().getModels({ keyword, page, pageSize })),
-  getTable: async ({ id }) => {
-    if (!id) throw new Error('id is required')
-    return toText(await data().getModel(id))
+  getTable: async (args) => {
+    assertArgs(args, ['id'])
+    return toText(await data().getModel(args.id))
   },
-  queryData: async ({ modelId, page = 1, pageSize = 10, filters = [] } = {}) => {
-    if (!modelId) throw new Error('modelId is required')
+  queryData: async (args) => {
+    const { modelId, page = 1, pageSize = 10, filters = [] } = args || {}
+    assertArgs(args, ['modelId'])
     // 工具 schema 用数组 [{field, operator, value}]，主进程 getModelData 要求对象 { field: {operator, value} }，在此转换
     const filterObj = {}
     ;(filters || []).forEach((f) => {
@@ -213,8 +214,9 @@ export const createDataTableExecutors = () => ({
     const res = await data().getModelData({ modelId, page, pageSize, filters: filterObj })
     return toText(res)
   },
-  createTable: async ({ name, description = '', category_id = '', fields = [] } = {}) => {
-    if (!name) throw new Error('name 必填')
+  createTable: async (args) => {
+    const { name, description = '', category_id = '', fields = [] } = args || {}
+    assertArgs(args, ['name'])
     if (!Array.isArray(fields)) throw new Error('fields 必须为数组')
     // fields 至少 1 个且字段 description（中文名）必填——与真实表单一致，空表/缺中文名会生成非法 SQL
     if (fields.length === 0) throw new Error('fields 至少需要 1 个字段（description 为字段中文名必填）')
@@ -223,22 +225,27 @@ export const createDataTableExecutors = () => ({
     }
     return toText(await data().createModel({ name, description, category_id, fields }))
   },
-  deleteTable: async ({ id }) => {
-    if (!id) throw new Error('id is required')
-    return toText(await data().deleteModel(id))
+  deleteTable: async (args) => {
+    assertArgs(args, ['id'])
+    return toText(await data().deleteModel(args.id))
   },
-  createData: async ({ modelId, data: payload } = {}) => {
-    if (!modelId) throw new Error('modelId is required')
+  createData: async (args) => {
+    const payload = args?.data
+    assertArgs(args, ['modelId'])
     if (!payload || typeof payload !== 'object') throw new Error('data 必须为对象')
-    return toText(await data().createModelData({ modelId, data: payload }))
+    return toText(await data().createModelData({ modelId: args.modelId, data: payload }))
   },
-  updateData: async ({ modelId, ids, data: payload } = {}) => {
-    if (!modelId || !Array.isArray(ids) || ids.length === 0) throw new Error('modelId 与 ids 必填')
+  updateData: async (args) => {
+    const { modelId, ids, data: payload } = args || {}
+    assertArgs(args, ['modelId'])
+    if (!Array.isArray(ids) || ids.length === 0) throw new Error('ids is required')
     if (!payload || typeof payload !== 'object') throw new Error('data 必须为对象')
     return toText(await data().updateModelData({ modelId, ids, data: payload }))
   },
-  deleteData: async ({ modelId, ids } = {}) => {
-    if (!modelId || !Array.isArray(ids) || ids.length === 0) throw new Error('modelId 与 ids 必填')
+  deleteData: async (args) => {
+    const { modelId, ids } = args || {}
+    assertArgs(args, ['modelId'])
+    if (!Array.isArray(ids) || ids.length === 0) throw new Error('ids is required')
     return toText(await data().deleteModelData({ modelId, ids }))
   }
 })

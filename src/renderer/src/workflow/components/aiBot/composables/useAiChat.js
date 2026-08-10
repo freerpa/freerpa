@@ -6,6 +6,7 @@
  *   user:      { message_id, role, content, attachments? }
  *   assistant: { message_id, role, content, reasoning_content, tool_calls: [{id,type,function:{name,arguments}}] }
  *   tool:      { message_id, role, tool_call_id, tool_name, content }（仅入上下文与持久化，UI 不渲染气泡）
+ * 纯函数层（上下文加工/错误映射）见 ./context.js，工具执行与循环守卫见 ./toolLoop.js
  */
 import { ref, computed } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
@@ -18,100 +19,15 @@ import {
   getConversations,
   deleteConversation
 } from '@/api/aiModels'
+import { snipContext, sanitizeContext, friendlyAIError, toOpenAiToolCall } from './context'
+import { executeToolCalls, STALL_ROUNDS, STALL_PROMPT_MSG, GRACE_PROMPT_MSG } from './toolLoop'
+import { useFlowStore } from '@/workflow/store'
+import { quickValidateWorkflow } from '@/workflow/engine/validate'
 
-const MAX_TOOL_ROUNDS = 8 // 工具循环轮次上限，防止模型死循环
-const MAX_LOOP_GUARD_FAILURES = 2 // 同一工具同一参数连续失败次数 → 阻断循环
-const STALL_ROUNDS = 4 // 连续无进展轮数 → 提示输出结论
-const LOOP_GUARD_MSG =
-  'blocked: [loop guard] 同一工具调用已连续失败，请停止重试并修正参数或改用其他方式，然后直接输出阶段性结论或询问用户'
-const BUDGET_CHARS = 240000 // 提交上下文总字符预算
-const MAX_TOOL_RESULT = 20000 // 单条 tool 结果截断上限
-
-/** 上下文预算：总长超限时先截断超长 tool 结果（head），仍超则丢弃最早的 tool 结果（不丢 sqlite 原文） */
-const snipContext = (ctx) => {
-  const estimate = (m) => JSON.stringify(m).length
-  let total = 0
-  for (const m of ctx) total += estimate(m)
-  if (total <= BUDGET_CHARS) return ctx
-  let result = ctx.map((m) => {
-    if (m.role !== 'tool') return m
-    const text = String(m.content || '')
-    if (text.length <= MAX_TOOL_RESULT) return m
-    return { ...m, content: `${text.slice(0, MAX_TOOL_RESULT)}…[truncated]` }
-  })
-  while (true) {
-    total = 0
-    for (const m of result) total += estimate(m)
-    if (total <= BUDGET_CHARS) break
-    const idx = result.findIndex((m) => m.role === 'tool')
-    if (idx === -1) break
-    result = [...result.slice(0, idx), ...result.slice(idx + 1)]
-  }
-  return result
-}
-
-/**
- * 清洗提交给模型的上下文，自愈残缺工具调用配对：
- * - assistant 的 tool_calls 若 id/function.name 缺失或其后无对应 tool 结果 → 剔除该调用
- *   （AI SDK 校验这些字段，undefined 会抛 AI_InvalidPromptError 拒绝发送请求，
- *   导致"一旦失败永远失败"）
- * - tool 消息若无有效对应 assistant tool_call → 剔除孤儿结果
- */
-const sanitizeContext = (ctx) => {
-  // 有效 tool_call：id 与 function.name 均非空才计入
-  const validIds = new Set()
-  ctx.forEach((m) => {
-    if (m.role === 'assistant') {
-      ;(m.tool_calls || []).forEach((tc) => {
-        if (tc?.id && tc.function?.name) validIds.add(tc.id)
-      })
-    }
-  })
-  const cleaned = ctx.map((m, i) => {
-    if (m.role === 'tool') {
-      return m.tool_call_id && validIds.has(m.tool_call_id) ? m : null
-    }
-    if (m.role === 'assistant' && Array.isArray(m.tool_calls) && m.tool_calls.length) {
-      const laterToolIds = new Set(
-        ctx.slice(i + 1).filter((x) => x.role === 'tool' && x.tool_call_id).map((x) => x.tool_call_id)
-      )
-      const kept = m.tool_calls.filter((tc) => tc?.id && tc.function?.name && laterToolIds.has(tc.id))
-      if (kept.length !== m.tool_calls.length) return { ...m, tool_calls: kept }
-    }
-    return m
-  })
-  return cleaned.filter(Boolean)
-}
-
-/** 把 AI 调用错误转成用户可读的提示（区分认证/网络/模型等常见原因） */
-const friendlyAIError = (error) => {
-  const msg = String(error?.message || error || '')
-  if (!msg || msg === 'Error') return '调用失败：模型响应异常，请重试'
-  if (/401|403|unauthori|invalid api|apikey|api key|authentication|permission/i.test(msg)) {
-    return '调用失败：API KEY 无效或已过期，请在「设置 → 模型管理」中检查供应商配置'
-  }
-  if (/404/.test(msg) && /model|not found/i.test(msg)) {
-    return '调用失败：模型不存在，请在「设置 → 模型管理」中确认模型 ID'
-  }
-  if (/ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|fetch failed|network error|socket/i.test(msg)) {
-    return '调用失败：无法连接 AI 供应商，请检查网络与 API 地址'
-  }
-  if (/429|rate limit|too many requests/i.test(msg)) {
-    return '调用失败：请求过于频繁（限流），请稍后重试'
-  }
-  if (/400|422|schema|validation|invalid/i.test(msg)) {
-    return `调用失败：请求参数异常（${msg.slice(0, 120)}）`
-  }
-  return `调用失败：${msg.slice(0, 200)}`
-}
-
-const toOpenAiToolCall = (tc) => ({
-  id: tc.toolCallId,
-  type: 'function',
-  function: { name: tc.toolName, arguments: tc.args || {} }
-})
+const MAX_TOOL_ROUNDS = 128 // 工具循环轮次上限，防止模型死循环（含每轮结束前的工作流检测修正轮）
 
 export const useAiChat = ({ workflowId, tools, executors, buildSystem, buildTurn, scrollToBottom }) => {
+  const flowStore = useFlowStore(workflowId)
   const messages = ref([]) // 当前会话消息（含 tool，供上下文与持久化）
   const conversations = ref([]) // 会话列表 [{ id, title, messageCount, updatedAt }]
   const currentConversationId = ref('')
@@ -132,7 +48,11 @@ export const useAiChat = ({ workflowId, tools, executors, buildSystem, buildTurn
 
   const loadMessages = async (conversationId) => {
     try {
-      messages.value = (await getChatMessages(workflowId, conversationId)) || []
+      // 历史消息持久化的 token 用量（DB usage 列）映射为运行时 _usage，供统计/气泡统一读取
+      messages.value = ((await getChatMessages(workflowId, conversationId)) || []).map((m) => ({
+        ...m,
+        _usage: m.usage || null
+      }))
       // JSON 深拷贝：messages.value 是 Vue reactive 数组，元素为 Proxy，
       // 直接经 IPC 传输会因 structuredClone 无法克隆 Proxy 报 "An object could not be cloned"
       contextMessages = JSON.parse(JSON.stringify(messages.value))
@@ -362,12 +282,17 @@ export const useAiChat = ({ workflowId, tools, executors, buildSystem, buildTurn
     }
     messages.value.push(userMsg)
     contextMessages.push(userMsg)
-    await persistIn(userMsg)
+    // 不 await：用户消息持久化异步完成（persistIn 已吞错），
+    // 立即继续创建 assistant 加载框——否则要等 IPC 落库后才显示回复加载，体验上"等到大模型响应"
+    persistIn(userMsg)
 
     // 每轮补全独立一条 assistant 消息（推理/工具调用/文本属于同一时间单元）。
     // 此前多轮工具调用聚合到同一条消息，UI 上所有推理堆在一起、时间错位，用户阅读困难；
     // 拆分后每条 assistant 消息 = 一轮（工具轮显示推理+工具卡片，最终轮显示推理+文本），时间顺序清晰
-    const beginRound = () => {
+    const beginRound = (prevRound) => {
+      // 切换轮次前先持久化上一轮完整状态（幂等覆盖其空骨架）——
+      // 否则中间工具轮次只保存了空消息，历史恢复后 tool_calls/流式内容丢失，工具调用记录不全
+      if (prevRound) persistIn(prevRound)
       const roundAssistant = {
         message_id: uuidv4(),
         round_id: roundId,
@@ -393,10 +318,9 @@ export const useAiChat = ({ workflowId, tools, executors, buildSystem, buildTurn
     // 当前轮 assistant 消息（reactive proxy）
     let viewRound = beginRound()
 
-    // 循环守卫 / 无进展 / grace 状态（每轮重置前保留跨轮计数）
+    // 循环守卫 / 无进展状态（每轮重置前保留跨轮计数）
     const failureFingerprints = new Map() // `${toolName}|${JSON.stringify(args)}` → 连续失败次数
     let stalledRounds = 0
-    let loopGuardBreak = false
 
     try {
       for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
@@ -405,6 +329,23 @@ export const useAiChat = ({ workflowId, tools, executors, buildSystem, buildTurn
         // 以完整结果为准（覆盖流式期间的部分工具调用）
         viewRound.tool_calls = toolCalls.map(toOpenAiToolCall)
         if (toolCalls.length === 0) {
+          // 每轮对话结束前：对当前工作流做运行检查（同步快速检测，缺节点/未连接/必填输入/子流程/参数引用），
+          // 发现问题注入提示让模型先修复再输出最终回复（受 MAX_TOOL_ROUNDS 上限保护）
+          const { ok, errors } = quickValidateWorkflow(flowStore)
+          if (!ok && round < MAX_TOOL_ROUNDS - 1) {
+            const checkMsg = {
+              message_id: uuidv4(),
+              round_id: roundId,
+              role: 'user',
+              content: `【工作流运行检查未通过】请先修复以下问题再输出最终回复：\n${errors
+                .map((e) => `- ${e.message}`)
+                .join('\n')}`
+            }
+            contextMessages.push(checkMsg)
+            await persistIn(checkMsg)
+            viewRound = beginRound(viewRound)
+            continue
+          }
           // 最终轮：无工具调用，本消息即最终回答
           viewRound.loading = false
           break
@@ -412,70 +353,22 @@ export const useAiChat = ({ workflowId, tools, executors, buildSystem, buildTurn
         viewRound.loading = false
         viewRound.tool_calling = 'loading'
         // 执行工具，结果写入上下文并持久化；finish 表示模型已达目标，执行后结束本轮
-        let finished = false
-        let roundFailed = false
-        for (const tc of toolCalls) {
-          if (tc.toolName === 'finish') {
-            finished = true
-            break
-          }
-          let output
-          let durationMs = 0
-          try {
-            const handler = executors[tc.toolName]
-            if (!handler) throw new Error(`未知工具: ${tc.toolName}`)
-            const t0 = performance.now()
-            output = await handler(tc.args || {})
-            durationMs = Math.round(performance.now() - t0)
-          } catch (error) {
-            // 统一为结构化失败结果（与执行器返回的 {ok:false} 一致），供模型自纠；
-            // 同时打印完整堆栈到 Console——工具失败常被这里吞掉，保留堆栈才能定位根因
-            console.error(`[AIBot 工具执行失败] ${tc.toolName}`, tc.args, error)
-            output = {
-              ok: false,
-              error: `${error?.message || String(error)}\n  ↳ ${(error?.stack || '').split('\n').slice(1, 4).join('\n  ↳ ')}`
-            }
-          }
-          const isFail = output && (output.ok === false || (typeof output === 'string' && output.startsWith('error')))
-          // 循环守卫：同一工具同一参数连续失败达到上限 → 注入 blocked 并结束工具阶段
-          if (isFail) {
-            roundFailed = true
-            const fingerprint = `${tc.toolName}|${JSON.stringify(tc.args || {})}`
-            const count = (failureFingerprints.get(fingerprint) || 0) + 1
-            failureFingerprints.set(fingerprint, count)
-            if (count >= MAX_LOOP_GUARD_FAILURES) {
-              const guardMsg = {
-                message_id: uuidv4(),
-                round_id: roundId,
-                role: 'tool',
-                tool_call_id: tc.toolCallId,
-                tool_name: tc.toolName,
-                content: LOOP_GUARD_MSG
-              }
-              contextMessages.push(guardMsg)
-              await persistIn(guardMsg)
-              loopGuardBreak = true
-              break
-            }
-          }
-          const toolMsg = {
-            message_id: uuidv4(),
-            round_id: roundId,
-            role: 'tool',
-            tool_call_id: tc.toolCallId,
-            tool_name: tc.toolName,
-            content: typeof output === 'string' ? output : JSON.stringify(output),
-            duration_ms: durationMs
-          }
-          contextMessages.push(toolMsg)
-          // 同步进 UI 消息源（displayMessages 过滤 tool，不显示为独立消息；供 buildRoundGroups 合并卡片结果与耗时）
-          messages.value.push(toolMsg)
-          await persistIn(toolMsg)
-        }
+        const { finished, loopGuardBreak, roundFailed } = await executeToolCalls({
+          toolCalls,
+          roundId,
+          executors,
+          persistIn,
+          contextMessages,
+          messages,
+          failureFingerprints
+        })
+        // 工具执行完毕：结束"调用中"状态（否则中间工具轮消息的 tool_calling 残留 'loading'，
+        // 历史消息会永久显示"调用工具中..."转圈卡；所有后续分支均经过此复位点）
+        viewRound.tool_calling = ''
         if (finished || loopGuardBreak) {
           // 守卫触发后放行一轮：让模型基于提示输出阶段性结论，避免空回复气泡
           if (loopGuardBreak) {
-            viewRound = beginRound()
+            viewRound = beginRound(viewRound)
             const guardFinal = await runCompletion(viewRound, model)
             if (guardFinal.aborted || cancelFlag) break
             viewRound.tool_calls = (guardFinal.toolCalls || []).map(toOpenAiToolCall)
@@ -490,11 +383,11 @@ export const useAiChat = ({ workflowId, tools, executors, buildSystem, buildTurn
             message_id: uuidv4(),
             round_id: roundId,
             role: 'user',
-            content: '提示：已连续多轮没有进展，请基于已有信息输出阶段性结论，或向用户询问下一步操作。'
+            content: STALL_PROMPT_MSG
           }
           contextMessages.push(stallMsg)
           await persistIn(stallMsg)
-          viewRound = beginRound()
+          viewRound = beginRound(viewRound)
           const stallFinal = await runCompletion(viewRound, model)
           if (stallFinal.aborted || cancelFlag) break
           viewRound.tool_calls = (stallFinal.toolCalls || []).map(toOpenAiToolCall)
@@ -507,19 +400,19 @@ export const useAiChat = ({ workflowId, tools, executors, buildSystem, buildTurn
             message_id: uuidv4(),
             round_id: roundId,
             role: 'user',
-            content: '提示：已达到工具调用轮次上限。请基于已完成的工具结果直接输出最终回复，不要再调用工具。'
+            content: GRACE_PROMPT_MSG
           }
           contextMessages.push(graceMsg)
           await persistIn(graceMsg)
-          viewRound = beginRound()
+          viewRound = beginRound(viewRound)
           const final = await runCompletion(viewRound, model)
           if (final.aborted || cancelFlag) break
           viewRound.tool_calls = (final.toolCalls || []).map(toOpenAiToolCall)
           viewRound.loading = false
           break // 无论是否还有工具调用都结束工具阶段
         }
-        // 下一轮：新 assistant 消息
-        viewRound = beginRound()
+        // 下一轮：新 assistant 消息（切换前已持久化当前轮完整状态）
+        viewRound = beginRound(viewRound)
       }
       if (viewRound) {
         viewRound.loading = false

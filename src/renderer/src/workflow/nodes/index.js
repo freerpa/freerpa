@@ -135,8 +135,6 @@ const nodes = reactive(getNodes())
 
 export default nodes
 
-export const availableNodesForAIBot = nodes
-
 // ═══════════════════════════════════════════════════
 // 4. 本地插件节点动态注册
 // ═══════════════════════════════════════════════════

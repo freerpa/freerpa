@@ -58,6 +58,7 @@ const ensureTables = async (db) => {
             attachments TEXT DEFAULT '[]',
             round_id TEXT DEFAULT '',
             duration_ms INTEGER DEFAULT NULL,
+            usage TEXT DEFAULT '',
             created_at TEXT DEFAULT (datetime('now', 'localtime')),
             UNIQUE(workflow_id, conversation_id, message_id)
           )
@@ -76,11 +77,12 @@ const ensureTables = async (db) => {
           'tool_call_id',
           hasOldAttachments ? 'attachments' : `'[]' AS attachments`,
           `'' AS round_id`,
+          `'' AS usage`,
           'created_at'
         ].join(', ')
         await db.exec(
           `INSERT INTO ${TABLE}
-            (workflow_id, conversation_id, message_id, role, content, reasoning_content, tool_calls, tool_call_id, attachments, round_id, created_at)
+            (workflow_id, conversation_id, message_id, role, content, reasoning_content, tool_calls, tool_call_id, attachments, round_id, usage, created_at)
            SELECT ${selCols} FROM ${TABLE}_old`
         )
         await db.exec(`DROP TABLE ${TABLE}_old`)
@@ -100,6 +102,10 @@ const ensureTables = async (db) => {
       // 已有表缺 duration_ms（工具执行耗时，跨会话展示）：轻量补列
       await db.exec(`ALTER TABLE ${TABLE} ADD COLUMN duration_ms INTEGER DEFAULT NULL`)
     }
+    if (!cols.some((c) => c.name === 'usage')) {
+      // 已有表缺 usage（AI 调用 token 用量，跟随会话持久化展示）：轻量补列
+      await db.exec(`ALTER TABLE ${TABLE} ADD COLUMN usage TEXT DEFAULT ''`)
+    }
   } else {
     await db.exec(`
       CREATE TABLE IF NOT EXISTS ${TABLE} (
@@ -115,6 +121,7 @@ const ensureTables = async (db) => {
         attachments TEXT DEFAULT '[]',
         round_id TEXT DEFAULT '',
         duration_ms INTEGER DEFAULT NULL,
+        usage TEXT DEFAULT '',
         created_at TEXT DEFAULT (datetime('now', 'localtime')),
         UNIQUE(workflow_id, conversation_id, message_id)
       )
@@ -133,7 +140,8 @@ const toRow = (m) => ({
   tool_call_id: m.tool_call_id || '',
   attachments: m.attachments ? JSON.stringify(m.attachments) : '[]',
   round_id: m.round_id || '',
-  duration_ms: m.duration_ms ?? null
+  duration_ms: m.duration_ms ?? null,
+  usage: m._usage ? JSON.stringify(m._usage) : ''
 })
 
 const fromRow = (row) => ({
@@ -146,6 +154,7 @@ const fromRow = (row) => ({
   attachments: row.attachments ? JSON.parse(row.attachments) : [],
   round_id: row.round_id || '',
   duration_ms: row.duration_ms ?? null,
+  usage: row.usage ? JSON.parse(row.usage) : null,
   created_at: row.created_at
 })
 
@@ -238,8 +247,8 @@ export const saveMessage = async (workflowId, conversationId = 'default', messag
   // user→tool→assistant，tool-result 无配对导致接口 400
   await db.run(
     `INSERT INTO ${TABLE}
-      (workflow_id, conversation_id, message_id, role, content, reasoning_content, tool_calls, tool_call_id, attachments, round_id, duration_ms, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM ${TABLE} WHERE workflow_id=? AND conversation_id=? AND message_id=?), datetime('now','localtime')))
+      (workflow_id, conversation_id, message_id, role, content, reasoning_content, tool_calls, tool_call_id, attachments, round_id, duration_ms, usage, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM ${TABLE} WHERE workflow_id=? AND conversation_id=? AND message_id=?), datetime('now','localtime')))
      ON CONFLICT(workflow_id, conversation_id, message_id) DO UPDATE SET
        role = excluded.role,
        content = excluded.content,
@@ -248,7 +257,8 @@ export const saveMessage = async (workflowId, conversationId = 'default', messag
        tool_call_id = excluded.tool_call_id,
        attachments = excluded.attachments,
        round_id = excluded.round_id,
-       duration_ms = excluded.duration_ms`,
+       duration_ms = excluded.duration_ms,
+       usage = excluded.usage`,
     row.workflow_id,
     row.conversation_id,
     row.message_id,
@@ -260,6 +270,7 @@ export const saveMessage = async (workflowId, conversationId = 'default', messag
     row.attachments,
     row.round_id,
     row.duration_ms,
+    row.usage,
     workflowId,
     conversationId,
     message.message_id

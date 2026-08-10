@@ -4,7 +4,7 @@
       <a-tabs
         v-if="tabGroups.length > 0"
         type="line"
-        size="mini"
+        size="large"
         :destroy-on-hide="false"
         scroll-position="center"
         @keydown="unDoReDoInterceptor"
@@ -73,13 +73,14 @@ const onConfigChange = (value) => {
 <style lang="less" scoped>
 .node-config-drawer {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  // 与会话抽屉（.chat-container）一致：垂直占位 100vh - 150px（顶 70px + 底 80px）、距边 20px、阴影
+  top: 30px;
+  left: 20px;
   bottom: 80px;
   width: 360px;
   background: var(--color-bg-2);
   border-radius: var(--border-radius-small);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
   z-index: 50;
   display: flex;
   flex-direction: column;

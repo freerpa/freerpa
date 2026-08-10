@@ -5,7 +5,7 @@
 const env = () => window.electronAPI.env
 
 // 工具结果注入 LLM 上下文的大小上限（head/tail 截断，见 guard.js）
-import { limitText } from './guard.js'
+import { limitText, assertArgs } from './guard.js'
 
 // 工具结果转文本：兼容两种返回形态——
 // 1) env:* 统一 {code:200,data} / {code:400,message} 包装；
@@ -151,25 +151,26 @@ export const createBrowserTools = () => [
 ]
 
 export const createBrowserExecutors = () => ({
-  createBrowser: async ({ name, description = '', kernel_id = '', category_id = '', proxy_url = '' } = {}) => {
-    if (!name) throw new Error('name 必填')
+  createBrowser: async (args) => {
+    const { name, description = '', kernel_id = '', category_id = '', proxy_url = '' } = args || {}
+    assertArgs(args, ['name'])
     const browserLocal = window.electronAPI.browserLocal
     return toText(await browserLocal.createBrowser({ name, description, kernel_id, category_id, proxy_url }))
   },
   openBrowser: async (args) => toText(await env().openBrowser(args || {})),
-  closeBrowser: async ({ envId } = {}) => {
-    if (!envId) throw new Error('envId is required')
-    return toText(await env().closeBrowser({ envId }))
+  closeBrowser: async (args) => {
+    assertArgs(args, ['envId'])
+    return toText(await env().closeBrowser({ envId: args.envId }))
   },
   getAllBrowserStatus: async () => toText(await env().getAllBrowserStatus()),
   getKernelList: async () => toText(await env().getKernelList()),
   getMajorVersionList: async () => toText(await env().getMajorVersionList()),
-  checkKernel: async ({ platform, version } = {}) => {
-    if (!platform || !version) throw new Error('platform 与 version 必填')
-    return toText(await env().checkKernel({ platform, version }))
+  checkKernel: async (args) => {
+    assertArgs(args, ['platform', 'version'])
+    return toText(await env().checkKernel({ platform: args.platform, version: args.version }))
   },
-  downloadKernel: async ({ platform, version } = {}) => {
-    if (!platform || !version) throw new Error('platform 与 version 必填')
-    return toText(await env().downloadKernel({ platform, version }))
+  downloadKernel: async (args) => {
+    assertArgs(args, ['platform', 'version'])
+    return toText(await env().downloadKernel({ platform: args.platform, version: args.version }))
   }
 })
