@@ -45,10 +45,13 @@ export const autoLayout = (vueFlowRef) => {
       }
       // 获取当前当前节点的所有后继节点
       const successorIds = edgeMap.get(currentNode.id) || new Set();
-      const successors = [...successorIds].filter(id => !layoutedIds.has(id)).map(id => allNodes.find(node => node.id === id))
+      const successors = [...successorIds]
+        .filter(id => !layoutedIds.has(id))
+        .map(id => allNodes.find(node => node.id === id))
+        .filter(Boolean) // 防损坏连线/历史遗留的悬空目标节点（undefined 会递归崩溃）
       // 递归布局后继节点，获取其盒子高度
-      const successorBoxHeight = layout(allNodes, allEdges, successors, currentNode.position.x + currentNode.dimensions.width + gapX, currentNode.position.y, gapX, gapY)
-      let currentNodeHeight = currentNode.dimensions.height
+      const successorBoxHeight = layout(allNodes, allEdges, successors, currentNode.position.x + (currentNode.dimensions?.width || 200) + gapX, currentNode.position.y, gapX, gapY)
+      let currentNodeHeight = currentNode.dimensions?.height || 100
       // 如果当前节点是父节点，高度增加50（用于容纳子节点展开按钮）
       if (currentNode.isParent) {
         currentNodeHeight += 50

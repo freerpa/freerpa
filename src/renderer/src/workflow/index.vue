@@ -13,9 +13,15 @@
       class="chat-container"
       @mouseenter="aiBotFocus = true"
       @mouseleave="aiBotFocus = false"
-      :style="{ right: aiBotVisible ? '20px' : '-550px' }"
+      :style="{ right: aiBotVisible ? '20px' : '-740px' }"
     >
-      <chat :workflowId="workflowId" @close="aiBotVisible = false" :toolActions="toolActions" />
+      <chat
+        :workflowId="workflowId"
+        :visible="aiBotVisible"
+        @close="aiBotVisible = false"
+        :workflow-ref="flowRef"
+        :vue-flow-ref="vueFlowRef"
+      />
     </div>
   </div>
 </template>
@@ -30,7 +36,6 @@ import { useFlowStore } from './store'
 import { useStore } from '@/store'
 import { autoLayout } from '@/workflow/utils'
 import { getShortcuts, findMatch, onChanged } from '@/utils/shortcut'
-import { getActions } from './components/aiBot/functionCalling.js'
 const props = defineProps({
   workflowId: {
     type: [String, Number],
@@ -203,8 +208,6 @@ const aiBotFocus = ref(false)
 const toggleChat = () => {
   aiBotVisible.value = !aiBotVisible.value
 }
-
-const toolActions = getActions(vueFlowRef, flowRef, props.workflowId, flowStore)
 </script>
 
 <style lang="less" scoped>
@@ -221,12 +224,12 @@ const toolActions = getActions(vueFlowRef, flowRef, props.workflowId, flowStore)
 .chat-container {
   position: absolute;
   bottom: 80px;
+  height: calc(100vh - 150px);
   z-index: 1000;
-  background: #fff;
-  padding: 12px 16px;
-  transition: all 0.3s ease-in-out;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border-radius: var(--border-radius-small);
+  overflow: hidden;
+  transition: right 0.3s ease-in-out;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
 }
 
 .ai-assistant-btn {

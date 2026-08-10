@@ -35,7 +35,8 @@ export const autoConnect = async (
   vueFlowRef.getNodes
     .filter((node) => node.parentNode === targetNode.parentNode)
     .forEach((node) => {
-      node.data.outputs
+      // subFlow 容器节点（type='subFlow'）没有 outputs 字段，必须防 undefined
+      ;(node.data?.outputs || [])
         .filter((output) => specialDataTypes.includes(output.type))
         .forEach((output) => {
           const outputSet = specialOutputMap.get(output.type) || new Set()
@@ -45,14 +46,17 @@ export const autoConnect = async (
     })
   // 如果sourceNode和targetNode都存在则流程连线
   if (sourceNode && targetNode) {
-    edges.push(
-      createConnection({
-        source: sourceNode.id,
-        target: targetNode.id,
-        sourceHandle: handleId,
-        targetHandle: 'prev'
-      })
-    )
+    const edge = createConnection({
+      source: sourceNode.id,
+      target: targetNode.id,
+      sourceHandle: handleId,
+      targetHandle: 'prev'
+    })
+    // createConnection 不做校验（Vue Flow 拖线时由 validate-connection 拦截）；
+    // 编程式调用必须自己防 null/残缺边，否则后续 isConnected/addEdges 读 null 崩溃
+    if (edge && edge.source && edge.target) {
+      edges.push(edge)
+    }
   }
   //获取sourceNode的输出和targetNode的输入
   await new Promise((resolve) => setTimeout(resolve, 1))
@@ -66,14 +70,15 @@ export const autoConnect = async (
     isConnectable(sourceOutputs[0], targetInputs[0]) &&
     !specialDataTypes.includes(targetInputs[0].type)
   ) {
-    edges.push(
-      createConnection({
-        source: sourceNode.id,
-        target: targetNode.id,
-        sourceHandle: sourceOutputs[0].id,
-        targetHandle: targetInputs[0].id
-      })
-    )
+    const edge = createConnection({
+      source: sourceNode.id,
+      target: targetNode.id,
+      sourceHandle: sourceOutputs[0].id,
+      targetHandle: targetInputs[0].id
+    })
+    if (edge && edge.source && edge.target) {
+      edges.push(edge)
+    }
   } else {
     //遍历targetNode的输入
     targetInputs.forEach((input) => {
@@ -86,11 +91,13 @@ export const autoConnect = async (
       //如果特殊类型节点只有一个并且输入节点没有连线则连线
       if (outputSet.size == 1 && inputEdges.length == 0) {
         const output = outputSet.values().next().value
+        const sourceHandle = output.data.outputs.find((item) => item.type == input.type)?.id
+        if (!sourceHandle) return
         edges.push(
           createConnection({
             source: output.id,
             target: targetNode.id,
-            sourceHandle: output.data.outputs.find((item) => item.type == input.type).id,
+            sourceHandle,
             targetHandle: input.id
           })
         )

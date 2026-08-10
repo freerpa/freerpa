@@ -190,6 +190,55 @@ contextBridge.exposeInMainWorld('electronAPI', {
     get: (key) => ipcRenderer.invoke('store:get', key),
     set: (key, value) => ipcRenderer.invoke('store:set', key, value)
   },
+  // AI 模型模块API
+  ai: {
+    getProviders: () => ipcRenderer.invoke('ai:getProviders'),
+    getPresetProviders: () => ipcRenderer.invoke('ai:getPresetProviders'),
+    createProvider: (data) => ipcRenderer.invoke('ai:createProvider', data),
+    updateProvider: (id, data) => ipcRenderer.invoke('ai:updateProvider', id, data),
+    deleteProvider: (id) => ipcRenderer.invoke('ai:deleteProvider', id),
+    getModels: () => ipcRenderer.invoke('ai:getModels'),
+    createConversation: (workflowId, title) =>
+      ipcRenderer.invoke('ai:createConversation', { workflowId, title }),
+    getConversations: (workflowId) => ipcRenderer.invoke('ai:getConversations', { workflowId }),
+    deleteConversation: (workflowId, conversationId) =>
+      ipcRenderer.invoke('ai:deleteConversation', { workflowId, conversationId }),
+    getMessages: (workflowId, conversationId) =>
+      ipcRenderer.invoke('ai:getMessages', { workflowId, conversationId }),
+    saveMessage: (workflowId, conversationId, message) =>
+      ipcRenderer.invoke('ai:saveMessage', { workflowId, conversationId, message }),
+    deleteMessage: (workflowId, conversationId, messageId) =>
+      ipcRenderer.invoke('ai:deleteMessage', { workflowId, conversationId, messageId }),
+    clearMessages: (workflowId, conversationId) =>
+      ipcRenderer.invoke('ai:clearMessages', { workflowId, conversationId }),
+    getMemories: (workflowId) => ipcRenderer.invoke('ai:getMemories', { workflowId }),
+    setMemory: (workflowId, key, value) =>
+      ipcRenderer.invoke('ai:setMemory', { workflowId, key, value }),
+    deleteMemory: (workflowId, key) =>
+      ipcRenderer.invoke('ai:deleteMemory', { workflowId, key }),
+    chatStart: (payload) => ipcRenderer.invoke('ai:chatStart', payload),
+    chatAbort: (requestId) => ipcRenderer.invoke('ai:chatAbort', requestId),
+    onProvidersChanged: (callback) => {
+      const listener = () => callback()
+      ipcRenderer.on('ai:providersChanged', listener)
+      return () => ipcRenderer.removeListener('ai:providersChanged', listener)
+    },
+    onChatChunk: (callback) => {
+      const listener = (_event, data) => callback(data)
+      ipcRenderer.on('ai:chatChunk', listener)
+      return () => ipcRenderer.removeListener('ai:chatChunk', listener)
+    },
+    onChatDone: (callback) => {
+      const listener = (_event, data) => callback(data)
+      ipcRenderer.on('ai:chatDone', listener)
+      return () => ipcRenderer.removeListener('ai:chatDone', listener)
+    },
+    onChatError: (callback) => {
+      const listener = (_event, data) => callback(data)
+      ipcRenderer.on('ai:chatError', listener)
+      return () => ipcRenderer.removeListener('ai:chatError', listener)
+    }
+  },
   cache: {
     getSize: () => ipcRenderer.invoke('cache:getSize'),
     clear: () => ipcRenderer.invoke('cache:clear')

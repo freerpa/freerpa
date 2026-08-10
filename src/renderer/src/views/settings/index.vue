@@ -22,6 +22,10 @@
           <template #icon><RiCommandLine /></template>
           快捷键
         </a-menu-item>
+        <a-menu-item key="ai">
+          <template #icon><RiRobot2Line /></template>
+          模型管理
+        </a-menu-item>
         <a-menu-item key="network">
           <template #icon><RiServerLine /></template>
           网络服务
@@ -34,6 +38,7 @@
       <PermissionManager v-if="activeTab === 'security'" />
       <DataManager v-if="activeTab === 'data'" />
       <ShortcutManager v-if="activeTab === 'shortcut'" />
+      <ModelManager v-if="activeTab === 'ai'" />
       <NetworkServerManager v-if="activeTab === 'network'" />
     </div>
   </div>
@@ -44,12 +49,13 @@
 defineOptions({ name: 'SettingsCenter' })
 
 import { ref } from 'vue'
-import { RiArchiveStackLine, RiPlugLine, RiShieldKeyholeLine, RiDatabase2Line, RiCommandLine, RiServerLine } from '@remixicon/vue'
+import { RiArchiveStackLine, RiPlugLine, RiShieldKeyholeLine, RiDatabase2Line, RiCommandLine, RiRobot2Line, RiServerLine } from '@remixicon/vue'
 import CacheManager from './components/CacheManager.vue'
 import PluginManager from './components/PluginManager.vue'
 import PermissionManager from './components/PermissionManager.vue'
 import DataManager from './components/DataManager.vue'
 import ShortcutManager from './components/ShortcutManager.vue'
+import ModelManager from './components/ModelManager.vue'
 import NetworkServerManager from './components/NetworkServerManager.vue'
 
 // initialTab：设置中心打开时指定的初始选项卡（如「去安装」→ 本地插件）

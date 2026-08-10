@@ -22,7 +22,11 @@
     "build:linux": "npm run ensure:native && npm run fetch:deno && npm run build:worker && npm run build && electron-builder --linux"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.36",
+    "@ai-sdk/google": "^4.0.39",
+    "@ai-sdk/openai-compatible": "^3.0.27",
     "adm-zip": "^0.6.0",
+    "ai": "^7.0.58",
     "axios": "^1.19.0",
     "croner": "^10.0.1",
     "crypto-js": "^4.2.0",
@@ -41,7 +45,8 @@
     "sqlite": "^5.1.1",
     "sqlite3": "^6.0.1",
     "uuid": "^14.0.0",
-    "xml2js": "^0.6.2"
+    "xml2js": "^0.6.2",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@arco-design/web-vue": "^2.58.0",

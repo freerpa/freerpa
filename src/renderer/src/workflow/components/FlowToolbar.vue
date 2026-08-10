@@ -45,7 +45,7 @@
         :loading="saveIng"
       >
         <template #icon><icon-save /></template>
-        保存 (S)
+        保存
       </a-button>
       <a-tooltip>
         <template #content>
@@ -73,7 +73,7 @@
           :disabled="isExecuting"
         >
           <template #icon><icon-play-circle /></template>
-          {{ isExecuting ? formattedDuration : '执行 (R)' }}
+          {{ isExecuting ? formattedDuration : '执行' }}
         </a-button>
         <a-button
           type="primary"
@@ -83,7 +83,7 @@
           :disabled="!isExecuting"
         >
           <template #icon><icon-pause-circle /></template>
-          停止 (E)
+          停止
         </a-button>
       </a-button-group>
     </a-space>
@@ -181,11 +181,11 @@
           />
         </template>
       </a-popover>
-      <!-- <a-tooltip content="AI助手">
+      <a-tooltip content="AI助手">
         <a-button type="text" size="small" @click="$emit('toggleChat')">
           <template #icon><icon-robot size="20" /></template>
         </a-button>
-      </a-tooltip> -->
+      </a-tooltip>
     </a-space>
   </div>
 </template>
@@ -203,7 +203,8 @@ import {
   IconMessage,
   IconNotification,
   IconDelete,
-  IconBug
+  IconBug,
+  IconRobot
 } from '@arco-design/web-vue/es/icon'
 import { RiDashboardLine } from '@remixicon/vue'
 import NodeList from './NodeList.vue'

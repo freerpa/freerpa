@@ -13,6 +13,7 @@ import { register as cacheRegisterIPC } from '../cache/ipc'
 import { register as dbInfoRegisterIPC } from '../data/dbIpc'
 import { register as pluginRegisterIPC } from '../plugin/ipc'
 import { registerDecryptIpc } from '../crypto'
+import { register as aiRegisterIPC } from '../ai'
 
 /**
  * 应用启动引导
@@ -81,6 +82,7 @@ export const bootstrap = async () => {
   cacheRegisterIPC()
   dbInfoRegisterIPC()
   pluginRegisterIPC()
+  aiRegisterIPC()
   registerDecryptIpc()
   registerIPC()
 
