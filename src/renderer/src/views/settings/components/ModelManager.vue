@@ -7,47 +7,46 @@
           添加供应商
         </a-button>
       </template>
-      <a-table :data="providers" :pagination="false" row-key="id">
-        <template #columns>
-          <a-table-column title="名称" data-index="name" />
-          <a-table-column title="协议">
-            <template #cell="{ record }">
-              <a-tag color="arcoblue">{{ protocolLabel[record.protocol] || record.protocol }}</a-tag>
-            </template>
-          </a-table-column>
-          <a-table-column title="API地址">
-            <template #cell="{ record }">
-              <span class="mono">{{ record.baseURL || '—' }}</span>
-            </template>
-          </a-table-column>
-          <a-table-column title="APIKEY">
-            <template #cell="{ record }">
-              <span v-if="record.hasKey" class="mono">{{ record.apiKey }}</span>
-              <a-tag v-else color="red">未配置</a-tag>
-            </template>
-          </a-table-column>
-          <a-table-column title="模型数">
-            <template #cell="{ record }">
-              <a-tag>{{ record.models.length }}</a-tag>
-            </template>
-          </a-table-column>
-          <a-table-column title="操作" :width="140">
-            <template #cell="{ record }">
-              <a-space>
-                <a-button type="text" size="mini" @click="openEdit(record)">编辑</a-button>
-                <a-popconfirm content="删除后该供应商及其模型将不可用，确认删除？" @ok="handleDelete(record)">
-                  <a-button type="text" size="mini" status="danger">删除</a-button>
-                </a-popconfirm>
-              </a-space>
-            </template>
-          </a-table-column>
-        </template>
-        <template #empty>
-          <a-empty description="暂无供应商。点击右上角「添加供应商」配置模型后，工作流 AI 助手即可使用。">
-            <template #image><icon-robot /></template>
-          </a-empty>
-        </template>
-      </a-table>
+      <div v-if="providers.length" class="provider-grid">
+        <div v-for="provider in providers" :key="provider.id" class="provider-card">
+          <div class="provider-card__head">
+            <span class="provider-card__name" :title="provider.name">{{ provider.name }}</span>
+            <a-tag color="arcoblue">{{ protocolLabel[provider.protocol] || provider.protocol }}</a-tag>
+          </div>
+          <div class="provider-card__row">
+            <span class="provider-card__label">API地址</span>
+            <span class="mono provider-card__value" :title="provider.baseURL">{{ provider.baseURL || '—' }}</span>
+          </div>
+          <div class="provider-card__row">
+            <span class="provider-card__label">APIKEY</span>
+            <span v-if="provider.hasKey" class="mono provider-card__value">{{ provider.apiKey }}</span>
+            <a-tag v-else color="red">未配置</a-tag>
+          </div>
+          <div class="provider-card__row">
+            <span class="provider-card__label">模型</span>
+            <div class="provider-card__models">
+              <template v-if="provider.models.length">
+                <a-tag v-for="m in visibleModels(provider)" :key="m.id" class="model-chip" :title="m.id">
+                  {{ m.name || m.id }}
+                </a-tag>
+                <a-tag v-if="provider.models.length > VISIBLE_MODELS" color="gray">
+                  +{{ provider.models.length - VISIBLE_MODELS }}
+                </a-tag>
+              </template>
+              <span v-else class="provider-card__empty">无模型</span>
+            </div>
+          </div>
+          <div class="provider-card__actions">
+            <a-button type="text" size="mini" @click="openEdit(provider)">编辑</a-button>
+            <a-popconfirm content="删除后该供应商及其模型将不可用，确认删除？" @ok="handleDelete(provider)">
+              <a-button type="text" size="mini" status="danger">删除</a-button>
+            </a-popconfirm>
+          </div>
+        </div>
+      </div>
+      <a-empty v-else description="暂无供应商。点击右上角「添加供应商」配置模型后，工作流 AI 助手即可使用。">
+        <template #image><icon-robot /></template>
+      </a-empty>
     </a-card>
 
     <a-modal
@@ -94,18 +93,14 @@
               <a-input v-model="model.name" placeholder="显示名（可选）" />
               <a-button
                 class="model-row__remove"
-                type="text"
-                size="mini"
+                type="secondary"
                 status="danger"
                 @click="form.models.splice(index, 1)"
               >
-                <template #icon><icon-delete /></template>
                 删除
               </a-button>
             </div>
-            <a-button type="dashed" block @click="form.models.push({ id: '', name: '' })">
-              添加模型
-            </a-button>
+            <a-button type="dashed" block @click="form.models.push({ id: '', name: '' })">添加模型</a-button>
           </div>
         </a-form-item>
       </a-form>
@@ -114,142 +109,220 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { Message } from '@arco-design/web-vue'
-import { getProviders, getPresetProviders, createProvider, updateProvider, deleteProvider } from '@/api/aiModels'
+  import { ref, reactive, computed, onMounted } from 'vue';
+  import { Message } from '@arco-design/web-vue';
+  import { getProviders, getPresetProviders, createProvider, updateProvider, deleteProvider } from '@/api/aiModels';
 
-const protocolOptions = [
-  { label: 'OpenAI 兼容', value: 'openai-compatible' },
-  { label: 'Anthropic', value: 'anthropic' },
-  { label: 'Google Gemini', value: 'google' }
-]
-const protocolLabel = {
-  'openai-compatible': 'OpenAI 兼容',
-  anthropic: 'Anthropic',
-  google: 'Google Gemini'
-}
-const protocolPlaceholder = computed(() => {
-  if (form.protocol === 'openai-compatible') return 'https://api.openai.com/v1'
-  if (form.protocol === 'anthropic') return '留空使用 https://api.anthropic.com'
-  return '留空使用官方地址'
-})
+  const protocolOptions = [
+    { label: 'OpenAI 兼容', value: 'openai-compatible' },
+    { label: 'Anthropic', value: 'anthropic' },
+    { label: 'Google Gemini', value: 'google' },
+  ];
+  const protocolLabel = {
+    'openai-compatible': 'OpenAI 兼容',
+    anthropic: 'Anthropic',
+    google: 'Google Gemini',
+  };
+  const protocolPlaceholder = computed(() => {
+    if (form.protocol === 'openai-compatible') return 'https://api.openai.com/v1';
+    if (form.protocol === 'anthropic') return '留空使用 https://api.anthropic.com';
+    return '留空使用官方地址';
+  });
 
-const providers = ref([])
-const presetProviders = ref([])
-const presetOptions = computed(() => presetProviders.value.map((p) => ({ label: p.name, value: p.name })))
+  const providers = ref([]);
+  const presetProviders = ref([]);
+  const presetOptions = computed(() => presetProviders.value.map((p) => ({ label: p.name, value: p.name })));
 
-const load = async () => {
-  try {
-    providers.value = (await getProviders()) || []
-  } catch (error) {
-    console.error('加载供应商列表失败:', error)
-  }
-}
+  // 卡片上最多直接展示的模型个数，超出折叠为 +N
+  const VISIBLE_MODELS = 5;
+  const visibleModels = (provider) => (provider.models || []).slice(0, VISIBLE_MODELS);
 
-onMounted(async () => {
-  try {
-    presetProviders.value = (await getPresetProviders()) || []
-  } catch (error) {
-    console.error('加载预设供应商失败:', error)
-  }
-  load()
-})
-
-// ---- 表单 ----
-const modalVisible = ref(false)
-const saving = ref(false)
-const editingId = ref('')
-const providerHasKey = ref(false)
-const presetName = ref('')
-const form = reactive({ name: '', protocol: 'openai-compatible', baseURL: '', apiKey: '', models: [] })
-
-const resetForm = () => {
-  presetName.value = ''
-  providerHasKey.value = false
-  Object.assign(form, { name: '', protocol: 'openai-compatible', baseURL: '', apiKey: '', models: [] })
-}
-
-const openCreate = () => {
-  editingId.value = ''
-  resetForm()
-  modalVisible.value = true
-}
-
-const openEdit = (provider) => {
-  editingId.value = provider.id
-  providerHasKey.value = !!provider.hasKey
-  Object.assign(form, {
-    name: provider.name,
-    protocol: provider.protocol,
-    baseURL: provider.baseURL,
-    apiKey: '',
-    models: (provider.models || []).map((m) => ({ ...m }))
-  })
-  modalVisible.value = true
-}
-
-const applyPreset = (name) => {
-  const preset = presetProviders.value.find((p) => p.name === name)
-  if (!preset) return
-  // 预设选项即供应商名称；只填充 名称/协议/API地址，模型列表由用户自行添加
-  form.name = preset.name
-  form.protocol = preset.protocol
-  form.baseURL = preset.baseURL || ''
-}
-
-const handleSave = async () => {
-  if (!form.name.trim()) {
-    Message.error('请输入供应商名称')
-    return
-  }
-  if (!form.protocol) {
-    Message.error('请选择协议')
-    return
-  }
-  const payload = {
-    name: form.name.trim(),
-    protocol: form.protocol,
-    baseURL: form.baseURL.trim(),
-    apiKey: form.apiKey,
-    // map 重造纯对象：form.models 元素是 Vue reactive Proxy，Electron IPC 的
-    // structuredClone 无法克隆 Proxy，直接传会报 "An object could not be cloned"
-    models: form.models
-      .filter((m) => m.id && m.id.trim())
-      .map((m) => ({ id: m.id.trim(), name: (m.name || '').trim() }))
-  }
-  saving.value = true
-  try {
-    if (editingId.value) {
-      await updateProvider(editingId.value, payload)
-    } else {
-      await createProvider(payload)
+  const load = async () => {
+    try {
+      providers.value = (await getProviders()) || [];
+    } catch (error) {
+      console.error('加载供应商列表失败:', error);
     }
-    Message.success('保存成功')
-    modalVisible.value = false
-    load()
-  } catch (error) {
-    Message.error(error.message || '保存失败')
-  } finally {
-    saving.value = false
-  }
-}
+  };
 
-const handleDelete = async (provider) => {
-  try {
-    await deleteProvider(provider.id)
-    Message.success('已删除')
-    load()
-  } catch (error) {
-    Message.error(error.message || '删除失败')
-  }
-}
+  onMounted(async () => {
+    try {
+      presetProviders.value = (await getPresetProviders()) || [];
+    } catch (error) {
+      console.error('加载预设供应商失败:', error);
+    }
+    load();
+  });
+
+  // ---- 表单 ----
+  const modalVisible = ref(false);
+  const saving = ref(false);
+  const editingId = ref('');
+  const providerHasKey = ref(false);
+  const presetName = ref('');
+  const form = reactive({ name: '', protocol: 'openai-compatible', baseURL: '', apiKey: '', models: [] });
+
+  const resetForm = () => {
+    presetName.value = '';
+    providerHasKey.value = false;
+    Object.assign(form, { name: '', protocol: 'openai-compatible', baseURL: '', apiKey: '', models: [] });
+  };
+
+  const openCreate = () => {
+    editingId.value = '';
+    resetForm();
+    modalVisible.value = true;
+  };
+
+  const openEdit = (provider) => {
+    editingId.value = provider.id;
+    providerHasKey.value = !!provider.hasKey;
+    Object.assign(form, {
+      name: provider.name,
+      protocol: provider.protocol,
+      baseURL: provider.baseURL,
+      apiKey: '',
+      models: (provider.models || []).map((m) => ({ ...m })),
+    });
+    modalVisible.value = true;
+  };
+
+  const applyPreset = (name) => {
+    const preset = presetProviders.value.find((p) => p.name === name);
+    if (!preset) return;
+    // 预设选项即供应商名称；只填充 名称/协议/API地址，模型列表由用户自行添加
+    form.name = preset.name;
+    form.protocol = preset.protocol;
+    form.baseURL = preset.baseURL || '';
+  };
+
+  const handleSave = async () => {
+    if (!form.name.trim()) {
+      Message.error('请输入供应商名称');
+      return;
+    }
+    if (!form.protocol) {
+      Message.error('请选择协议');
+      return;
+    }
+    const payload = {
+      name: form.name.trim(),
+      protocol: form.protocol,
+      baseURL: form.baseURL.trim(),
+      apiKey: form.apiKey,
+      // map 重造纯对象：form.models 元素是 Vue reactive Proxy，Electron IPC 的
+      // structuredClone 无法克隆 Proxy，直接传会报 "An object could not be cloned"
+      models: form.models
+        .filter((m) => m.id && m.id.trim())
+        .map((m) => ({ id: m.id.trim(), name: (m.name || '').trim() })),
+    };
+    saving.value = true;
+    try {
+      if (editingId.value) {
+        await updateProvider(editingId.value, payload);
+      } else {
+        await createProvider(payload);
+      }
+      Message.success('保存成功');
+      modalVisible.value = false;
+      load();
+    } catch (error) {
+      Message.error(error.message || '保存失败');
+    } finally {
+      saving.value = false;
+    }
+  };
+
+  const handleDelete = async (provider) => {
+    try {
+      await deleteProvider(provider.id);
+      Message.success('已删除');
+      load();
+    } catch (error) {
+      Message.error(error.message || '删除失败');
+    }
+  };
 </script>
 
 <style lang="less" scoped>
-.model-manager {
   .mono {
     font-family: monospace;
     font-size: 12px;
+  }
+  // 供应商卡片网格（替代表格：完整展示 API 地址与模型列表）
+  .provider-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+  .provider-card {
+    border: 1px solid var(--color-border-2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--color-bg-2);
+    transition: box-shadow 0.2s ease;
+    &:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+    &__head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    &__name {
+      flex: 1;
+      min-width: 0;
+      font-size: 15px;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    &__row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    &__label {
+      flex-shrink: 0;
+      width: 52px;
+      color: var(--color-text-3);
+    }
+    &__value {
+      flex: 1;
+      min-width: 0;
+      word-break: break-all;
+      color: var(--color-text-1);
+    }
+    &__models {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      .model-chip {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+    &__empty {
+      color: var(--color-text-4);
+    }
+    &__actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 4px;
+      border-top: 1px dashed var(--color-border-2);
+      padding-top: 10px;
+      margin-top: auto;
+    }
   }
   .model-rows {
     width: 100%;
@@ -275,5 +348,4 @@ const handleDelete = async (provider) => {
       }
     }
   }
-}
 </style>

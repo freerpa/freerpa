@@ -1,7 +1,7 @@
 import { ipcMain, screen, dialog, shell, app, Notification } from 'electron'
 import { sendToRenderer } from './workflow/host/rendererUtils'
 import { manager as workflowManager } from './workflow/index'
-import { get } from './store/index'
+import { get, flush as flushStore } from './store/index'
 import { destroyTray } from './app/tray'
 import fs from 'fs'
 import path from 'path'
@@ -33,7 +33,8 @@ export const register = () => {
       /* 托盘清理失败不影响退出 */
     }
     workflowManager.cleanup().catch(() => {})
-    app.exit(0)
+    // 等待配置写入落库后退出，防丢最近一次 set
+    flushStore().finally(() => app.exit(0))
   })
   // 注册路径选择对话框处理
   ipcMain.handle('dialog:openPath', async (event, options) => {

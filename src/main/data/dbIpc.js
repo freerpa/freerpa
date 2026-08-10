@@ -6,8 +6,8 @@ import { ipcMain, dialog, shell } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import { formatSize } from '../utils.js'
-import { getDbPath } from './db.js'
-import { set } from '../store/index.js'
+import { getDbPath, writeDbLocation } from './db.js'
+import { set, flush } from '../store/index.js'
 
 const DB_PATH = () => getDbPath()
 const DB_DIR = () => path.dirname(getDbPath())
@@ -41,19 +41,26 @@ export const register = () => {
 
     if (newPath === oldPath) return { canceled: false, same: true }
 
-    // 移动文件
+    // 目标已存在则拒绝（防止覆盖既有库）
     if (fs.existsSync(newPath)) {
       return { error: '目标目录已存在 database.sqlite，请选择空目录或先备份' }
     }
     if (!fs.existsSync(newDir)) {
       fs.mkdirSync(newDir, { recursive: true })
     }
+
+    // 1. 先把新路径写入当前库（新库副本因此自带 dbPath 覆盖，重启自举可读）
+    set('dbPath', newPath)
+    await flush()
+
+    // 2. 复制到新位置（含 settings.dbPath），再移除旧库（移动语义）
     if (fs.existsSync(oldPath)) {
       fs.copyFileSync(oldPath, newPath)
       fs.unlinkSync(oldPath)
     }
-    // 持久化新路径，重启后 initDatabase 从新位置打开
-    set('dbPath', newPath)
+
+    // 3. 引导定位文件兜底：默认库被移除后，重启自举仍能找到新库
+    writeDbLocation(newPath)
     return { success: true, newPath }
   })
 

@@ -2,6 +2,9 @@ import { app, powerSaveBlocker } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import '../menu'
 import pkg from '../../../package.json'
+import { initDatabase } from '../data/db'
+import { load as loadStore } from '../store/index'
+import { migrateLegacyPreferences } from '../store/migrate'
 import { createWindow } from './window'
 import { createTray } from './tray'
 import { register as workflowRegisterIPC } from '../workflow/ipc'
@@ -34,6 +37,11 @@ export const bootstrap = async () => {
     if (!is.dev) app.quit()
     return
   }
+
+  // 一次性迁移旧配置（user-preferences JSON → settings 表），随后加载配置。
+  // 迁移内部可能按库内 dbPath 覆盖切库，故 load 在其后执行。
+  await migrateLegacyPreferences()
+  await loadStore(await initDatabase())
 
   app.on('second-instance', () => {
     try {

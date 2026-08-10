@@ -1,46 +1,36 @@
 /**
- * @file: 应用配置存储模块
- * @author: dabao
- * @date: 2024-03-16
+ * @file: 应用配置存储模块（DB 后端）
+ * 持久化到 SQLite settings 表（替代原 <userData>/user-preferences JSON 文件），
+ * 业务调用方仍通过同步 get(key)/set(key) 薄接口访问，无需改动。
+ * 启动时序：bootstrap 在 createWindow 前 await initDatabase() → store.load(db)；
+ * 退出前 await flush() 确保未落库写入完成。
  */
-import { app } from 'electron'
-import path from 'path'
-import fs from 'fs'
+import { loadAllSettings, upsertSetting } from '../data/settings.js'
 
-class Store {
-  constructor(opts) {
-    // 确定存储文件的路径
-    const userDataPath = app.getPath('userData')
-    this.path = path.join(userDataPath, opts.configName)
-    // 如果文件不存在，则创建一个空对象
-    if (!fs.existsSync(this.path)) {
-      fs.writeFileSync(this.path, JSON.stringify({}))
-    }
-    // 读取文件内容
-    this.data = JSON.parse(fs.readFileSync(this.path))
-  }
+let cache = {}
+let dbRef = null
+let pending = Promise.resolve()
 
-  // 获取特定键的值
-  get(key) {
-    return this.data[key]
-  }
-
-  // 设置特定键的值
-  set(key, val) {
-    this.data[key] = val
-    // 确保数据被同步保存到文件
-    fs.writeFileSync(this.path, JSON.stringify(this.data))
-  }
+/** 从数据库加载全部配置到内存缓存（启动时调用；dbRef 由本次设置） */
+export const load = async (db) => {
+  dbRef = db
+  cache = await loadAllSettings(db)
+  return cache
 }
 
-const store = new Store({
-  configName: 'user-preferences'
-})
-
+/** 读取配置（同步，读内存缓存） */
 export const get = (key) => {
-  return store.get(key)
+  return cache[key]
 }
 
+/** 写入配置：更新内存缓存 + 异步串行写库（队列防止并发覆盖） */
 export const set = (key, value) => {
-  store.set(key, value)
+  cache[key] = value
+  if (dbRef) {
+    pending = pending.then(() => upsertSetting(dbRef, key, value)).catch(() => {})
+  }
+  return value
 }
+
+/** 等待所有未落库写入完成（退出/重启前调用） */
+export const flush = () => pending
