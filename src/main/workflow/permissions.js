@@ -8,9 +8,50 @@
  *   env:     { allow: string[] }            环境变量白名单（空=全部禁止）
  *   sys:     { allow: string[] }            系统信息权限（空=全部禁止）
  */
-import { get as storeGet } from '../store'
+import { app } from 'electron'
+import fs from 'fs'
+import path from 'path'
+import { get as storeGet, set as storeSet } from '../store'
 
 export const PERMISSIONS_KEY = 'permissions'
+
+/** 首次启动写入最安全默认权限（含预置 FREERPA-DATA 目录）；幂等，返回是否本次写入 */
+export const ensureDefaultPermissions = () => {
+  if (!storeGet(PERMISSIONS_KEY)) {
+    storeSet(PERMISSIONS_KEY, getDefaultPermissions())
+    return true
+  }
+  return false
+}
+
+/** 默认数据目录名（用户文稿下，工作流文件类节点默认可读写，开箱即用） */
+const DATA_DIR_NAME = 'FREERPA-DATA'
+
+/** deno 2.x sys 权限合法 kind 集合（buildDenoPermissions 预校验用；umask 为 node 兼容层写文件硬约束） */
+const SYS_KINDS = new Set([
+  'hostname', 'osRelease', 'osUptime', 'loadavg', 'networkInterfaces', 'systemMemoryInfo',
+  'uid', 'gid', 'username', 'cpus', 'homedir', 'umask'
+])
+
+/** 生成最安全（非最小化）默认权限：预置 FREERPA-DATA 目录、基础设施 env/sys 默认开放（可取消）、远程导入默认打开、网络保持 allow-all、进程/FFI 默认禁 */
+export const getDefaultPermissions = () => {
+  let dataRoot = ''
+  try {
+    dataRoot = path.join(app.getPath('documents'), DATA_DIR_NAME)
+    fs.mkdirSync(dataRoot, { recursive: true }) // 首次运行创建
+  } catch {
+    // 获取/创建失败时保持空目录列表（不阻塞启动）
+  }
+  return {
+    io: { roots: dataRoot ? [dataRoot] : [] },
+    network: { mode: 'allow-all', rules: [] },
+    process: { enabled: false, commands: [] },
+    env: { allow: [...INFRA_ENV] },
+    sys: { allow: ['umask'] },
+    ffi: { enabled: false, paths: [] },
+    import: { enabled: true, hosts: [] }
+  }
+}
 
 const DEFAULTS = {
   io: { roots: [] },
@@ -39,34 +80,40 @@ const normalize = (p) => {
   return out
 }
 
-/** 读取全局权限（迁移旧安全目录 allowedRoot） */
+/** 读取全局权限；从未配置过时返回最安全默认（含预置 FREERPA-DATA 目录），并兼容旧安全目录 allowedRoot 迁移 */
 export const getPermissions = () => {
   const stored = storeGet(PERMISSIONS_KEY)
-  const p = normalize(stored)
-  // 迁移：旧安全目录 → io.roots（仅当从未配置过权限时）
-  if (!stored && storeGet('allowedRoot')) {
-    p.io.roots = [storeGet('allowedRoot')]
+  if (!stored) {
+    const oldRoot = storeGet('allowedRoot')
+    if (oldRoot) {
+      const p = getDefaultPermissions()
+      p.io.roots = [oldRoot]
+      return p
+    }
+    return getDefaultPermissions()
   }
-  return p
+  return normalize(stored)
 }
 
 // node 兼容层（process.env）模块加载期必需的非敏感环境变量（用户配置 env 白名单时自动附加）
+// 覆盖 exceljs→graceful-fs/readable-stream/bluebird 等依赖链加载期读取的变量（deno 对未授权 env 读取抛错而非返回 undefined）
 const INFRA_ENV = [
-  'GRACEFUL_FS_PLATFORM', 'WS_NO_BUFFER_UTIL', 'WS_NO_UTF_8_VALIDATE',
+  'GRACEFUL_FS_PLATFORM', 'TEST_GRACEFUL_FS_GLOBAL_PATCH', 'READABLE_STREAM',
+  'BLUEBIRD_DEBUG', 'BLUEBIRD_LONG_STACK_TRACES', 'BLUEBIRD_WARNINGS', 'BLUEBIRD_W_FORGOTTEN_RETURN',
+  'WS_NO_BUFFER_UTIL', 'WS_NO_UTF_8_VALIDATE',
   'NODE_ENV', 'NODE_DEBUG', 'HOME', 'USERPROFILE', 'TMPDIR', 'TEMP', 'TMP', 'PATH', 'LANG'
 ]
 
 /**
  * 生成 deno Worker 权限描述符（最小权限原则）
- * env 默认全允许（node 生态兼容硬约束，ws/graceful-fs 等模块加载期读取环境变量）；
- * 用户配置 env 白名单后收紧。IO/网络/子进程默认最小。
+ * env/sys 完全由用户配置决定（默认值已含基础设施项，用户可自主取消；不再强制附加）
+ * IO/网络/子进程默认最小。
  * @param {object} effective  getPermissions 的结果
  * @param {string[]} infraReadPaths 基础设施读路径（引擎/节点/node_modules，自动授予）
  */
 export const buildDenoPermissions = (effective, infraReadPaths) => {
   const net = effective.network
   const run = effective.process
-  const allowEnv = effective.env.allow
   const ffi = effective.ffi
   const imp = effective.import
   return {
@@ -76,7 +123,7 @@ export const buildDenoPermissions = (effective, infraReadPaths) => {
     run: run.enabled ? (run.commands.length ? run.commands : true) : [],
     ffi: ffi.enabled ? (ffi.paths.length ? ffi.paths : true) : [],
     import: imp.enabled ? (imp.hosts.length ? imp.hosts : true) : [],
-    env: allowEnv && allowEnv.length ? [...new Set([...INFRA_ENV, ...allowEnv])] : true,
-    sys: [...effective.sys.allow]
+    env: [...new Set([...(effective.env.allow || [])])],
+    sys: [...new Set([...(effective.sys.allow || []).filter((k) => SYS_KINDS.has(k))])]
   }
 }

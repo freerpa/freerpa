@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { renameNodeReferences } from '@/workflow/utils'
 
 /**
  * Composable for node action handling
@@ -26,6 +27,10 @@ export function useNodeActions(props, flowStore, emit) {
   // Save node name after rename
   const saveNodeName = () => {
     if (!checkNodeName(nodeName.value)) {
+      // 改名联动：全图扫描 config 中 {{旧名. 引用并同步为新名（含 [全局] 前缀形式），避免引用失效
+      if (nodeName.value !== props.data.name) {
+        renameNodeReferences(flowStore.vueFlowRef.getNodes, props.data.name, nodeName.value)
+      }
       props.data.name = nodeName.value
       flowStore.onNodesChange([{ id: props.id, type: 'data' }])
     }

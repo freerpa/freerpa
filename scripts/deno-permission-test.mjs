@@ -17,14 +17,15 @@ const nodeModules = process.env.WORKER_ROOT ? path.join(workerRoot, 'node_module
 
 const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'freerpa-perm-'))
 
-// 每个场景一个独立 Worker（权限描述符固定：仅 tmpRoot 可写、仅 example.com 可访问、禁止子进程）
+// 每个场景一个独立 Worker（权限描述符固定：仅 tmpRoot 可写、仅 example.com 可访问、禁止子进程、env 基础设施白名单、sys 含 umask）
+// 与主进程 buildDenoPermissions 对齐（env 非全开、umask 为 node 兼容层写文件硬约束）
 const PERMISSIONS = {
   read: [workerRoot, nodesRoot, nodeModules, tmpRoot],
   write: [tmpRoot],
   net: ['example.com'],
   run: [],
-  env: true,
-  sys: []
+  env: ['GRACEFUL_FS_PLATFORM', 'TEST_GRACEFUL_FS_GLOBAL_PATCH', 'READABLE_STREAM', 'BLUEBIRD_DEBUG', 'BLUEBIRD_LONG_STACK_TRACES', 'BLUEBIRD_WARNINGS', 'BLUEBIRD_W_FORGOTTEN_RETURN', 'WS_NO_BUFFER_UTIL', 'WS_NO_UTF_8_VALIDATE', 'NODE_ENV', 'NODE_DEBUG', 'HOME', 'USERPROFILE', 'TMPDIR', 'TEMP', 'TMP', 'PATH', 'LANG'],
+  sys: ['umask']
 }
 
 const customNode = (id, code) => ({
@@ -97,13 +98,18 @@ const runFlow = async (hostApi, workflow) => {
   return { state: 'timeout', error: '未收到最终状态' }
 }
 
-// 场景：越权写（tmpRoot 外）/ 越权网络 / 被禁子进程 / 合法写入
+// 场景：越权写（tmpRoot 外）/ 越权网络 / 被禁子进程 / 合法写入 / node:fs 写文件（umask 授予）/ env 越权变量未授权
 const evilPath = path.join(os.tmpdir(), 'freerpa-evil.txt')
+const okPath = path.join(tmpRoot, 'ok.txt')
 const cases = [
   { name: '越权写文件被拒', code: `await Deno.writeTextFile(${JSON.stringify(evilPath)}, 'x')`, expect: 'error' },
   { name: '越权网络被拒', code: `await fetch('https://blocked.invalid/data')`, expect: 'error' },
   { name: '子进程被禁', code: `await new Deno.Command('ls').output()`, expect: 'error' },
-  { name: '合法写入放行', code: `await Deno.writeTextFile(${JSON.stringify(path.join(tmpRoot, 'ok.txt'))}, 'ok')`, expect: 'stopped' }
+  { name: '合法写入放行', code: `await Deno.writeTextFile(${JSON.stringify(okPath)}, 'ok')`, expect: 'stopped' },
+  // exceljs 依赖链含 graceful-fs（模块加载期 process.umask()，即 workbookCreate 报错路径）：sys 授予 umask 后应放行
+  { name: 'node 库加载放行（umask）', code: `await import('exceljs')`, expect: 'stopped' },
+  // env 为基础设施白名单：越权变量不应被授权（querySync 校验，deno 对未授权 env.get 静默返回 undefined，故用权限查询验证）
+  { name: 'env 越权变量未授权', code: `const p = Deno.permissions.querySync({ name: 'env', variable: 'SOME_SECRET' }); if (p.state === 'granted') throw new Error('越权变量被授权')`, expect: 'stopped' }
 ]
 
 let failed = 0

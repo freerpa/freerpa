@@ -90,7 +90,6 @@
           <div class="model-rows">
             <div v-for="(model, index) in form.models" :key="index" class="model-row">
               <a-input v-model="model.id" placeholder="模型ID，如 deepseek-chat" />
-              <a-input v-model="model.name" placeholder="显示名（可选）" />
               <a-button
                 class="model-row__remove"
                 type="secondary"

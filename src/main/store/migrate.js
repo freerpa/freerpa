@@ -8,7 +8,7 @@ import path from 'path'
 import fs from 'fs'
 import { app } from 'electron'
 import { loadAllSettings, upsertSetting } from '../data/settings.js'
-import { initDatabase, closeDatabase } from '../data/db.js'
+import { initDatabase } from '../data/db.js'
 
 const LEGACY_FILE = 'user-preferences'
 
@@ -38,10 +38,7 @@ export const migrateLegacyPreferences = async () => {
   }
 
   if (migrated > 0) {
-    // 迁移写入可能含 dbPath 覆盖：重开一次让 initDatabase 自举切库生效
-    await closeDatabase()
-    await initDatabase()
-    // 全部落库成功后原文件留档
+    // 库位置固定默认路径，无需自举重开；全部落库成功后原文件留档
     fs.renameSync(file, file + '.migrated')
   }
   return migrated > 0

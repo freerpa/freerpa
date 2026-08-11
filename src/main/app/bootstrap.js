@@ -7,6 +7,7 @@ import { load as loadStore } from '../store/index'
 import { migrateLegacyPreferences } from '../store/migrate'
 import { createWindow } from './window'
 import { createTray } from './tray'
+import { ensureDefaultPermissions } from '../workflow/permissions'
 import { register as workflowRegisterIPC } from '../workflow/ipc'
 import { register as dataRegisterIPC } from '../data'
 import { register as envRegisterIPC } from '../browser/ipc'
@@ -38,10 +39,11 @@ export const bootstrap = async () => {
     return
   }
 
-  // 一次性迁移旧配置（user-preferences JSON → settings 表），随后加载配置。
-  // 迁移内部可能按库内 dbPath 覆盖切库，故 load 在其后执行。
+  // 一次性迁移旧配置（user-preferences JSON → settings 表），随后加载配置
   await migrateLegacyPreferences()
   await loadStore(await initDatabase())
+  // 首次启动写入最安全默认权限（含预置 FREERPA-DATA 目录）；已有配置则跳过
+  ensureDefaultPermissions()
 
   app.on('second-instance', () => {
     try {

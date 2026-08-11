@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import { Message } from '@arco-design/web-vue'
+import { Message, Modal } from '@arco-design/web-vue'
 import nodes from '@nodes-path'
 import {
   getInitNodeData,
@@ -9,7 +9,8 @@ import {
   rebuildElementIds,
   handleNodeCopy,
   handleNodePaste,
-  adjustParentSize
+  adjustParentSize,
+  countNodeReferences
 } from '../utils/index.js'
 
 /**
@@ -233,6 +234,19 @@ export function useNodeCrud({ vueFlowRef, isExecuting, clipboard, createConnecti
   const handleNodeAction = (action, nodeId) => {
     const node = vueFlowRef.value.getNode(nodeId)
     if (action === 'delete') {
+      // 删除前引用检测：被引用则提示，避免静默失效
+      const refCount = countNodeReferences(vueFlowRef.value.getNodes, node?.data?.name)
+      if (refCount > 0) {
+        Modal.confirm({
+          title: '删除确认',
+          content: `节点「${node.data.name}」被 ${refCount} 处参数引用，删除后这些引用将失效，确认删除？`,
+          okText: '删除',
+          okButtonProps: { status: 'danger', type: 'primary', style: { width: '160px' } },
+          cancelButtonProps: { style: { width: '160px' } },
+          onOk: () => handleNodeDelete(node)
+        })
+        return
+      }
       handleNodeDelete(node)
     } else if (action === 'copy') {
       handleNodeCopy(vueFlowRef.value, clipboard, [node])

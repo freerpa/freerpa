@@ -78,9 +78,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 数据库管理 API
   dbInfo: {
     getInfo: () => ipcRenderer.invoke('data:getDbInfo'),
-    changeLocation: () => ipcRenderer.invoke('data:changeDbLocation'),
-    backup: () => ipcRenderer.invoke('data:backupDb'),
-    restore: () => ipcRenderer.invoke('data:restoreDb'),
     openFolder: () => ipcRenderer.invoke('data:openDbFolder')
   },
 
@@ -234,6 +231,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   cache: {
     getSize: () => ipcRenderer.invoke('cache:getSize'),
     clear: () => ipcRenderer.invoke('cache:clear')
+  },
+  permissions: {
+    getDefaults: () => ipcRenderer.invoke('permissions:getDefaults')
   },
   plugin: {
     addDir: () => ipcRenderer.invoke('plugin:addDir'),

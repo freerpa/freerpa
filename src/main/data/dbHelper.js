@@ -1,6 +1,6 @@
 /**
  * @file: data 层 withDb 助手 — 统一 initDatabase + ensureTable 样板，并缓存建表结果
- * 缓存以 db 实例为键（WeakMap）：切库（closeDatabase → 新实例）后自动失效重建，避免漏建表
+ * 缓存以 db 实例为键（WeakMap）：库连接重建后自动失效，避免漏建表
  */
 import { initDatabase } from './db.js'
 

@@ -7,6 +7,7 @@
  */
 import { ipcMain } from 'electron'
 import { manager } from './index'
+import { getDefaultPermissions } from './permissions'
 
 // 命令通道单点定义（渲染端经 preload emitFlowEvent(event, null, null, params) 拼出同名通道）
 const CHANNELS = {
@@ -17,6 +18,8 @@ const CHANNELS = {
 }
 
 export const register = () => {
+  // 权限默认配置（设置中心「恢复默认」与首次加载使用；主进程单点生成，含动态预置目录）
+  ipcMain.handle('permissions:getDefaults', () => getDefaultPermissions())
   // 创建工作流
   ipcMain.handle(CHANNELS.createEngine, async (event, data) => {
     try {

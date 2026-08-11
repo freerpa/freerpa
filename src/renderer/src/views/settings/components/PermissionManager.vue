@@ -33,9 +33,15 @@ const loadGlobal = async () => {
   loaded = true
 }
 
-const resetGlobal = () => {
-  globalPermissions.value = DEFAULTS()
-  Message.success('已恢复默认（自动保存）')
+const resetGlobal = async () => {
+  // 恢复主进程单点生成的最安全默认（含预置 FREERPA-DATA 目录），IPC 失败回退静态 DEFAULTS
+  try {
+    const defaults = await window.electronAPI.permissions.getDefaults()
+    globalPermissions.value = defaults || DEFAULTS()
+  } catch {
+    globalPermissions.value = DEFAULTS()
+  }
+  Message.success('已恢复默认')
 }
 
 // 改动即保存（防抖，避免输入过程频繁写；静默无提示）

@@ -11,7 +11,7 @@ import nodes from '@nodes-path'
 import { nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
-import { autoLayout, autoConnect, getInitNodeData, ConnectionRules } from '@/workflow/utils'
+import { autoLayout, autoConnect, getInitNodeData, ConnectionRules, isParamRefer, makeParamReferValue } from '@/workflow/utils'
 import { useFlowStore } from '@/workflow/store'
 import { buildNodeMeta } from './schema.js'
 import { limitText, maskSensitive } from './guard.js'
@@ -32,6 +32,18 @@ const flattenConfigFields = (configGroups = {}) => {
 /** 按字段类型容错转换值（模型可能传任意类型，统一收敛，不抛错） */
 const coerceValue = (value, field) => {
   if (value === undefined || value === null) return undefined
+
+  // 优先：完整参数引用穿透（任何类型都先于类型转换判断）——
+  // 已是标准格式 {{路径}}--!@#$%freerpa-refer%$#@!--"旧值" 原样保留；
+  // 纯 {{路径}} 规范化为完整引用（补 separator + 空旧值），
+  // 避免 object/array 被 JSON.parse 吞掉、number/switch 被类型转换破坏
+  if (typeof value === 'string') {
+    if (isParamRefer(value)) return value
+    if (/^{{([^{}]+)\.([^{}]+)}}$/.test(value)) {
+      return makeParamReferValue('', value)
+    }
+  }
+
   const type = field?.type
   if (type === 'switch') return Boolean(value)
   if (type === 'number') {

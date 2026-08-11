@@ -46,8 +46,7 @@ const execute = async (node, context) => {
     }
   }
 
-  // 显式挂载 workbook 引用（供 workbookSave 等下游节点保存；替代 exceljs 私有 _workbook hack）
-  worksheet.workbook = workbook
+  // worksheet.workbook 为 exceljs 原生 getter（返回所属工作簿），无需也不可手动挂载（getter-only 赋值会抛 TypeError）
 
   complete({
     worksheet: worksheet

@@ -77,7 +77,8 @@ try {
       write: [],
       net: [],
       run: [],
-      env: true,
+      // 与主进程 buildDenoPermissions 对齐：env 为基础设施白名单（非全开）
+      env: ['GRACEFUL_FS_PLATFORM', 'TEST_GRACEFUL_FS_GLOBAL_PATCH', 'READABLE_STREAM', 'BLUEBIRD_DEBUG', 'BLUEBIRD_LONG_STACK_TRACES', 'BLUEBIRD_WARNINGS', 'BLUEBIRD_W_FORGOTTEN_RETURN', 'WS_NO_BUFFER_UTIL', 'WS_NO_UTF_8_VALIDATE', 'NODE_ENV', 'NODE_DEBUG', 'HOME', 'USERPROFILE', 'TMPDIR', 'TEMP', 'TMP', 'PATH', 'LANG'],
       sys: []
     }
   })

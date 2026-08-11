@@ -159,7 +159,10 @@ export const createBrowserExecutors = () => ({
     let kernelId = kernel_id
     try {
       const raw = await env().getMajorVersionList()
-      const list = (Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : []).map(String)
+      // majorList 返回对象数组（{ major_version, label }），提取版本号；兼容纯字符串数组
+      const list = (Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [])
+        .map((item) => (typeof item === 'string' ? item : String(item?.major_version ?? '')))
+        .filter(Boolean)
       if (list.length > 0) {
         if (!kernelId) {
           kernelId = list[0]
