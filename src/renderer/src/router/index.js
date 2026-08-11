@@ -41,10 +41,7 @@ const router = createRouter({
   routes
 })
 
-let firstLoad = true
-if (firstLoad) {
-  window.electronAPI.window.maximize(true)
-  firstLoad = false
-}
+// 模块级只执行一次：启动即最大化窗口
+window.electronAPI.window.maximize(true)
 
 export default router

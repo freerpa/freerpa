@@ -1,7 +1,5 @@
 /**
  * @file: DOM监听节点
- * @author: dabao
- * @date: 2024-03-15
  */
 
 import { RiNewsLine } from "@remixicon/vue";

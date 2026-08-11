@@ -1,7 +1,5 @@
 /**
  * @file: 访问URL节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { IconLink } from '@arco-design/web-vue/es/icon'
 

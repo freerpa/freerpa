@@ -1,7 +1,5 @@
 /**
  * @file: 子流程节点执行器
- * @author: dabao
- * @date: 2024-03-29
  *
  * 与 workFlow（工作流）执行器逻辑完全一致：都经 executeSubFlow 分发到子流程
  * （子节点按 parentNode === '{id}-subFlow' 关联，见 WorkflowExecutor.executeSubFlow）。

@@ -1,7 +1,5 @@
 /**
  * @file: 数据过滤节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { IconFilter } from '@arco-design/web-vue/es/icon'
 

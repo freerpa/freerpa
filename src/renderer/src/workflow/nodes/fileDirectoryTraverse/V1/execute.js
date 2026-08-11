@@ -1,7 +1,5 @@
 /**
  * @file: 文件目录遍历节点执行器
- * @author: FreeRPA
- * @date: 2025-07-30
  */
 
 import path from 'path'
@@ -150,64 +148,62 @@ const execute = async (node, context) => {
   const { config } = node
   const { complete, fs } = context
 
-  try {
-    const {
-      directoryPath,
-      traverseType = 'files',
-      isDeep = true,
-      maxDepth = 10,
-      includePattern = '*',
-      excludePattern = '',
-      sortBy = 'name',
-      sortOrder = 'asc'
-    } = config
+  
+  const {
+    directoryPath,
+    traverseType = 'files',
+    isDeep = true,
+    maxDepth = 10,
+    includePattern = '*',
+    excludePattern = '',
+    sortBy = 'name',
+    sortOrder = 'asc'
+  } = config
 
-    // 验证目录路径
-    if (!directoryPath) {
-      throw new Error('目录路径不能为空')
-    }
-
-    // 检查目录是否存在
-    try {
-      const stats = await fs.stat(directoryPath)
-      if (!stats.isDirectory()) {
-        throw new Error('指定的路径不是一个目录')
-      }
-    } catch (error) {
-      throw new Error(`目录访问失败: ${error.message}`)
-    }
-
-    // 安全深度上限：maxDepth<=0 视为仅遍历顶层（原实现 0 表示无限制 → 大目录树意外无限递归/栈溢出）
-    const depthLimit = isDeep ? Math.max(1, Number(maxDepth) || 1) : 1
-
-    // 遍历目录
-    const results = await traverseDirectory(directoryPath, fs, path, minimatch, {
-      traverseType,
-      isDeep,
-      maxDepth: depthLimit,
-      includePattern,
-      excludePattern,
-      currentDepth: 0
-    })
-
-    // 排序结果
-    const sortedResults = sortResults(results, sortBy, sortOrder)
-
-    // 提取路径列表
-    const paths = sortedResults.map(item => item.path)
-
-    // 准备输出数据
-    const outputData = {
-      paths,
-      count: paths.length,
-      rootPath: directoryPath
-    }
-
-    // 使用context.complete完成节点执行，传递输出数据和isNext参数
-    complete(outputData)
-  } catch (error) {
-    throw error
+  // 验证目录路径
+  if (!directoryPath) {
+    throw new Error('目录路径不能为空')
   }
+
+  // 检查目录是否存在
+  try {
+    const stats = await fs.stat(directoryPath)
+    if (!stats.isDirectory()) {
+      throw new Error('指定的路径不是一个目录')
+    }
+  } catch (error) {
+    throw new Error(`目录访问失败: ${error.message}`)
+  }
+
+  // 安全深度上限：maxDepth<=0 视为仅遍历顶层（原实现 0 表示无限制 → 大目录树意外无限递归/栈溢出）
+  const depthLimit = isDeep ? Math.max(1, Number(maxDepth) || 1) : 1
+
+  // 遍历目录
+  const results = await traverseDirectory(directoryPath, fs, path, minimatch, {
+    traverseType,
+    isDeep,
+    maxDepth: depthLimit,
+    includePattern,
+    excludePattern,
+    currentDepth: 0
+  })
+
+  // 排序结果
+  const sortedResults = sortResults(results, sortBy, sortOrder)
+
+  // 提取路径列表
+  const paths = sortedResults.map(item => item.path)
+
+  // 准备输出数据
+  const outputData = {
+    paths,
+    count: paths.length,
+    rootPath: directoryPath
+  }
+
+  // 使用context.complete完成节点执行，传递输出数据和isNext参数
+  complete(outputData)
+
 }
 
 export default execute

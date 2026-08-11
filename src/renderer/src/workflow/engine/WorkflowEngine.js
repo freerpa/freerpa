@@ -3,9 +3,7 @@ import { useFlowStore } from '../store'
 import { Message } from '@arco-design/web-vue'
 import { locateNode } from '../utils'
 import {
-  getFlowData,
   validateWorkflow,
-  resolveParamRefs,
   findUnconnectedNodes,
   findMissingInputs
 } from './validate'
@@ -62,10 +60,9 @@ export class WorkflowEngine {
 
   // 创建工作流（运行前检测 + 构建执行数据）
   async create() {
-    const flowData = getFlowData(this.store, this.flowId)
     const { unConnectedNodes, needConnects } = storeToRefs(this.store)
-    // 运行前完整检测（同步项 + 异步节点表单校验），错误统一结构化 { code, nodeId?, nodeIds?, message }
-    const { errors } = await validateWorkflow(this.store)
+    // 运行前完整检测（同步项 + 异步节点表单校验）；flowData 由 quickValidateWorkflow 生成并完成参数引用替换，检测与执行共用避免重复序列化
+    const { errors, flowData } = await validateWorkflow(this.store)
     const byCode = (code) => errors.find((e) => e.code === code)
 
     // 缺少节点定义（本地插件被移除等）：阻止运行并定位第一个缺失节点
@@ -107,9 +104,8 @@ export class WorkflowEngine {
       locateNode(this.store.vueFlowRef, paramRef.nodeIds)
       throw new Error(paramRef.message)
     }
-    // 参数引用替换（构建执行数据；检测已确认无错误，替换必然成功）
-    const { flowData: resolved } = resolveParamRefs(flowData, this.store.vueFlowRef)
-    return await window.electronAPI.emitFlowEvent('createEngine', null, null, resolved)
+    // 参数引用已由 quickValidateWorkflow 在副本上完成替换（检测通过则必然成功）
+    return await window.electronAPI.emitFlowEvent('createEngine', null, null, flowData)
   }
 
   // 工作流执行

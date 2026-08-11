@@ -1,7 +1,5 @@
 /**
  * @file: 工作流历史记录管理
- * @author: dabao
- * @date: 2024-03-16
  */
 import { computed, ref } from 'vue'
 import { adjustParentSize } from './adjustParentSize'

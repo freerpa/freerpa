@@ -1,4 +1,33 @@
 import { typeText } from '../utils/typeColor'
+import { IO_FIELD_MAP_STANDARD } from '../io-conventions'
+
+/**
+ * 单类型数据处理节点定义工厂（dataHandler{Array,Number,Object,String} 共用）
+ */
+export const createDataHandlerNode = ({ type, name, icon, description }) => ({
+  type,
+  name,
+  icon,
+  description,
+  view: true,
+  config: {},
+  inputs: [
+    {
+      type: 'dynamic',
+      dataPath: '__nodeIO.inputs',
+      legacyDataPath: 'nodeIO.inputs',
+      fieldMap: IO_FIELD_MAP_STANDARD
+    }
+  ],
+  outputs: [
+    {
+      type: 'dynamic',
+      dataPath: '__nodeIO.outputs',
+      legacyDataPath: 'nodeIO.outputs',
+      fieldMap: IO_FIELD_MAP_STANDARD
+    }
+  ]
+})
 
 export const dynamicFields = {
   type: {
@@ -307,7 +336,6 @@ export const configFields = {
     name: '配置类型',
     type: 'select',
     paramRef: false,
-    default: 'string',
     options: [
       { label: '文本', value: 'string' },
       { label: '数字', value: 'number' },
@@ -400,15 +428,13 @@ export const configFields = {
       label: filters[key].name,
       value: key
     })),
-    default: 'other',
-    show: "${type} === 'file'"
+    default: 'other'
   },
   //文件格式后缀名
   fileExt: {
     id: 'fileExt',
     name: '文件格式',
     description: '文件格式后缀名如 txt png mp4 为空则表示所有文件',
-    show: "${type} === 'file'",
     type: 'text',
     paramRef: false,
     default: '',

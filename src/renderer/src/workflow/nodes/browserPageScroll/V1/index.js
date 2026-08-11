@@ -1,7 +1,5 @@
 /**
  * @file: 页面滚动节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { RiScrollToBottomLine } from "@remixicon/vue";
 

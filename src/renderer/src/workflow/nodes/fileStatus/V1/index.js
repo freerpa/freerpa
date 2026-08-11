@@ -1,7 +1,5 @@
 /**
  * @file: 获取状态节点配置
- * @author: FreeRPA
- * @date: 2024-03-15
  */
 
 import { RiFolderInfoLine } from "@remixicon/vue";

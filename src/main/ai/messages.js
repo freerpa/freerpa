@@ -315,24 +315,3 @@ export const getMemories = async (workflowId) => {
   )
   return rows.map((r) => ({ key: r.key, value: r.value }))
 }
-
-/** 写入/更新一条记忆（upsert） */
-export const setMemory = async (workflowId, key, value) => {
-  const db = await initDatabase()
-  await ensureTables(db)
-  await db.run(
-    `INSERT INTO ${MEMORY_TABLE} (workflow_id, key, value, updated_at)
-     VALUES (?, ?, ?, datetime('now','localtime'))
-     ON CONFLICT(workflow_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-    workflowId,
-    key,
-    String(value ?? '')
-  )
-}
-
-/** 删除一条记忆 */
-export const deleteMemory = async (workflowId, key) => {
-  const db = await initDatabase()
-  await ensureTables(db)
-  await db.run(`DELETE FROM ${MEMORY_TABLE} WHERE workflow_id = ? AND key = ?`, workflowId, key)
-}

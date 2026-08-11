@@ -1,7 +1,5 @@
 /**
  * @file: 新页面打开事件节点
- * @author: dabao
- * @date: 2024-03-19
  */
 import { RiWindowLine } from "@remixicon/vue";
 

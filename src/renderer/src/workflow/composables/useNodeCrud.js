@@ -281,7 +281,6 @@ export function useNodeCrud({ vueFlowRef, isExecuting, clipboard, createConnecti
   return {
     addStartNode,
     addNode,
-    addSubFlowNode,
     handleNodeAction,
     handleNodeDelete,
     isOverNodeLimit

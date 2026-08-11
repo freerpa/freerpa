@@ -1,8 +1,6 @@
 import { IO_FIELD_MAP_STANDARD } from '../../../io-conventions.js'
 /**
  * @file: 剪切板操作节点
- * @author: FreeRPA
- * @date: 2025-07-30
  */
 import { IconPaste } from '@arco-design/web-vue/es/icon'
 

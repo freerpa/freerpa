@@ -1,7 +1,5 @@
 /**
  * @file: HTTP服务节点
- * @author: Auto Generated
- * @date: 2024-03-15
  */
 import { IconWifi } from '@arco-design/web-vue/es/icon'
 

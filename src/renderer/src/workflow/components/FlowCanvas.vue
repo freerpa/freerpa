@@ -1,7 +1,5 @@
 /**
  * @file: 流程图画布组件
- * @author: dabao
- * @date: 2024-03-15
  */
 <template>
   <a-spin style="width: 100%; height: calc(100% - 10px)" :loading="loading" tip="加载中...">

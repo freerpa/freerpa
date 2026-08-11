@@ -1,7 +1,5 @@
 /**
  * @file: 文件删除节点
- * @author: dabao
- * @date: 2024-03-29
  */
 import { RiFileShredLine } from "@remixicon/vue";
 

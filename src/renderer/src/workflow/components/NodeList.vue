@@ -177,7 +177,7 @@
 </template>
 
 <script setup>
-  import { IconBranch, IconSearch, IconApps } from '@arco-design/web-vue/lib/icon';
+  import { IconBranch, IconSearch } from '@arco-design/web-vue/lib/icon';
   import { RiPlugLine } from '@remixicon/vue';
   import allNodes, { categories, loadPluginNodes } from '@nodes-path';
   import { debounce } from 'lodash-es';

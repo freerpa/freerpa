@@ -1,7 +1,5 @@
 /**
  * @file: 视频预览节点
- * @author: FreeRPA
- * @date: 2025-07-31
  */
 import { IconLiveBroadcast } from '@arco-design/web-vue/es/icon'
 export default {

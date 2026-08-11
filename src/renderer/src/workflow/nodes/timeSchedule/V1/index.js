@@ -1,8 +1,6 @@
 import { IO_FIELD_MAP_NAME_ID } from '../../../io-conventions.js'
 /**
  * @file: 触发器节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { IconPlayArrow } from '@arco-design/web-vue/es/icon'
 import { configFields } from '../../common'

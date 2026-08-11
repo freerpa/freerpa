@@ -19,8 +19,6 @@
         :workflowId="workflowId"
         :visible="aiVisible"
         @close="aiVisible = false"
-        :workflow-ref="flowRef"
-        :vue-flow-ref="vueFlowRef"
       />
     </div>
   </div>

@@ -6,11 +6,15 @@
  */
 
 import { app } from 'electron'
-import { execSync } from 'child_process'
+import { execFile } from 'child_process'
+import { promisify } from 'util'
+import fsp from 'fs/promises'
 import path from 'path'
 import fs from 'fs-extra'
 import https from 'https'
 import http from 'http'
+
+const execFileAsync = promisify(execFile)
 
 // 内核存储根目录
 export const KERNEL_DIR = path.join(app.getPath('userData'), 'kernels')
@@ -102,16 +106,20 @@ const extractArchive = async (archivePath, extractDir, platform) => {
   } else if (ext === '.tar.xz' || ext === '.tar.gz' || ext === '.tgz' || ext === '.tar') {
     const tarPath = archivePath.replace(/\.xz$|\.gz$/, '')
     if (ext === '.xz') {
-      execSync(`xz -d "${archivePath}"`, { stdio: 'pipe' })
+      await execFileAsync('xz', ['-d', archivePath])
     } else if (ext === '.gz') {
-      execSync(`gunzip -f "${archivePath}"`, { stdio: 'pipe' })
+      await execFileAsync('gunzip', ['-f', archivePath])
     }
-    execSync(`tar -xf "${tarPath}" -C "${extractDir}"`, { stdio: 'pipe' })
+    await execFileAsync('tar', ['-xf', tarPath, '-C', extractDir])
   } else if (ext === '.dmg') {
     const mountPoint = `/Volumes/chrome_${Date.now()}`
-    execSync(`hdiutil attach "${archivePath}" -mountpoint "${mountPoint}" -nobrowse`, { stdio: 'pipe' })
-    execSync(`cp -R "${mountPoint}"/*.app "${extractDir}"`, { stdio: 'pipe' })
-    execSync(`hdiutil detach "${mountPoint}"`, { stdio: 'pipe' })
+    await execFileAsync('hdiutil', ['attach', archivePath, '-mountpoint', mountPoint, '-nobrowse'])
+    // 复制 .app（execFile 不经 shell，需自行枚举避免通配符依赖）
+    const entries = await fsp.readdir(mountPoint)
+    for (const name of entries.filter((n) => n.endsWith('.app'))) {
+      await execFileAsync('cp', ['-R', path.join(mountPoint, name), extractDir])
+    }
+    await execFileAsync('hdiutil', ['detach', mountPoint])
   } else {
     throw new Error(`不支持的文件格式: ${ext}`)
   }

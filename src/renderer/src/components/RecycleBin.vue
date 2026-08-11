@@ -45,18 +45,14 @@ const loadTrash = async () => {
 }
 
 const handleBatchRestore = async () => {
-  for (const id of selectedKeys.value) {
-    await props.api.restore(id)
-  }
+  await Promise.all(selectedKeys.value.map((id) => props.api.restore(id)))
   Message.success(`已恢复 ${selectedKeys.value.length} 项`)
   props.onRestored?.()
   loadTrash()
 }
 
 const handleBatchDelete = async () => {
-  for (const id of selectedKeys.value) {
-    await props.api.permanentDelete(id)
-  }
+  await Promise.all(selectedKeys.value.map((id) => props.api.permanentDelete(id)))
   Message.success(`已永久删除 ${selectedKeys.value.length} 项`)
   props.onRestored?.()
   loadTrash()

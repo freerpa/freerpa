@@ -1,8 +1,6 @@
 import { IO_FIELD_MAP_NAME_ID } from '../../../io-conventions.js'
 /**
  * @file: 数据加解密节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { RiDatabase2Line } from "@remixicon/vue"
 import { typeText } from '../../../utils/typeColor'

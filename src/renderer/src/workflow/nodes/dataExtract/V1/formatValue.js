@@ -1,8 +1,5 @@
 /**
- * @file: 值格式化（dataExtract 节点自包含；与 dataParser 的 formatValue.js 同源——修改时两处同步）
- */
-/**
- * @file: 值格式化（dataExtract / dataParser 共用，避免双份实现漂移）
+ * @file: 值格式化（与 dataParser 的 formatValue.js 保持逐字一致——prod 构建要求节点目录自包含，无法跨目录共享）
  * custom 分支经 runCode 执行用户自定义格式化
  */
 import dayjs from 'dayjs'

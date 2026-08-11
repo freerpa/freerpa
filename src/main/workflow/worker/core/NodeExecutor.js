@@ -56,12 +56,6 @@ class NodeExecutor extends EventEmitter {
   setInputs(inputs) {
     this.inputs = { ...this.inputs, ...inputs }
   }
-  getInputs() {
-    return this.inputs
-  }
-  getState() {
-    return this.state
-  }
 
   async execute() {
     try {

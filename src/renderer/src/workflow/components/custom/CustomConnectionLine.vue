@@ -35,18 +35,9 @@ const props = defineProps({
 })
 import { computed } from 'vue'
 import { getBezierPath } from '@vue-flow/core'
-import { getTypeColor } from '../../utils/typeColor'
 const path = computed(() => getBezierPath(props))
 const strokeColor = computed(() => {
   return '#b1b1b7'
-  if (props.sourceHandle.type === 'source') {
-    return getTypeColor(
-      props.sourceNode.data.outputs.find((output) => output.id === props.sourceHandle.id).type
-    )
-  }
-  return getTypeColor(
-    props.sourceNode.data.inputs.find((input) => input.id === props.sourceHandle.id).type
-  )
 })
 </script>
 

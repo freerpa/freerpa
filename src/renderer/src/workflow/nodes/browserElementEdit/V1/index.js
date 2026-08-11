@@ -1,7 +1,5 @@
 /**
  * @file: 元素编辑节点
- * @author: dabao
- * @date: 2024-03-19
  */
 import { RiEditBoxLine } from "@remixicon/vue";
 

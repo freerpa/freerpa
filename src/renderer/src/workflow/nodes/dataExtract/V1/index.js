@@ -1,7 +1,5 @@
 /**
  * @file: 数据提取节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { IconMindMapping } from '@arco-design/web-vue/es/icon'
 import { format } from '../../common'

@@ -1,7 +1,5 @@
 /**
  * @file: 文件保存节点
- * @author: dabao
- * @date: 2024-03-24
  */
 import { IconSave } from '@arco-design/web-vue/es/icon'
 

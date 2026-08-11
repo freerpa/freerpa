@@ -1,7 +1,5 @@
 /**
  * @file: 剪切板操作节点执行器
- * @author: FreeRPA
- * @date: 2025-07-30
  */
 import { clipboard } from 'electron'
 

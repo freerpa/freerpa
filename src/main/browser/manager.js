@@ -141,12 +141,3 @@ export const getAllBrowserStatus = () => {
   for (const [envId] of openBrowserInstances) status[envId] = true
   return status
 }
-
-/**
- * 关闭所有打开的浏览器（应用退出时调用）
- */
-export const closeAllBrowsers = async () => {
-  for (const envId of [...openBrowserInstances.keys()]) {
-    await killBrowserProcess(envId).catch(() => {})
-  }
-}

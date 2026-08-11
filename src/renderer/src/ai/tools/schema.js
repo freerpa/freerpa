@@ -119,9 +119,6 @@ export const buildNodeMeta = (type, { detail = false } = {}) => {
   return meta
 }
 
-/** 兼容旧调用：概览模式（不传 detail 时为精简版） */
-export const buildNodeMetaShort = (type) => buildNodeMeta(type)
-
 // ---- 模型目录（system prompt 注入的节点精简描述） ----
 
 /**

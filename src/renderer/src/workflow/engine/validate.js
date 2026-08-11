@@ -17,18 +17,28 @@ export const getFlowData = (store, id) => {
     nodes: store.vueFlowRef.getNodes.filter(
       // 排除 comment 与 subFlow 容器节点：容器只作画布分组（子节点经 parentNode 关联），不参与执行
       (node) => node.type !== 'comment' && node.type !== 'subFlow' && !node.data.deactivate
-    ).map((node) => ({
-      id: node.id,
-      name: node.data.name,
-      type: node.data.type,
-      version: node.data.version || 'V1',
-      deactivate: node.data.deactivate,
-      parentNode: node.parentNode,
-      subFlow: !!nodes[node.data.type]?.subFlow,
-      inputs: JSON.parse(JSON.stringify(node.data.inputs || [])),
-      outputs: JSON.parse(JSON.stringify(node.data.outputs || [])),
-      config: JSON.parse(JSON.stringify(node.data.config || {}))
-    })),
+    ).map((node) => {
+      // 一次深拷贝（inputs/outputs/config 合并），避免逐字段 stringify+parse
+      const data = JSON.parse(
+        JSON.stringify({
+          inputs: node.data.inputs || [],
+          outputs: node.data.outputs || [],
+          config: node.data.config || {}
+        })
+      )
+      return {
+        id: node.id,
+        name: node.data.name,
+        type: node.data.type,
+        version: node.data.version || 'V1',
+        deactivate: node.data.deactivate,
+        parentNode: node.parentNode,
+        subFlow: !!nodes[node.data.type]?.subFlow,
+        inputs: data.inputs,
+        outputs: data.outputs,
+        config: data.config
+      }
+    }),
     edges: store.vueFlowRef.getEdges.map((edge) => ({
       id: edge.id,
       source: edge.source,
@@ -73,16 +83,21 @@ export const resolveParamRefs = (flowData, vueFlowRef) => {
       }
     }
     try {
-      const nodeConfig = JSON.stringify(node.config).replace(paramReferRegex, (match) => {
-        const paramPath = match.slice(2, -2) // 获取参数路径
-        const LeafPathMap = LeafPathMaps.get(node.parentNode || 'root')
-        const realPath = LeafPathMap.get(paramPath)
-        if (realPath) {
-          return '{{' + realPath.id + '}}'
-        }
-        throw new Error(`找不到【${paramPath}】的引用`)
-      })
-      node.config = JSON.parse(nodeConfig)
+      // 无参数引用（{{...}}）的节点跳过序列化往返；有引用才 stringify → 替换 → parse
+      const nodeConfigStr = JSON.stringify(node.config)
+      if (nodeConfigStr.includes('{{')) {
+        node.config = JSON.parse(
+          nodeConfigStr.replace(paramReferRegex, (match) => {
+            const paramPath = match.slice(2, -2) // 获取参数路径
+            const LeafPathMap = LeafPathMaps.get(node.parentNode || 'root')
+            const realPath = LeafPathMap.get(paramPath)
+            if (realPath) {
+              return '{{' + realPath.id + '}}'
+            }
+            throw new Error(`找不到【${paramPath}】的引用`)
+          })
+        )
+      }
     } catch (error) {
       errors.push({
         nodeId: node.id,
@@ -215,7 +230,7 @@ export const quickValidateWorkflow = (store) => {
     })
   }
 
-  return { ok: errors.length === 0, errors }
+  return { ok: errors.length === 0, errors, flowData }
 }
 
 /** 节点配置表单校验（async）：遍历节点 ref 的 validate 方法。返回 { code:'config-invalid', nodeId, message } */
@@ -257,5 +272,5 @@ export const validateWorkflow = async (store, { deep = true } = {}) => {
   const quick = quickValidateWorkflow(store)
   if (!deep) return quick
   const configErrors = await validateNodeForms(store)
-  return { ok: quick.ok && configErrors.length === 0, errors: [...quick.errors, ...configErrors] }
+  return { ok: quick.ok && configErrors.length === 0, errors: [...quick.errors, ...configErrors], flowData: quick.flowData }
 }

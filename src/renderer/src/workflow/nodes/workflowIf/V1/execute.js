@@ -1,7 +1,5 @@
 /**
  * @file: 判断节点执行器
- * @author: dabao
- * @date: 2024-03-29
  */
 import dayjs from 'dayjs'
 import isBetween from 'dayjs/plugin/isBetween'
@@ -160,29 +158,27 @@ const execute = async (node, context) => {
   const { config } = node
   const { complete } = context
   runCode = context.runCode
-  try {
-    const { matchType = 'and', rules = [] } = config
+  
+  const { matchType = 'and', rules = [] } = config
 
-    // 如果没有规则,默认为true
-    if (rules.length === 0) {
-      complete({ result: true })
-      return
-    }
-
-    // 执行所有规则
-    const results = rules.map((rule) => executeRule(rule))
-    // 根据匹配类型判断最终结果
-    const finalResult =
-      matchType === 'and' ? results.every((result) => result) : results.some((result) => result)
-    // 完成节点
-    if (finalResult) {
-      complete({ result: true })
-    } else {
-      complete({ result: false })
-    }
-  } catch (error) {
-    throw error
+  // 如果没有规则,默认为true
+  if (rules.length === 0) {
+    complete({ result: true })
+    return
   }
+
+  // 执行所有规则
+  const results = rules.map((rule) => executeRule(rule))
+  // 根据匹配类型判断最终结果
+  const finalResult =
+    matchType === 'and' ? results.every((result) => result) : results.some((result) => result)
+  // 完成节点
+  if (finalResult) {
+    complete({ result: true })
+  } else {
+    complete({ result: false })
+  }
+
 }
 
 export default execute

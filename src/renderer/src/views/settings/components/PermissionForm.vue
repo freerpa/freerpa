@@ -151,31 +151,17 @@ const addRoot = async () => {
   if (!value.value.io.roots.includes(result.filePaths[0])) value.value.io.roots.push(result.filePaths[0])
 }
 const removeRoot = (i) => value.value.io.roots.splice(i, 1)
-const addRule = () => {
-  const v = ruleInput.value.trim()
-  if (v && !value.value.network.rules.includes(v)) value.value.network.rules.push(v)
-  ruleInput.value = ''
+// 标签白名单输入统一逻辑：trim → 查重 → push → 清空输入
+const addTag = (list, input) => {
+  const v = input.value.trim()
+  if (v && !list.includes(v)) list.push(v)
+  input.value = ''
 }
-const addCommand = () => {
-  const v = commandInput.value.trim()
-  if (v && !value.value.process.commands.includes(v)) value.value.process.commands.push(v)
-  commandInput.value = ''
-}
-const addEnv = () => {
-  const v = envInput.value.trim()
-  if (v && !value.value.env.allow.includes(v)) value.value.env.allow.push(v)
-  envInput.value = ''
-}
-const addFfi = () => {
-  const v = ffiInput.value.trim()
-  if (v && !value.value.ffi.paths.includes(v)) value.value.ffi.paths.push(v)
-  ffiInput.value = ''
-}
-const addImport = () => {
-  const v = importInput.value.trim()
-  if (v && !value.value.import.hosts.includes(v)) value.value.import.hosts.push(v)
-  importInput.value = ''
-}
+const addRule = () => addTag(value.value.network.rules, ruleInput)
+const addCommand = () => addTag(value.value.process.commands, commandInput)
+const addEnv = () => addTag(value.value.env.allow, envInput)
+const addFfi = () => addTag(value.value.ffi.paths, ffiInput)
+const addImport = () => addTag(value.value.import.hosts, importInput)
 </script>
 
 <style lang="less" scoped>

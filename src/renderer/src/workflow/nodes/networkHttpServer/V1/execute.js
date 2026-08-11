@@ -1,7 +1,5 @@
 /**
  * @file: HTTP服务节点执行器
- * @author: Auto Generated
- * @date: 2024-03-15
  */
 import { processParams, getHttpServer } from '@/common'
 

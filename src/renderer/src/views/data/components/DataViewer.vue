@@ -506,13 +506,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import {
-  Message,
-  Button as AButton,
-  InputNumber as AInputNumber,
-  Select as ASelect,
-  Input as AInput
-} from '@arco-design/web-vue'
+import { Message } from '@arco-design/web-vue'
 import {
   IconPlus,
   IconEdit,
@@ -621,8 +615,13 @@ const filterFields = computed(() => {
 
 const getFiledType = (field) => {
   if (!field) return ''
-  return filterFields.value.find((f) => f.name === field).type
+  return fieldTypeMap.value.get(field)
 }
+const fieldTypeMap = computed(() => {
+  const map = new Map()
+  filterFields.value.forEach((f) => map.set(f.name, f.type))
+  return map
+})
 const conditions = ref([])
 const addConditionGroup = () => {
   conditions.value.push({
@@ -787,6 +786,11 @@ onMounted(() => {
   resetFilters()
   resetSort()
   search()
+  // 导入/导出进度回调：统一注册一次（preload 内部 removeAllListeners 替换，避免每次导出/导入重复注册）
+  dataAPI.onImportExcelProgress(({ total, finished }) => {
+    progress.value.finished = finished
+    progress.value.total = total
+  })
 })
 // 处理批量删除
 const handleBatchDelete = async () => {
@@ -860,10 +864,6 @@ const handleExport = async (type) => {
     })
     if (pathResult.canceled) return
     exporting.value = true
-    dataAPI.onImportExcelProgress(({ total, finished }) => {
-      progress.value.finished = finished
-      progress.value.total = total
-    })
     await dataAPI.exportExcel({
       filePath: pathResult.filePath,
       modelId: props.model.id,
@@ -902,10 +902,6 @@ const handleImport = async () => {
   const filePath = result.filePaths[0]
   try {
     importing.value = true
-    dataAPI.onImportExcelProgress(({ total, finished }) => {
-      progress.value.finished = finished
-      progress.value.total = total
-    })
     await dataAPI.importExcel({
       filePath,
       modelId: props.model.id

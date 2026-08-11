@@ -4,25 +4,31 @@
  */
 import { ipcMain, app } from 'electron'
 import fs from 'fs'
+import fsp from 'fs/promises'
 import path from 'path'
 import { formatSize } from '../utils.js'
 
-/** 递归计算目录大小 */
-const getDirSize = (dirPath) => {
-  if (!fs.existsSync(dirPath)) return 0
-  let size = 0
-  const files = fs.readdirSync(dirPath, { withFileTypes: true })
-  for (const file of files) {
-    const fp = path.join(dirPath, file.name)
-    try {
-      if (file.isDirectory()) {
-        size += getDirSize(fp)
-      } else {
-        size += fs.statSync(fp).size
-      }
-    } catch (_) {}
+/** 递归计算目录大小（异步并行，避免同步递归阻塞主进程） */
+const getDirSize = async (dirPath) => {
+  let entries
+  try {
+    entries = await fsp.readdir(dirPath, { withFileTypes: true })
+  } catch {
+    return 0
   }
-  return size
+  const sizes = await Promise.all(
+    entries.map(async (file) => {
+      const fp = path.join(dirPath, file.name)
+      try {
+        if (file.isDirectory()) return getDirSize(fp)
+        const st = await fsp.stat(fp)
+        return st.size
+      } catch {
+        return 0
+      }
+    })
+  )
+  return sizes.reduce((sum, s) => sum + s, 0)
 }
 
 /** 递归删除目录 */
@@ -40,11 +46,12 @@ export const register = () => {
       path.join(userData, 'Partitions')
     ]
     let totalSize = 0
-    const details = dirs.map((d) => {
-      const size = getDirSize(d)
+    const details = []
+    for (const d of dirs) {
+      const size = await getDirSize(d)
       totalSize += size
-      return { path: d, size, label: formatSize(size), exists: fs.existsSync(d) }
-    })
+      details.push({ path: d, size, label: formatSize(size), exists: fs.existsSync(d) })
+    }
     return { totalSize, label: formatSize(totalSize), details }
   })
 

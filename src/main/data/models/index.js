@@ -4,7 +4,9 @@
 
 import { v4 as uuidv4 } from 'uuid'
 import { initDatabase } from '../db.js'
-import { queryPage, softDelete, trashList, restoreRow } from '../crud.js'
+import { queryPage } from '../crud.js'
+import { createEntityCrud } from '../crudFactory.js'
+import { withDb } from '../dbHelper.js'
 
 // 创建模型表
 const ensureModelsTable = async (db) => {
@@ -27,42 +29,37 @@ const ensureModelsTable = async (db) => {
 }
 
 // 获取模型
-export const getModel = async (id) => {
-  const db = await initDatabase()
-  await ensureModelsTable(db)
-  return db.get('SELECT * FROM models WHERE id = ?', id)
-}
+export const getModel = (id) =>
+  withDb('models', ensureModelsTable, (db) => db.get('SELECT * FROM models WHERE id = ?', id))
 
 // 获取所有模型
-export const getModels = async (params) => {
-  const db = await initDatabase()
-  await ensureModelsTable(db)
+export const getModels = (params) =>
+  withDb('models', ensureModelsTable, async (db) => {
+    const result = await queryPage({ db, table: 'models', keywordCols: ['name', 'description'], defaultOrder: 'created_at DESC', pageSize: 8, ...params })
 
-  const result = await queryPage({ db, table: 'models', keywordCols: ['name', 'description'], defaultOrder: 'created_at DESC', pageSize: 8, ...params })
+    const getTableName = (id) => `model_data_${id}`
+    for (const model of result.data) {
+      try {
+        const countResult = await db.get(`SELECT COUNT(*) as count FROM ${getTableName(model.id)}`)
+        model.data_count = countResult.count
+      } catch (error) {
+        model.data_count = 0
+      }
 
-  const getTableName = (id) => `model_data_${id}`
-  for (const model of result.data) {
-    try {
-      const countResult = await db.get(`SELECT COUNT(*) as count FROM ${getTableName(model.id)}`)
-      model.data_count = countResult.count
-    } catch (error) {
-      model.data_count = 0
+      const fields = JSON.parse(model.fields)
+      model.field_stats = {
+        total: fields.length,
+        required: fields.filter((f) => f.required).length,
+        unique: fields.filter((f) => f.unique).length,
+        types: fields.reduce((acc, f) => {
+          acc[f.type] = (acc[f.type] || 0) + 1
+          return acc
+        }, {})
+      }
     }
 
-    const fields = JSON.parse(model.fields)
-    model.field_stats = {
-      total: fields.length,
-      required: fields.filter((f) => f.required).length,
-      unique: fields.filter((f) => f.unique).length,
-      types: fields.reduce((acc, f) => {
-        acc[f.type] = (acc[f.type] || 0) + 1
-        return acc
-      }, {})
-    }
-  }
-
-  return result
-}
+    return result
+  })
 
 // 生成建表SQL
 const generateCreateTableSQL = (id, fields) => {
@@ -90,145 +87,126 @@ const getColumnType = (field) => {
 }
 
 // 创建模型
-export const createModel = async ({ name, description, category_id, fields }) => {
-  const db = await initDatabase()
-  await ensureModelsTable(db)
-  const id = uuidv4().replace(/-/g, '_')
+export const createModel = ({ name, description, category_id, fields }) =>
+  withDb('models', ensureModelsTable, async (db) => {
+    const id = uuidv4().replace(/-/g, '_')
 
-  fields = fields.map((field, index) => ({ ...field, sort: index }))
+    fields = fields.map((field, index) => ({ ...field, sort: index }))
 
-  await db.run('BEGIN TRANSACTION')
-  try {
-    await db.run(`INSERT INTO models (id, name, description, category_id, fields) VALUES (?, ?, ?, ?, ?)`, [
-      id, name, description, category_id || '', JSON.stringify(fields)
-    ])
-    await db.exec(generateCreateTableSQL(id, fields))
-    for (const field of fields) {
-      if (field.unique) {
-        await db.exec(`CREATE UNIQUE INDEX idx_${id}_${field.name} ON model_data_${id} (${field.name})`)
-      }
-    }
-    await db.run('COMMIT')
-    return id
-  } catch (error) {
-    await db.run('ROLLBACK')
-    throw error
-  }
-}
-
-// 更新模型
-export const updateModel = async ({ id, name, description, category_id, fields }) => {
-  const db = await initDatabase()
-  await ensureModelsTable(db)
-
-  const model = await db.get('SELECT fields FROM models WHERE id = ?', id)
-  if (!model) throw new Error('模型不存在')
-
-  const tableName = `model_data_${id}`
-  const hasData = await db.get(`SELECT COUNT(*) as count FROM ${tableName}`)
-  const hasExistingData = hasData.count > 0
-
-  if (hasExistingData) {
-    const oldFields = JSON.parse(model.fields)
-    const oldFieldNames = oldFields.map((f) => f.name).sort().join(',')
-    const newFieldNames = fields.map((f) => f.name).sort().join(',')
-    if (oldFieldNames !== newFieldNames) throw new Error('模型已有数据，不能修改字段结构')
-    const oldFieldMap = Object.fromEntries(oldFields.map((f) => [f.name, f.type]))
-    const hasTypeChange = fields.some((f) => oldFieldMap[f.name] !== f.type)
-    if (hasTypeChange) throw new Error('模型已有数据，不能修改字段类型')
-  }
-
-  await db.run('BEGIN TRANSACTION')
-  try {
-    await db.run(
-      `UPDATE models SET name = ?, description = ?, category_id = ?, fields = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-      [name, description, category_id || '', JSON.stringify(fields), id]
-    )
-    if (!hasExistingData) {
-      await db.run(`DROP TABLE IF EXISTS ${tableName}`)
+    await db.run('BEGIN TRANSACTION')
+    try {
+      await db.run(`INSERT INTO models (id, name, description, category_id, fields) VALUES (?, ?, ?, ?, ?)`, [
+        id, name, description, category_id || '', JSON.stringify(fields)
+      ])
       await db.exec(generateCreateTableSQL(id, fields))
       for (const field of fields) {
         if (field.unique) {
-          await db.exec(`CREATE UNIQUE INDEX idx_${id}_${field.name} ON ${tableName} (${field.name})`)
+          await db.exec(`CREATE UNIQUE INDEX idx_${id}_${field.name} ON model_data_${id} (${field.name})`)
         }
       }
+      await db.run('COMMIT')
+      return id
+    } catch (error) {
+      await db.run('ROLLBACK')
+      throw error
     }
-    await db.run('COMMIT')
-  } catch (error) {
-    await db.run('ROLLBACK')
-    throw error
-  }
-}
+  })
 
-// 删除模型
-export const deleteModel = async (id) => {
-  const db = await initDatabase()
-  await ensureModelsTable(db)
-  await softDelete(db, 'models', id)
-}
+// 更新模型
+export const updateModel = ({ id, name, description, category_id, fields }) =>
+  withDb('models', ensureModelsTable, async (db) => {
+    const model = await db.get('SELECT fields FROM models WHERE id = ?', id)
+    if (!model) throw new Error('模型不存在')
 
-export const getTrashModels = async () => {
-  const db = await initDatabase()
-  await ensureModelsTable(db)
-  return trashList(db, 'models')
-}
+    const tableName = `model_data_${id}`
+    const hasData = await db.get(`SELECT COUNT(*) as count FROM ${tableName}`)
+    const hasExistingData = hasData.count > 0
 
-export const restoreModel = async (id) => {
-  const db = await initDatabase()
-  await ensureModelsTable(db)
-  await restoreRow(db, 'models', id)
-}
+    if (hasExistingData) {
+      const oldFields = JSON.parse(model.fields)
+      const oldFieldNames = oldFields.map((f) => f.name).sort().join(',')
+      const newFieldNames = fields.map((f) => f.name).sort().join(',')
+      if (oldFieldNames !== newFieldNames) throw new Error('模型已有数据，不能修改字段结构')
+      const oldFieldMap = Object.fromEntries(oldFields.map((f) => [f.name, f.type]))
+      const hasTypeChange = fields.some((f) => oldFieldMap[f.name] !== f.type)
+      if (hasTypeChange) throw new Error('模型已有数据，不能修改字段类型')
+    }
 
-export const permanentDeleteModel = async (id) => {
-  const db = await initDatabase()
-  await ensureModelsTable(db)
-  await db.run(`DROP TABLE IF EXISTS model_data_${id}`)
-  await db.run('DELETE FROM models WHERE id = ?', id)
-}
+    await db.run('BEGIN TRANSACTION')
+    try {
+      await db.run(
+        `UPDATE models SET name = ?, description = ?, category_id = ?, fields = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [name, description, category_id || '', JSON.stringify(fields), id]
+      )
+      if (!hasExistingData) {
+        await db.run(`DROP TABLE IF EXISTS ${tableName}`)
+        await db.exec(generateCreateTableSQL(id, fields))
+        for (const field of fields) {
+          if (field.unique) {
+            await db.exec(`CREATE UNIQUE INDEX idx_${id}_${field.name} ON ${tableName} (${field.name})`)
+          }
+        }
+      }
+      await db.run('COMMIT')
+    } catch (error) {
+      await db.run('ROLLBACK')
+      throw error
+    }
+  })
+
+// 删除模型（软删除/回收站/恢复：通用八件套，复用 crudFactory）
+const crud = createEntityCrud({ table: 'models', entityName: '模型', ensureTable: ensureModelsTable })
+export const deleteModel = crud.del
+export const getTrashModels = crud.trash
+export const restoreModel = crud.restore
+
+export const permanentDeleteModel = (id) =>
+  withDb('models', ensureModelsTable, async (db) => {
+    await db.run(`DROP TABLE IF EXISTS model_data_${id}`)
+    await db.run('DELETE FROM models WHERE id = ?', id)
+  })
 
 // 复制模型
-export const copyModel = async (id) => {
-  const db = await initDatabase()
-  await ensureModelsTable(db)
+export const copyModel = (id) =>
+  withDb('models', ensureModelsTable, async (db) => {
+    const model = await db.get('SELECT * FROM models WHERE id = ?', id)
+    if (!model) throw new Error('模型不存在')
 
-  const model = await db.get('SELECT * FROM models WHERE id = ?', id)
-  if (!model) throw new Error('模型不存在')
+    const newId = uuidv4().replace(/-/g, '_')
+    const newName = `${model.name} - 副本`
 
-  const newId = uuidv4().replace(/-/g, '_')
-  const newName = `${model.name} - 副本`
-
-  await db.run('BEGIN TRANSACTION')
-  try {
-    const fields = JSON.parse(model.fields)
-    await db.run(
-      `INSERT INTO models (id, name, description, fields) VALUES (?, ?, ?, ?)`,
-      [newId, newName, model.description, JSON.stringify(fields)]
-    )
-    const columns = fields
-      .map((field) =>
-        `${field.name} ${getColumnType(field)} ${field.required ? 'NOT NULL' : ''} DEFAULT NULL`
+    await db.run('BEGIN TRANSACTION')
+    try {
+      const fields = JSON.parse(model.fields)
+      await db.run(
+        `INSERT INTO models (id, name, description, fields) VALUES (?, ?, ?, ?)`,
+        [newId, newName, model.description, JSON.stringify(fields)]
       )
-      .join(',')
-    await db.exec(`
-      CREATE TABLE model_data_${newId} (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        color TEXT,
-        ${columns},
-        created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
-      )
-    `)
-    for (const field of fields) {
-      if (field.unique) {
-        await db.exec(`CREATE UNIQUE INDEX idx_${newId}_${field.name} ON model_data_${newId} (${field.name})`)
+      const columns = fields
+        .map((field) =>
+          `${field.name} ${getColumnType(field)} ${field.required ? 'NOT NULL' : ''} DEFAULT NULL`
+        )
+        .join(',')
+      await db.exec(`
+        CREATE TABLE model_data_${newId} (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          color TEXT,
+          ${columns},
+          created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
+        )
+      `)
+      for (const field of fields) {
+        if (field.unique) {
+          await db.exec(`CREATE UNIQUE INDEX idx_${newId}_${field.name} ON model_data_${newId} (${field.name})`)
+        }
       }
+      await db.run('COMMIT')
+      return newId
+    } catch (error) {
+      await db.run('ROLLBACK')
+      throw error
     }
-    await db.run('COMMIT')
-    return newId
-  } catch (error) {
-    await db.run('ROLLBACK')
-    throw error
-  }
-}
+  })
 
 // === 模型数据 CRUD ===
 
@@ -422,7 +400,7 @@ import ExcelJS from 'exceljs'
 export const exportExcel = async ({ filePath, modelId, conditions, filters, sort, readFields }) => {
   let total = 1
   let exportDataNum = 0
-  const params = { modelId, page: 1, pageSize: 100000, filters: filters || {}, conditions: conditions || [], sort: sort || null, readFields: readFields || [] }
+  const params = { modelId, page: 1, pageSize: 5000, filters: filters || {}, conditions: conditions || [], sort: sort || null, readFields: readFields || [] }
   params.readFields.push('created_at')
   const options = { filename: filePath, useStyles: true, useSharedStrings: true }
   const workbook = new ExcelJS.stream.xlsx.WorkbookWriter(options)

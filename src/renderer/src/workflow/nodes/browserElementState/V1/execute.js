@@ -1,7 +1,5 @@
 /**
  * @file: 元素状态节点执行器
- * @author: dabao
- * @date: 2024-03-29
  */
 
 import { page_eval } from '@pageEval'

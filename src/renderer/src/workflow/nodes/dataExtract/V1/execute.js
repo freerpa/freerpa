@@ -1,7 +1,5 @@
 /**
  * @file: 数据解析节点执行器
- * @author: dabao
- * @date: 2024-03-15
  */
 import { formatValue } from './formatValue.js'
 
@@ -41,20 +39,16 @@ const execute = async (node, context) => {
   const { complete } = context
   runCode = context.runCode
 
-  try {
-    const { rules = [] } = config
-    try {
-      let result = {}
-      // 执行解析
-      result = parseData(inputs.data, rules)
-      // 发送结果
-      complete(result)
-    } catch (error) {
-      throw error
-    }
-  } catch (error) {
-    throw error
-  }
+  
+  const { rules = [] } = config
+  
+  let result = {}
+  // 执行解析
+  result = parseData(inputs.data, rules)
+  // 发送结果
+  complete(result)
+
+
 }
 
 export default execute

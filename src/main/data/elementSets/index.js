@@ -4,8 +4,8 @@
  */
 
 import { v4 as uuidv4 } from 'uuid'
-import { initDatabase } from '../db.js'
-import { queryPage, softDelete, trashList, restoreRow } from '../crud.js'
+import { createEntityCrud } from '../crudFactory.js'
+import { withDb } from '../dbHelper.js'
 
 const ensureTables = async (db) => {
   await db.exec(`
@@ -44,99 +44,96 @@ const ensureTables = async (db) => {
 
 // ─── 元素集 CRUD ───────────────────────────────────────
 
-export const getElementSets = async (params) => {
-  const db = await initDatabase()
-  await ensureTables(db)
-  return queryPage({ db, table: 'es_sets', keywordCols: ['title', 'description'], ...params })
-}
+const crud = createEntityCrud({
+  table: 'es_sets',
+  entityName: '元素集',
+  ensureTable: ensureTables,
+  keywordCols: ['title', 'description']
+})
+
+export const getElementSets = crud.list
+export const deleteElementSet = crud.del
+export const getTrashElementSets = crud.trash
+export const restoreElementSet = crud.restore
 
 export const getElementSet = async (id) => {
-  const db = await initDatabase()
-  await ensureTables(db)
-  const set = await db.get('SELECT * FROM es_sets WHERE id = ?', id)
-  if (!set) return null
-  const elements = await db.all('SELECT * FROM es_elements WHERE set_id = ? ORDER BY sort_order ASC', id)
-  for (const el of elements) {
-    el.selectors = await db.all('SELECT * FROM es_selectors WHERE element_id = ? ORDER BY sort_order ASC', el.id)
-  }
-  set.elements = elements
-  return set
+  return withDb('es_sets', ensureTables, async (db) => {
+    const set = await db.get('SELECT * FROM es_sets WHERE id = ?', id)
+    if (!set) return null
+    const elements = await db.all('SELECT * FROM es_elements WHERE set_id = ? ORDER BY sort_order ASC', id)
+    // selectors 单次批量取回（消除每元素 N+1 查询）
+    if (elements.length > 0) {
+      const selectors = await db.all(
+        `SELECT * FROM es_selectors WHERE element_id IN (${elements.map(() => '?').join(',')}) ORDER BY sort_order ASC`,
+        elements.map((el) => el.id)
+      )
+      const byElement = new Map()
+      for (const s of selectors) {
+        if (!byElement.has(s.element_id)) byElement.set(s.element_id, [])
+        byElement.get(s.element_id).push(s)
+      }
+      for (const el of elements) el.selectors = byElement.get(el.id) || []
+    }
+    set.elements = elements
+    return set
+  })
 }
 
 export const createElementSet = async ({ title, description, category_id, elements = [] }) => {
-  const db = await initDatabase()
-  await ensureTables(db)
-  const id = uuidv4().replace(/-/g, '_')
+  return withDb('es_sets', ensureTables, async (db) => {
+    const id = uuidv4().replace(/-/g, '_')
 
-  await db.run(
-    `INSERT INTO es_sets (id, category_id, title, description) VALUES (?, ?, ?, ?)`,
-    [id, category_id || '', title, description || '']
-  )
+    await db.run(
+      `INSERT INTO es_sets (id, category_id, title, description) VALUES (?, ?, ?, ?)`,
+      [id, category_id || '', title, description || '']
+    )
 
-  for (let i = 0; i < elements.length; i++) {
-    await _insertElement(db, id, elements[i], i)
-  }
+    for (let i = 0; i < elements.length; i++) {
+      await _insertElement(db, id, elements[i], i)
+    }
 
-  return id
+    return id
+  })
 }
 
 export const updateElementSet = async ({ id, title, description, category_id, elements }) => {
-  const db = await initDatabase()
-  await ensureTables(db)
-  const existing = await db.get('SELECT * FROM es_sets WHERE id = ?', id)
-  if (!existing) throw new Error('元素集不存在')
+  return withDb('es_sets', ensureTables, async (db) => {
+    const existing = await db.get('SELECT * FROM es_sets WHERE id = ?', id)
+    if (!existing) throw new Error('元素集不存在')
 
-  await db.run(
-    `UPDATE es_sets SET title = ?, description = ?, category_id = ?, updated_at = datetime('now','localtime') WHERE id = ?`,
-    [
-      title !== undefined ? title : existing.title,
-      description !== undefined ? description : existing.description,
-      category_id !== undefined ? category_id : existing.category_id,
-      id
-    ]
-  )
+    await db.run(
+      `UPDATE es_sets SET title = ?, description = ?, category_id = ?, updated_at = datetime('now','localtime') WHERE id = ?`,
+      [
+        title !== undefined ? title : existing.title,
+        description !== undefined ? description : existing.description,
+        category_id !== undefined ? category_id : existing.category_id,
+        id
+      ]
+    )
 
-  if (elements !== undefined) {
+    if (elements !== undefined) {
+      const oldElements = await db.all('SELECT id FROM es_elements WHERE set_id = ?', id)
+      for (const el of oldElements) {
+        await db.run('DELETE FROM es_selectors WHERE element_id = ?', el.id)
+      }
+      await db.run('DELETE FROM es_elements WHERE set_id = ?', id)
+
+      for (let i = 0; i < elements.length; i++) {
+        await _insertElement(db, id, elements[i], i)
+      }
+    }
+  })
+}
+
+export const permanentDeleteElementSet = async (id) => {
+  return withDb('es_sets', ensureTables, async (db) => {
     const oldElements = await db.all('SELECT id FROM es_elements WHERE set_id = ?', id)
     for (const el of oldElements) {
       await db.run('DELETE FROM es_selectors WHERE element_id = ?', el.id)
     }
     await db.run('DELETE FROM es_elements WHERE set_id = ?', id)
-
-    for (let i = 0; i < elements.length; i++) {
-      await _insertElement(db, id, elements[i], i)
-    }
-  }
-}
-
-export const deleteElementSet = async (id) => {
-  const db = await initDatabase()
-  await ensureTables(db)
-  await softDelete(db, 'es_sets', id)
-}
-
-// 回收站
-export const getTrashElementSets = async () => {
-  const db = await initDatabase()
-  await ensureTables(db)
-  return trashList(db, 'es_sets')
-}
-
-export const restoreElementSet = async (id) => {
-  const db = await initDatabase()
-  await ensureTables(db)
-  await restoreRow(db, 'es_sets', id)
-}
-
-export const permanentDeleteElementSet = async (id) => {
-  const db = await initDatabase()
-  await ensureTables(db)
-  const oldElements = await db.all('SELECT id FROM es_elements WHERE set_id = ?', id)
-  for (const el of oldElements) {
-    await db.run('DELETE FROM es_selectors WHERE element_id = ?', el.id)
-  }
-  await db.run('DELETE FROM es_elements WHERE set_id = ?', id)
-  await db.run('DELETE FROM es_sets WHERE id = ?', id)
+    await db.run('DELETE FROM es_sets WHERE id = ?', id)
+  })
 }
 
 // ─── 内部工具 ──────────────────────────────────────────

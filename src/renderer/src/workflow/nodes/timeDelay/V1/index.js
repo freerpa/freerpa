@@ -1,7 +1,5 @@
 /**
  * @file: 延时节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { RiRestTimeLine } from '@remixicon/vue'
 

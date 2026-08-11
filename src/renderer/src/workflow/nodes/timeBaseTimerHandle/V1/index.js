@@ -1,7 +1,5 @@
 /**
  * @file: 计时器操作节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { RiTimerFlashLine } from "@remixicon/vue"
 

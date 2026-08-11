@@ -1,7 +1,5 @@
 /**
  * @file: 下载监听节点
- * @author: dabao
- * @date: 2024-03-29
  */
 import { IconCloudDownload } from '@arco-design/web-vue/es/icon'
 

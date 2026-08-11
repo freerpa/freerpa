@@ -1,8 +1,6 @@
 import { IO_FIELD_MAP_NAME_ID } from '../../../io-conventions.js'
 /**
  * @file: 自定义节点
- * @author: dabao
- * @date: 2024-03-29
  */
 import { IconCode } from '@arco-design/web-vue/es/icon'
 import { dynamicFields, configFields } from '../../common'

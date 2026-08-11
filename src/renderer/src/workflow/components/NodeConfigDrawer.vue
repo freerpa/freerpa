@@ -41,8 +41,6 @@ const props = defineProps({
   allConfigFieldsWithGroup: { type: Object, default: () => ({}) }
 })
 
-const emit = defineEmits(['update:nodeConfig'])
-
 // Provide context needed by FieldRenderer / ParamRefer
 provide('nodeId', props.nodeId)
 provide('nodeData', props.nodeData)
@@ -56,11 +54,8 @@ const tabGroups = computed(() => {
   }))
 })
 
-// Node config model — bound to nodeData.config
-const nodeConfig = computed({
-  get: () => props.nodeData?.config || {},
-  set: (value) => emit('update:nodeConfig', value)
-})
+// Node config model — bound to nodeData.config（写回由 FieldRenderer 的 @update:model-value → onConfigChange 完成）
+const nodeConfig = computed(() => props.nodeData?.config || {})
 
 // Write config changes back
 const onConfigChange = (value) => {

@@ -1,7 +1,5 @@
 /**
  * @file: 文件写入节点
- * @author: dabao
- * @date: 2024-03-29
  */
 import { RiFileEditLine } from "@remixicon/vue";
 

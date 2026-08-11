@@ -1,7 +1,5 @@
 /**
  * @file: 操作计数器节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { RiIncreaseDecreaseLine } from "@remixicon/vue"
 

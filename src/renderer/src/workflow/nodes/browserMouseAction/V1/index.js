@@ -1,7 +1,5 @@
 /**
  * @file: 鼠标操作节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { RiCursorLine } from "@remixicon/vue";
 

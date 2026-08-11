@@ -141,10 +141,20 @@ const handleViewWorkflow = (workflow) => {
   store.switchTab(workflow.id)
 }
 
-const getStatus = (id) => { try { return useFlowStore(id)().workflowStatus || 'idle' } catch { return 'idle' } }
+// 缓存 flowStore 实例，避免模板每渲染重复 defineStore+实例化（每卡片 4 次）
+const flowStoreCache = new Map()
+const getFlowStore = (id) => {
+  let s = flowStoreCache.get(id)
+  if (!s) {
+    try { s = useFlowStore(id)() } catch { s = null }
+    if (s) flowStoreCache.set(id, s)
+  }
+  return s
+}
+const getStatus = (id) => getFlowStore(id)?.workflowStatus || 'idle'
 const getStatusText = (id) => ({ idle: '未执行', running: '执行中', error: '执行失败', completed: '执行完成', stopping: '停止中', stopped: '已停止' }[getStatus(id)] || '未执行')
 const getStatusColor = (id) => ({ idle: 'gray', running: 'blue', error: 'red', completed: 'green', stopping: 'blue', stopped: 'gray' }[getStatus(id)] || 'gray')
-const getNoticeNum = (id) => { try { return useFlowStore(id)().noticeNum || 0 } catch { return 0 } }
+const getNoticeNum = (id) => getFlowStore(id)?.noticeNum || 0
 
 watch(searchKeyword, debounce(() => { currentPage.value = 1; fetchWorkflows(true) }, 300))
 onActivated(() => fetchWorkflows(true))

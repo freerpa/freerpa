@@ -274,9 +274,3 @@ export function importFromFile(onComplete) {
     input.click()
   })
 }
-
-export default {
-  MODULE_CONFIG,
-  exportToFile,
-  importFromFile
-}

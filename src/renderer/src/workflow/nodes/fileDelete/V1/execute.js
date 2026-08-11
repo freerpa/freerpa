@@ -1,7 +1,5 @@
 /**
  * @file: 文件删除节点执行器
- * @author: dabao
- * @date: 2024-03-29
  */
 
 import path from 'node:path'

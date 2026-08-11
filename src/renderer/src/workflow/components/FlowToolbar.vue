@@ -212,20 +212,13 @@ import IconSwitch from './custom/components/iconSwitch.vue'
 import { useFlowStore } from '../store'
 import { inject, computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useStore } from '@/store'
-import { autoLayout, getValidNodesCount } from '../utils'
+import { autoLayout } from '../utils'
 import { v4 as uuidv4 } from 'uuid'
 const workflowId = inject('workflowId')
 const flowStore = useFlowStore(workflowId)
 const { isExecuting, isSaved, saveIng, debug, noticeNum, notices, playAudio } =
   storeToRefs(flowStore)
 import { debounce } from 'lodash-es'
-const store = useStore()
-// 节点数量
-const nodeCount = computed(() => {
-  return getValidNodesCount(flowStore.vueFlowRef?.getNodes)
-})
-
 const saveWorkflow = debounce(() => {
   flowStore.saveWorkflow()
 }, 300)

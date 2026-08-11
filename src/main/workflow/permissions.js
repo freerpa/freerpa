@@ -8,7 +8,7 @@
  *   env:     { allow: string[] }            环境变量白名单（空=全部禁止）
  *   sys:     { allow: string[] }            系统信息权限（空=全部禁止）
  */
-import { get as storeGet, set as storeSet } from '../store'
+import { get as storeGet } from '../store'
 
 export const PERMISSIONS_KEY = 'permissions'
 
@@ -48,12 +48,6 @@ export const getPermissions = () => {
     p.io.roots = [storeGet('allowedRoot')]
   }
   return p
-}
-
-/** 保存全局权限 */
-export const setPermissions = (p) => {
-  storeSet(PERMISSIONS_KEY, normalize(p))
-  return getPermissions()
 }
 
 // node 兼容层（process.env）模块加载期必需的非敏感环境变量（用户配置 env 白名单时自动附加）

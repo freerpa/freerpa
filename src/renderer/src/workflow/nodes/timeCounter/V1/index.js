@@ -1,7 +1,5 @@
 /**
  * @file: 计数器节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { RiNumber0 } from '@remixicon/vue'
 export default {

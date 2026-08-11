@@ -1,7 +1,5 @@
 /**
  * @file: 触发器节点执行器
- * @author: dabao
- * @date: 2024-03-15
  */
 import { Cron } from 'croner'
 import { processParams } from '@/common'

@@ -1,7 +1,5 @@
 /**
  * @file: 计时器节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { RiTimerLine } from "@remixicon/vue"
 import { dynamicFields, configFields } from '../../common'

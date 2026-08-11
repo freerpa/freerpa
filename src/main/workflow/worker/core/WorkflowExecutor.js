@@ -18,7 +18,6 @@ class WorkflowExecutor extends EventEmitter {
 
     this.id = options.id
     this.global = options.global || {
-      opendBitBrowser: [],
       opendCdpBrowser: []
     }
     // 本地网络服务默认端口（主进程 init 注入，设置中心可配）：挂 global 供 http-server.js 创建共享服务时监听，

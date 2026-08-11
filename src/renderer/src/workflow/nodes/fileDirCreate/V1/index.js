@@ -1,7 +1,5 @@
 /**
  * @file: 文件目录创建节点
- * @author: dabao
- * @date: 2024-03-24
  */
 import { RiFolderAddLine } from '@remixicon/vue'
 

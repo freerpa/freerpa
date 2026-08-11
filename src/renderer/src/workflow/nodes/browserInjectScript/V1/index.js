@@ -1,7 +1,5 @@
 /**
  * @file: JavaScript注入节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { RiJavascriptLine } from "@remixicon/vue";
 

@@ -42,12 +42,8 @@
   import { ref } from 'vue';
   import { useRouter, useRoute } from 'vue-router';
   import {
-    IconHome,
-    IconBranch,
     IconMenuFold,
     IconMenuUnfold,
-    IconStorage,
-    IconComputer,
   } from '@arco-design/web-vue/es/icon';
   import {
     RiHome2Line,

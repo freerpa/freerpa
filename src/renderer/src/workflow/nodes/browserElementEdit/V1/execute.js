@@ -1,7 +1,5 @@
 /**
  * @file: 浏览器元素编辑节点执行器
- * @author: dabao
- * @date: 2024-03-29
  * @security: 用户输入（attrName/attrValue/content）一律经 page_eval 参数传递，禁止插值进 JS 源码（防注入）
  */
 import { page_eval } from '@pageEval'

@@ -1,7 +1,5 @@
 /**
  * @file: 数据过滤节点执行器
- * @author: dabao
- * @date: 2024-03-15
  */
 import dayjs from 'dayjs'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js'
@@ -97,28 +95,26 @@ const execute = async (node, context) => {
   const { complete } = context
   runCode = context.runCode
 
-  try {
-    const { rules = [], matchType = 'and' } = config
-    let data = inputs.data
-    if (!Array.isArray(data)) {
-      data = [data]
-    }
-    // 过滤数据
-    const result = data.filter((item) => {
-      if (matchType === 'and') {
-        return rules.every((rule) => checkValue(item, rule))
-      } else {
-        return rules.some((rule) => checkValue(item, rule))
-      }
-    })
-
-    // 完成节点
-    complete({
-      data: result
-    })
-  } catch (error) {
-    throw error
+  
+  const { rules = [], matchType = 'and' } = config
+  let data = inputs.data
+  if (!Array.isArray(data)) {
+    data = [data]
   }
+  // 过滤数据
+  const result = data.filter((item) => {
+    if (matchType === 'and') {
+      return rules.every((rule) => checkValue(item, rule))
+    } else {
+      return rules.some((rule) => checkValue(item, rule))
+    }
+  })
+
+  // 完成节点
+  complete({
+    data: result
+  })
+
 }
 
 export default execute

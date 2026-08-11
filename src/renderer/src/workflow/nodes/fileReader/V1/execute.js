@@ -1,7 +1,5 @@
 /**
  * @file: 文件读取节点执行器
- * @author: dabao
- * @date: 2024-03-29
  */
 import readline from 'readline'
 import iconv from 'iconv-lite'

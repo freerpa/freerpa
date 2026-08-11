@@ -1,7 +1,5 @@
 /**
  * @file: 子流程节点
- * @author: dabao
- * @date: 2024-03-29
  */
 import { RiFlowChart } from "@remixicon/vue";
 

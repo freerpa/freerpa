@@ -1,7 +1,5 @@
 /**
  * @file: 工作流重启节点
- * @author: dabao
- * @date: 2024-03-29
  */
 import { RiRestartLine } from '@remixicon/vue'
 export default {

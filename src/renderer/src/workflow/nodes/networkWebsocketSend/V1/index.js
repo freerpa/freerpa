@@ -1,7 +1,5 @@
 /**
  * @file: WebSocket发送消息节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { IconSend } from '@arco-design/web-vue/es/icon'
 

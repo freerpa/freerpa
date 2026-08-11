@@ -48,7 +48,6 @@ import { IconRefresh, IconInfoCircle } from '@arco-design/web-vue/es/icon'
 import { getShortcuts, getDefaults, updateShortcut, resetShortcuts, formatKeys, eventToAccelerator, onChanged } from '@/utils/shortcut'
 
 const shortcuts = ref([])
-const defaults = ref(getDefaults())
 const recording = ref(null)
 const currentKeys = ref('')
 const activeCategories = ref([])

@@ -82,7 +82,6 @@
 import {
   IconQuestionCircle,
   IconCodeBlock,
-  IconDoubleRight,
   IconCommon
 } from '@arco-design/web-vue/es/icon'
 import { ref, computed, watch, provide, inject } from 'vue'
@@ -115,7 +114,7 @@ const props = defineProps({
 const isExecuting = inject('isExecuting')
 provide('isQuickConfig', props.isQuickConfig)
 
-const emit = defineEmits(['validate'])
+const emit = defineEmits(['validate', 'submit'])
 const formRef = ref(null)
 const formData = defineModel({
   set(value) {
@@ -171,9 +170,9 @@ const getFieldComponent = (type) => {
   return fieldComponents[type] || fieldComponents.text
 }
 
-// 构建表单验证规则
+// 构建表单验证规则（返回新数组，避免 push 污染字段定义共享的 rules）
 const buildRules = (field) => {
-  const rules = field.rules || []
+  const rules = [...(field.rules || [])]
   if (field.required) {
     rules.push({ required: true, message: field.name + '是必填项' })
   }

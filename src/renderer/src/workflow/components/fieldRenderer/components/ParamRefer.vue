@@ -11,9 +11,10 @@
     <template #content>
       <div class="param-selector">
         <div class="param-selector-header">
-          <span><icon-code-block /> 参数引用（文本框内 {{ isMacOS ? 'Opt' : 'Alt' }} 键唤起）</span>
+          <template v-if="headerText">{{ headerText }}</template>
+          <template v-else><icon-code-block /> 参数引用（文本框内 {{ isMacOS ? 'Opt' : 'Alt' }} 键唤起）</template>
         </div>
-        <div class="target">
+        <div class="target" v-if="props.field">
           <span>
             <span>字段：</span>
             <span>
@@ -138,12 +139,11 @@ import { inject, computed, ref } from 'vue'
 import {
   IconCommon,
   IconSearch,
-  IconQuestionCircle,
   IconCodeBlock,
   IconExclamationPolygonFill
 } from '@arco-design/web-vue/es/icon'
 import { useFlowStore } from '../../../store'
-import { getNodeParamsTreeData, getTypeColor, getGlobleNodes } from '../../../utils'
+import { getNodeParamsTreeData, getTypeColor, getGlobleNodes, typeColor } from '../../../utils'
 import ModalPopover from '../../ModalPopover.vue'
 import fieldRenders from '../index.js'
 
@@ -151,8 +151,9 @@ import { useStore } from '@/store'
 const { isMacOS } = useStore()
 const workflowId = inject('workflowId')
 const thisNodeId = inject('nodeId')
-const isPreview = inject('isPreview')
-const isExecuting = inject('isExecuting')
+// 无 field 场景（如 workflowStart 薄壳）未 provide isPreview/isExecuting，容错为 false
+const isPreview = inject('isPreview') || ref(false)
+const isExecuting = inject('isExecuting') || ref(false)
 const flowStore = useFlowStore(workflowId)
 const visible = ref(false)
 
@@ -163,7 +164,8 @@ const props = defineProps({
   },
   field: {
     type: Object,
-    required: true
+    required: false,
+    default: null
   },
   showTrigger: {
     type: Boolean,
@@ -172,16 +174,35 @@ const props = defineProps({
   allTypes: {
     type: Boolean,
     default: false
+  },
+  // 选择输出格式：'text'（写入 {{fullName}} 文本，字段引用）| 'object'（输出节点对象，workflowStart 透传参数）
+  outputFormat: {
+    type: String,
+    default: 'text'
+  },
+  // 数据源范围：'default'（同级 + 全局节点，按允许类型过滤）| 'parentLevel'（父级同级节点，全类型，workflowStart 子流程场景）
+  dataSourceMode: {
+    type: String,
+    default: 'default'
+  },
+  // 自定义标题文案（缺省用字段引用提示）
+  headerText: {
+    type: String,
+    default: ''
   }
 })
 
-const nodeData = flowStore.vueFlowRef.getNodes.find((node) => node.id === thisNodeId).data
+const nodeData = computed(() => {
+  const node = flowStore.vueFlowRef.getNodes.find((n) => n.id === thisNodeId)
+  return node?.data || {}
+})
 // 不可引用参数节点类型
 const noRefNodes = ['workflowStart', 'workflowEnd']
 const isAvailable = computed(() => {
+  if (!props.field) return true
   return (
     props.field?.paramRef !== false &&
-    !noRefNodes.includes(nodeData.type) &&
+    !noRefNodes.includes(nodeData.value.type) &&
     !isPreview.value &&
     !isExecuting.value
   )
@@ -206,10 +227,23 @@ const allowTypes = computed(() => {
 const nodeParamsData = computed(() => {
   const allNodes = flowStore.vueFlowRef.getNodes
   const thisNode = allNodes.find((node) => node.id === thisNodeId)
+  if (props.dataSourceMode === 'parentLevel') {
+    // 子流程场景：可引用父级同级节点的输出（workflowStart 透传参数）
+    const thisParentNode = allNodes.find(
+      (node) => node.id === thisNode?.parentNode?.replace('-subFlow', '')
+    )
+    if (!thisParentNode) return []
+    return getNodeParamsTreeData(
+      allNodes.filter(
+        (node) => node.parentNode === thisParentNode.parentNode && node.id !== thisParentNode.id
+      ),
+      Object.keys(typeColor)
+    )
+  }
   const globalNodes = getGlobleNodes(allNodes)
   const sameLevelNodes = allNodes.filter(
     (node) =>
-      node.parentNode === thisNode.parentNode && node.id !== thisNodeId && !node.data?.global
+      node.parentNode === thisNode?.parentNode && node.id !== thisNodeId && !node.data?.global
   )
   //可引用参数节点为同级且不是当前节点
   return getNodeParamsTreeData(
@@ -249,8 +283,12 @@ const handleVisibleChange = () => {
 // 选择参数时插入
 function handleSelect(selectedKeys, { selectedNodes }) {
   if (selectedNodes[0].children) return
-  const paramText = `\{{${selectedNodes[0].fullName}}}`
-  emits('onSelect', paramText)
+  if (props.outputFormat === 'object') {
+    emits('onSelect', selectedNodes[0])
+  } else {
+    const paramText = `{{${selectedNodes[0].fullName}}}`
+    emits('onSelect', paramText)
+  }
   visible.value = false
 }
 

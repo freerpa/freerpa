@@ -7,10 +7,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     maximize: (forceMax = false) => ipcRenderer.send('window-max', forceMax),
     hide: () => ipcRenderer.send('window-hide'),
     close: () => ipcRenderer.send('window-close'),
-    onClose: (callback) => {
-      ipcRenderer.removeAllListeners('window-close')
-      ipcRenderer.on('window-close', callback)
-    },
     onRequestExit: (callback) => {
       ipcRenderer.removeAllListeners('request-exit')
       ipcRenderer.on('request-exit', callback)
@@ -212,10 +208,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     clearMessages: (workflowId, conversationId) =>
       ipcRenderer.invoke('ai:clearMessages', { workflowId, conversationId }),
     getMemories: (workflowId) => ipcRenderer.invoke('ai:getMemories', { workflowId }),
-    setMemory: (workflowId, key, value) =>
-      ipcRenderer.invoke('ai:setMemory', { workflowId, key, value }),
-    deleteMemory: (workflowId, key) =>
-      ipcRenderer.invoke('ai:deleteMemory', { workflowId, key }),
     chatStart: (payload) => ipcRenderer.invoke('ai:chatStart', payload),
     chatAbort: (requestId) => ipcRenderer.invoke('ai:chatAbort', requestId),
     onProvidersChanged: (callback) => {

@@ -1,7 +1,5 @@
 /**
  * @file: 工作表单元格写入节点执行器
- * @author: dabao
- * @date: 2024-03-15
  */
 const execute = async (node, context) => {
   /**
@@ -18,18 +16,16 @@ const execute = async (node, context) => {
     }
     return columnLetter
   }
-  try {
-    let { writeData } = node.config
-    const { worksheet } = node.inputs
-    const { complete } = context
-    writeData.forEach(({ rowIndex, columnIndex, value }) => {
-      const cell = worksheet.getCell(`${getColumnLetter(columnIndex)}${rowIndex}`);
-      cell.value = value
-    })
-    complete()
-  } catch (error) {
-    throw error
-  }
+  
+  let { writeData } = node.config
+  const { worksheet } = node.inputs
+  const { complete } = context
+  writeData.forEach(({ rowIndex, columnIndex, value }) => {
+    const cell = worksheet.getCell(`${getColumnLetter(columnIndex)}${rowIndex}`);
+    cell.value = value
+  })
+  complete()
+
 }
 
 export default execute

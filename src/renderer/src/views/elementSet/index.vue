@@ -96,11 +96,13 @@ const fetchElementSets = async (refresh = false) => {
       category_id: categoryId.value
     })
     if (result.data.length < pageSize) hasMore.value = false
-    // 预取元素数量
-    for (const es of result.data) {
-      const full = await elementSetAPI.getElementSet(es.id)
-      es.elementCount = full?.elements?.length ?? 0
-    }
+    // 预取元素数量（并行，避免 24×RTT 串行往返）
+    await Promise.all(
+      result.data.map(async (es) => {
+        const full = await elementSetAPI.getElementSet(es.id)
+        es.elementCount = full?.elements?.length ?? 0
+      })
+    )
     elementSets.value = currentPage.value === 1 ? result.data : [...elementSets.value, ...result.data]
   } catch (e) { Message.error('获取元素集列表失败') } finally { loading.value = false }
 }

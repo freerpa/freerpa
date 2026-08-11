@@ -1,7 +1,5 @@
 /**
  * @file: 时间获取节点执行器
- * @author: dabao
- * @date: 2024-03-15
  */
 import dayjs from 'dayjs'
 

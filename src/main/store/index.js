@@ -10,6 +10,10 @@ import { loadAllSettings, upsertSetting } from '../data/settings.js'
 let cache = {}
 let dbRef = null
 let pending = Promise.resolve()
+// 短窗口批量写：合并高频配置写（权限/插件目录等），同 key 只落最后一次值
+let writeMap = new Map()
+let writeTimer = null
+const WRITE_WINDOW_MS = 50
 
 /** 从数据库加载全部配置到内存缓存（启动时调用；dbRef 由本次设置） */
 export const load = async (db) => {
@@ -23,14 +27,34 @@ export const get = (key) => {
   return cache[key]
 }
 
-/** 写入配置：更新内存缓存 + 异步串行写库（队列防止并发覆盖） */
+/** 写入配置：更新内存缓存 + 异步串行写库（短窗口合并，队列防止并发覆盖） */
 export const set = (key, value) => {
   cache[key] = value
   if (dbRef) {
-    pending = pending.then(() => upsertSetting(dbRef, key, value)).catch(() => {})
+    writeMap.set(key, value)
+    if (!writeTimer) {
+      writeTimer = setTimeout(flushPending, WRITE_WINDOW_MS)
+    }
   }
   return value
 }
 
+const flushPending = () => {
+  if (writeTimer) {
+    clearTimeout(writeTimer)
+    writeTimer = null
+  }
+  const batch = writeMap
+  writeMap = new Map()
+  if (batch.size === 0) return
+  const entries = [...batch.entries()]
+  pending = pending.then(async () => {
+    for (const [k, v] of entries) await upsertSetting(dbRef, k, v)
+  }).catch(() => {})
+}
+
 /** 等待所有未落库写入完成（退出/重启前调用） */
-export const flush = () => pending
+export const flush = () => {
+  if (writeTimer) flushPending()
+  return pending
+}

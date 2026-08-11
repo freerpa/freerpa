@@ -1,7 +1,5 @@
 /**
  * @file: 浏览器元素编辑节点执行器
- * @author: dabao
- * @date: 2024-03-29
  */
 const execute = async (node, context) => {
   const { inputs, config } = node

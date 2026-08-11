@@ -1,7 +1,5 @@
 /**
  * @file: 文件上传节点
- * @author: dabao
- * @date: 2024-03-29
  */
 import { IconUpload } from '@arco-design/web-vue/es/icon'
 

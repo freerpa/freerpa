@@ -1,7 +1,5 @@
 /**
  * @file: 文件目录遍历节点
- * @author: FreeRPA
- * @date: 2025-07-30
  */
 import { RiFolderLine } from "@remixicon/vue";
 

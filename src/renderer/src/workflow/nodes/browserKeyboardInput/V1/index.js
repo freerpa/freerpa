@@ -1,7 +1,5 @@
 /**
  * @file: 键盘操作节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { RiKeyboardLine } from "@remixicon/vue";
 

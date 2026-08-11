@@ -47,9 +47,7 @@ import {
   saveMessage,
   deleteMessage,
   clearMessages,
-  getMemories,
-  setMemory,
-  deleteMemory
+  getMemories
 } from './messages.js'
 
 const activeRequests = new Map()
@@ -106,10 +104,6 @@ export const register = () => {
 
   // ---- 轻量记忆 ----
   ipcMain.handle('ai:getMemories', (_e, { workflowId }) => getMemories(workflowId))
-  ipcMain.handle('ai:setMemory', (_e, { workflowId, key, value }) =>
-    setMemory(workflowId, key, value)
-  )
-  ipcMain.handle('ai:deleteMemory', (_e, { workflowId, key }) => deleteMemory(workflowId, key))
 
   // ---- 流式对话 ----
   ipcMain.handle('ai:chatStart', async (event, payload) => {

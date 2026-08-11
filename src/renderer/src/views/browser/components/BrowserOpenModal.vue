@@ -153,7 +153,6 @@ import {
   IconCheck,
   IconLoading,
   IconClockCircle,
-  IconCheckCircleFill,
   IconCloseCircleFill
 } from '@arco-design/web-vue/es/icon'
 import { API_CONFIG } from '@/api/config'
@@ -185,40 +184,7 @@ const proxyResult = ref(null),
   proxyError = ref('')
 const openError = ref('')
 
-// 国家代码 → 语言映射
-const countryLang = {
-  CN: 'zh-CN',
-  TW: 'zh-TW',
-  HK: 'zh-HK',
-  US: 'en-US',
-  GB: 'en-GB',
-  CA: 'en-CA',
-  AU: 'en-AU',
-  JP: 'ja-JP',
-  KR: 'ko-KR',
-  DE: 'de-DE',
-  FR: 'fr-FR',
-  ES: 'es-ES',
-  MX: 'es-MX',
-  IT: 'it-IT',
-  RU: 'ru-RU',
-  BR: 'pt-BR',
-  PT: 'pt-PT',
-  NL: 'nl-NL',
-  SE: 'sv-SE',
-  NO: 'nb-NO',
-  DK: 'da-DK',
-  FI: 'fi-FI',
-  PL: 'pl-PL',
-  TR: 'tr-TR',
-  IN: 'hi-IN',
-  SA: 'ar-SA',
-  AE: 'ar-AE',
-  IL: 'he-IL',
-  TH: 'th-TH',
-  VN: 'vi-VN',
-  ID: 'id-ID'
-}
+import { countryLang } from '@/utils/geoLang'
 
 const geoInfo = computed(() => {
   if (!proxyResult.value) return '-'

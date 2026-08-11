@@ -68,16 +68,6 @@
       type: String,
       required: true,
     },
-    /** FlowCanvas 组件 ref（提供 addNode / handleNodeDelete） */
-    workflowRef: {
-      type: Object,
-      required: true,
-    },
-    /** VueFlow 实例 ref（storeToRefs(flowStore) 解构而来） */
-    vueFlowRef: {
-      type: Object,
-      required: true,
-    },
     /** 面板显隐（index.vue 控制）：打开时刷新模型下拉，确保配置模型后立即可选 */
     visible: {
       type: Boolean,
@@ -85,7 +75,7 @@
     },
   });
 
-  const emit = defineEmits(['close', 'workflow']);
+  const emit = defineEmits(['close']);
 
   const flowStore = useFlowStore(props.workflowId);
   const senderRef = ref(null);
@@ -187,21 +177,32 @@
   // prompt_tokens_details.cached_tokens 归一化于此），raw 顶层 prompt_cache_{hit,miss}_tokens 兜底；
   // 上下文长度 = 最后一条 assistant 调用提交的 inputTokens；轮数 = 用户消息条数
   // （usage 随消息持久化在 usage 列，跨会话/重启恢复）
-  const sessionTokens = computed(() => allMessages.value.reduce((sum, m) => sum + (m._usage?.totalTokens || 0), 0));
+  // 单次遍历产出全部统计，避免 5 个 computed 各自全量遍历 allMessages
   const cacheOf = (m) => m._usage?.inputTokenDetails?.cacheReadTokens ?? m._usage?.raw?.prompt_cache_hit_tokens ?? 0;
   const missOf = (m) => m._usage?.inputTokenDetails?.noCacheTokens ?? m._usage?.raw?.prompt_cache_miss_tokens ?? 0;
-  const cacheHitTokens = computed(() => allMessages.value.reduce((sum, m) => sum + cacheOf(m), 0));
-  const cacheMissTokens = computed(() => allMessages.value.reduce((sum, m) => sum + missOf(m), 0));
+  const stats = computed(() => {
+    let sessionTokens = 0;
+    let cacheHit = 0;
+    let cacheMiss = 0;
+    let lastInput = 0;
+    let userTurns = 0;
+    for (const m of allMessages.value) {
+      sessionTokens += m._usage?.totalTokens || 0;
+      cacheHit += cacheOf(m);
+      cacheMiss += missOf(m);
+      if (m.role === 'assistant' && m._usage?.inputTokens) lastInput = m._usage.inputTokens;
+      if (m.role === 'user') userTurns++;
+    }
+    return { sessionTokens, cacheHit, cacheMiss, lastInput, userTurns };
+  });
+  const sessionTokens = computed(() => stats.value.sessionTokens);
   const cacheHitRate = computed(() => {
-    const denom = cacheHitTokens.value + cacheMissTokens.value;
+    const denom = stats.value.cacheHit + stats.value.cacheMiss;
     if (denom <= 0) return '—';
-    return `${((cacheHitTokens.value / denom) * 100).toFixed(2)}%`;
+    return `${((stats.value.cacheHit / denom) * 100).toFixed(2)}%`;
   });
-  const lastInputTokens = computed(() => {
-    const list = allMessages.value.filter((m) => m.role === 'assistant' && m._usage?.inputTokens);
-    return list.length > 0 ? list[list.length - 1]._usage.inputTokens : 0;
-  });
-  const userTurnCount = computed(() => allMessages.value.filter((m) => m.role === 'user').length);
+  const lastInputTokens = computed(() => stats.value.lastInput);
+  const userTurnCount = computed(() => stats.value.userTurns);
   const fmtTokens = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
   const handleNewChat = () => {
     newConversation();

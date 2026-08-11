@@ -156,8 +156,9 @@
 <script setup>
 import { ref, nextTick } from 'vue'
 import { Message } from '@arco-design/web-vue'
-import { IconPlus, IconDelete, IconExclamationCircle } from '@arco-design/web-vue/es/icon'
+import { IconPlus, IconDelete } from '@arco-design/web-vue/es/icon'
 import CategorySelect from '@/components/CategorySelect.vue'
+import { deepClone } from '@/workflow/utils'
 import pinyin from 'pinyin'
 // 自动生成字段名
 const autoFieldName = (record) => {
@@ -229,7 +230,6 @@ const addField = (index = modelForm.value.fields.length) => {
     name: '',
     type: 'string',
     description: '',
-    type: 'string',
     required: false,
     unique: false
   })
@@ -277,11 +277,6 @@ const validateFields = async (value, callback) => {
   }
 
   callback()
-}
-
-// 深拷贝
-const deepClone = (obj) => {
-  return JSON.parse(JSON.stringify(obj))
 }
 
 // 处理提交前验证

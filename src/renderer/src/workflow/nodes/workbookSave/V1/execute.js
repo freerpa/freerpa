@@ -1,7 +1,5 @@
 /**
  * @file: 工作薄保存节点执行器
- * @author: dabao
- * @date: 2024-03-15
  */
 import path from 'path'
 const execute = async (node, context) => {

@@ -7,7 +7,7 @@ import { ipcMain } from 'electron'
 import { checkKernelExists, downloadKernel, fetchKernelList, resolveKernelVersion } from './kernel'
 import { API_CONFIG } from '@/api/config'
 import { launchEnvBrowser } from './launch.js'
-import { registerBrowser, killBrowserProcess, isBrowserOpen, getAllBrowserStatus, getBrowserInstance, incrementRef, decrementRef } from './manager'
+import { getAllBrowserStatus, getBrowserInstance, incrementRef, decrementRef } from './manager'
 
 const safeMsg = (e, fallback) => (e && typeof e.message === 'string') ? e.message : fallback
 
@@ -20,7 +20,11 @@ export const register = () => {
   })
 
   ipcMain.handle('env:getMajorVersionList', async () => {
-    try { return await (await fetch(`${API_CONFIG.BASE_URL}/kernel/majorList`)).json() }
+    try {
+      // AbortSignal.timeout 防止远端无响应时请求悬挂
+      const res = await fetch(`${API_CONFIG.BASE_URL}/kernel/majorList`, { signal: AbortSignal.timeout(10000) })
+      return await res.json()
+    }
     catch (e) { return { code: 400, message: safeMsg(e, '获取失败') } }
   })
 
@@ -51,11 +55,9 @@ export const register = () => {
   ipcMain.handle('env:openBrowser', async (event, { envId, kernel, proxy, fingerprint: existingFingerprint }) => {
     try {
       // 如果已打开则复用（工作流可能已启动同一环境）
-      if (isBrowserOpen(envId)) {
-        const existing = getBrowserInstance(envId)
-        if (existing) {
-          return { code: 200, message: '浏览器已打开（复用）', data: { instanceId: existing.instanceId, port: existing.port, wsEndpoint: existing.wsEndpoint } }
-        }
+      const existing = getBrowserInstance(envId)
+      if (existing) {
+        return { code: 200, message: '浏览器已打开（复用）', data: { instanceId: existing.instanceId, port: existing.port, wsEndpoint: existing.wsEndpoint } }
       }
 
       const fingerprint = existingFingerprint?.seed ? existingFingerprint

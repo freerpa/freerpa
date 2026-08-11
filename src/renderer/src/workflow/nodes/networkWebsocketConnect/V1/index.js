@@ -1,7 +1,5 @@
 /**
  * @file: WebSocket连接节点
- * @author: dabao
- * @date: 2024-03-29
  */
 import { IconThunderbolt } from '@arco-design/web-vue/es/icon'
 

@@ -1,7 +1,5 @@
 /**
  * @file: 数据删除节点
- * @author: dabao
- * @date: 2024-03-29
  */
 import { IconDelete } from '@arco-design/web-vue/es/icon'
 

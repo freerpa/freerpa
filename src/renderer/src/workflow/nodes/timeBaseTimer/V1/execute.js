@@ -1,68 +1,64 @@
 /**
  * @file: 计数器节点执行器
- * @author: dabao
- * @date: 2024-03-15
  */
 
 const execute = async (node, context) => {
   const { store, config } = node
   const { complete, setOutputs, sendNodeEvent, onBeforeDestroy } = context
   const { timerSecond } = config
-  try {
-    if (!store.second) {
+  
+  if (!store.second) {
+    store.second = 0
+  }
+  store.timer = null
+  const timer = {
+    clear: function () {
       store.second = 0
-    }
-    store.timer = null
-    const timer = {
-      clear: function () {
-        store.second = 0
+      setOutputs({
+        second: store.second,
+        remainingSecond: timerSecond
+      })
+      sendNodeEvent({
+        type: 'clear',
+        data: store.second
+      })
+    },
+    start: function () {
+      store.timer = setInterval(() => {
+        store.second++
+        const remainingSecond = timerSecond - store.second
         setOutputs({
           second: store.second,
-          remainingSecond: timerSecond
+          remainingSecond: remainingSecond
         })
-        sendNodeEvent({
-          type: 'clear',
-          data: store.second
-        })
-      },
-      start: function () {
-        store.timer = setInterval(() => {
-          store.second++
-          const remainingSecond = timerSecond - store.second
-          setOutputs({
-            second: store.second,
-            remainingSecond: remainingSecond
-          })
-          if (remainingSecond <= 0) {
-            complete()
-            timer.stop()
-          }
-        }, 1000)
-        sendNodeEvent({
-          type: 'start',
-          data: store.second
-        })
-      },
-      stop: function () {
-        clearInterval(store.timer)
-        sendNodeEvent({
-          type: 'stop',
-          data: store.second
-        })
-      }
+        if (remainingSecond <= 0) {
+          complete()
+          timer.stop()
+        }
+      }, 1000)
+      sendNodeEvent({
+        type: 'start',
+        data: store.second
+      })
+    },
+    stop: function () {
+      clearInterval(store.timer)
+      sendNodeEvent({
+        type: 'stop',
+        data: store.second
+      })
     }
-    onBeforeDestroy(() => {
-      timer.stop()
-    })
-    timer.start()
-    setOutputs({
-      timer: timer,
-      second: store.second,
-      remainingSecond: timerSecond
-    })
-  } catch (error) {
-    throw error
   }
+  onBeforeDestroy(() => {
+    timer.stop()
+  })
+  timer.start()
+  setOutputs({
+    timer: timer,
+    second: store.second,
+    remainingSecond: timerSecond
+  })
+
 }
 
 export default execute

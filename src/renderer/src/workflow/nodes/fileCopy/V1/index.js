@@ -1,7 +1,5 @@
 /**
  * @file: 复制文件节点
- * @author: dabao
- * @date: 2024-03-29
  */
 import { IconCopy } from '@arco-design/web-vue/es/icon'
 

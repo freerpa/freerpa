@@ -1,7 +1,5 @@
 /**
  * @file: 内容获取节点
- * @author: dabao
- * @date: 2024-03-19
  */
 import { RiArticleLine } from "@remixicon/vue";
 

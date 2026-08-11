@@ -1,7 +1,5 @@
 /**
  * @file: 网络监听节点
- * @author: dabao
- * @date: 2024-03-15
  */
 import { IconWifi } from '@arco-design/web-vue/es/icon'
 const mode = {
