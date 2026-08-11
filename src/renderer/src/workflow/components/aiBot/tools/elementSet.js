@@ -15,7 +15,7 @@ export const createElementSetTools = () => [
     function: {
       name: 'createElementSet',
       description:
-        '创建元素集（网页元素选择器的集合）。仅当同一组元素需要被多个工作流/多次长期复用时才创建；常规少量元素不要建元素集——直接在浏览器节点 config 的 selector 字段内嵌元素对象 {name, match_condition, selectors} 即可。elements 为元素数组（可选）：每个元素含 name 与 selectors 选择器数组；selectors.type 支持 css（CSS 选择器）、xpath、text（按文本匹配，text_subtype 为 start/end/equals/contains）、position（坐标定位）；一个元素可配多个选择器并用 match_condition（any/all）决定命中条件。',
+        '创建元素集（网页元素选择器集合）。仅当同一组元素需多个工作流长期复用时创建；少量元素直接在节点 config 的 selector 字段内嵌 {name, match_condition, selectors}。elements 可选：每项含 name 与 selectors（type: css/xpath/text/position，text 用 text_subtype: start/end/equals/contains），match_condition: any/all 决定多选择器命中条件。',
       strict: true,
       parameters: {
         type: 'object',

@@ -128,11 +128,15 @@ export const createWorkflowTools = () => [
     type: 'function',
     function: {
       name: 'getNodeConfig',
-      description: '查询某个节点类型的配置字段说明（JSON Schema），用于构造 addNode/updateNode 的 config 参数。',
+      description:
+        '查询某个节点类型的配置说明。默认返回精简概览（类型/必填输入/输出/关键字段），快速判断节点用途；填写复杂配置时传 detail=true 获取完整字段说明（默认值/枚举/嵌套字段）。',
       strict: true,
       parameters: {
         type: 'object',
-        properties: { type: { type: 'string', description: '节点类型（如 workflowStart、httpRequest、workflowIf）' } },
+        properties: {
+          type: { type: 'string', description: '节点类型（如 workflowStart、httpRequest、workflowIf、plu_ 插件节点）' },
+          detail: { type: 'boolean', description: '是否返回完整字段说明，默认 false（精简概览）', default: false }
+        },
         required: ['type'],
         additionalProperties: false
       }
@@ -323,12 +327,36 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     return { ok: true, data: { total: list.length, nodes: list.slice(0, 200) } }
   }
 
-  executors.getNodeConfig = async ({ type }) => {
-    // 返回 AI 友好的完整元信息（config 字段说明目录/端口/版本），内置节点与插件节点均支持；
+  executors.getNodeConfig = async ({ type, detail = false } = {}) => {
+    // 两级元信息：默认返回精简概览（快速定位），detail=true 返回完整字段说明；内置节点与插件节点均支持；
     // 每个 type 只构建一次（schema.js 内缓存，取最高版本定义）
-    const meta = buildNodeMeta(type)
+    const meta = buildNodeMeta(type, { detail })
     if (!meta) {
       throw new Error(`节点类型 ${type} 不存在，请先用 listNodeTypes 查询可用类型`)
+    }
+    // 动态枚举注入：remote 字段执行节点定义的 remoteMethod 拉取真实选项（如表 ID、字段选择），
+    // 防止模型臆造不存在的值；注入发生在返回副本上，不污染 buildNodeMeta 缓存
+    const injectDynamicOptions = async (fields, metaFields) => {
+      for (const [fieldId, field] of Object.entries(fields || {})) {
+        const mf = metaFields?.[fieldId]
+        if (!mf) continue
+        if (field.remote === true && typeof field.remoteMethod === 'function') {
+          try {
+            const opts = await field.remoteMethod('')
+            if (Array.isArray(opts) && opts.length > 0) {
+              mf.options = opts
+              delete mf.dynamic // 已注入真实枚举
+            }
+          } catch {
+            // 动态拉取失败：保留 dynamic 标记，模型可先调用对应列表工具查询
+          }
+        }
+        if (field.fields) await injectDynamicOptions(field.fields, mf.fields)
+      }
+    }
+    const nodeDef = nodes[type]
+    for (const [groupKey, group] of Object.entries(nodeDef?.config || {})) {
+      await injectDynamicOptions(group.fields, meta.config?.[groupKey]?.fields)
     }
     return { ok: true, data: meta }
   }
@@ -558,7 +586,19 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     return { ok: true, data: limitText(maskWorkflow(res)) }
   }
 
-  executors.finish = async () => ({ ok: true, data: { status: 'done' } })
+  executors.finish = async () => {
+    // 完成前强制检测：工作流未通过运行检查时拒绝 finish，返回修复清单让模型修复后再完成
+    const { ok, errors } = quickValidateWorkflow(flowStore)
+    if (!ok) {
+      return {
+        ok: false,
+        error: `工作流尚未通过运行检查，请先修复以下问题再调用 finish：\n${errors
+          .map((e) => `- ${e.message}`)
+          .join('\n')}`
+      }
+    }
+    return { ok: true, data: { status: 'done' } }
+  }
 
   return executors
 }

@@ -26,7 +26,7 @@ export const createBrowserTools = () => [
     function: {
       name: 'createBrowser',
       description:
-        '创建浏览器环境（「浏览器管理」中的浏览器实例，搭建工作流需要浏览器时先创建再 openBrowser）。kernel_id 为浏览器内核大版本号（如 "130"，可选，用 getMajorVersionList 查询本机可用大版本；不填则默认）。',
+        '创建浏览器环境（浏览器管理中的实例，搭建工作流需要浏览器时先创建再 openBrowser）。kernel_id 为本机可用内核大版本（不填自动取首个可用）。',
       strict: true,
       parameters: {
         type: 'object',
@@ -47,7 +47,7 @@ export const createBrowserTools = () => [
     function: {
       name: 'openBrowser',
       description:
-        '打开一个浏览器环境（复用已存在环境或创建新会话）。kernel 为内核信息且必填：platform 为当前系统平台（windows/macos/linux，用 getKernelList 查询已安装内核的 platform/version 后原样传入），不传 kernel 会报「浏览器配置未设置内核版本」。',
+        '打开一个浏览器环境（复用已存在环境或创建新会话）。kernel 必填：{platform: windows/macos/linux, version: 完整版本号}，先用 getKernelList 查询已安装内核后原样传入。',
       strict: true,
       parameters: {
         type: 'object',
@@ -155,7 +155,23 @@ export const createBrowserExecutors = () => ({
     const { name, description = '', kernel_id = '', category_id = '', proxy_url = '' } = args || {}
     assertArgs(args, ['name'])
     const browserLocal = window.electronAPI.browserLocal
-    return toText(await browserLocal.createBrowser({ name, description, kernel_id, category_id, proxy_url }))
+    // 内核版本：缺省自动取本机可用大版本首个（防止空值走默认）；显式指定时校验有效性（防止臆造版本号）
+    let kernelId = kernel_id
+    try {
+      const raw = await env().getMajorVersionList()
+      const list = (Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : []).map(String)
+      if (list.length > 0) {
+        if (!kernelId) {
+          kernelId = list[0]
+        } else if (!list.includes(String(kernelId))) {
+          throw new Error(`内核版本 ${kernelId} 不可用，本机可用大版本：${list.join('、')}，请选择其一`)
+        }
+      }
+    } catch (error) {
+      if (error?.message?.includes('不可用')) throw error // 校验失败明确抛出（含可用列表）
+      // 拉取列表失败（IPC 异常）静默，交给主进程默认处理
+    }
+    return toText(await browserLocal.createBrowser({ name, description, kernel_id: kernelId, category_id, proxy_url }))
   },
   openBrowser: async (args) => toText(await env().openBrowser(args || {})),
   closeBrowser: async (args) => {
