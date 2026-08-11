@@ -67,7 +67,7 @@ const copyContent = async () => {
 </script>
 
 <style scoped lang="less">
-/* 外观由 aiBot.less 的 .ai-bubble-actions / .ai-bubble-action 提供（含 hover 显隐） */
+/* 外观由 ai.less 的 .ai-bubble-actions / .ai-bubble-action 提供（含 hover 显隐） */
 /* 复制成功反馈：图标对号 + 绿色 */
 .ai-bubble-action.is-copied {
   color: #10b981;

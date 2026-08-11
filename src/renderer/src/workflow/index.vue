@@ -11,14 +11,14 @@
     <FlowToolbar @toggleChat="toggleChat" />
     <div
       class="chat-container"
-      @mouseenter="aiBotFocus = true"
-      @mouseleave="aiBotFocus = false"
-      :style="{ right: aiBotVisible ? '20px' : '-740px' }"
+      @mouseenter="aiFocus = true"
+      @mouseleave="aiFocus = false"
+      :style="{ right: aiVisible ? '20px' : '-740px' }"
     >
       <chat
         :workflowId="workflowId"
-        :visible="aiBotVisible"
-        @close="aiBotVisible = false"
+        :visible="aiVisible"
+        @close="aiVisible = false"
         :workflow-ref="flowRef"
         :vue-flow-ref="vueFlowRef"
       />
@@ -30,7 +30,7 @@
 import { ref, onMounted, onUnmounted, provide, inject } from 'vue'
 import FlowCanvas from './components/FlowCanvas.vue'
 import FlowToolbar from './components/FlowToolbar.vue'
-import chat from './components/aiBot/chat.vue'
+import chat from '@/ai/chat.vue'
 import { storeToRefs } from 'pinia'
 import { useFlowStore } from './store'
 import { useStore } from '@/store'
@@ -176,7 +176,7 @@ provide('isFocus', isFocus)
 
 // 注册键盘事件监听
 const removeKeyDownEventListener = addKeyDownEventListener((e) => {
-  if (props.visible && isFocus.value && !aiBotFocus.value) {
+  if (props.visible && isFocus.value && !aiFocus.value) {
     handleKeyDown(e)
     if (!e.repeat) {
       handleKeyDownOnce(e)
@@ -186,7 +186,7 @@ const removeKeyDownEventListener = addKeyDownEventListener((e) => {
 
 // 注册键盘事件监听
 const removeKeyUpEventListener = addKeyUpEventListener((e) => {
-  if (props.visible && isFocus.value && !aiBotFocus.value) {
+  if (props.visible && isFocus.value && !aiFocus.value) {
     handleKeyUp(e)
   }
 }, props.workflowId)
@@ -203,10 +203,10 @@ onUnmounted(() => {
   }
 })
 
-const aiBotVisible = ref(false)
-const aiBotFocus = ref(false)
+const aiVisible = ref(false)
+const aiFocus = ref(false)
 const toggleChat = () => {
-  aiBotVisible.value = !aiBotVisible.value
+  aiVisible.value = !aiVisible.value
 }
 </script>
 

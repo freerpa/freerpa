@@ -55,7 +55,7 @@ export const executeToolCalls = async ({
     } catch (error) {
       // 统一为结构化失败结果（与执行器返回的 {ok:false} 一致），供模型自纠；
       // 同时打印完整堆栈到 Console——工具失败常被这里吞掉，保留堆栈才能定位根因
-      console.error(`[AIBot 工具执行失败] ${tc.toolName}`, tc.args, error)
+      console.error(`[AI 工具执行失败] ${tc.toolName}`, tc.args, error)
       output = {
         ok: false,
         error: `${error?.message || String(error)}\n  ↳ ${(error?.stack || '').split('\n').slice(1, 4).join('\n  ↳ ')}`

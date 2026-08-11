@@ -212,7 +212,7 @@
 </script>
 
 <style lang="less">
-  @import './aiBot.less';
+  @import './ai.less';
 </style>
 
 <style scoped lang="less">
