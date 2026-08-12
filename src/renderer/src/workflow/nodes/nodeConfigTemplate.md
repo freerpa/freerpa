@@ -199,7 +199,7 @@ fieldKey: {
 inputs: [
   {
     id: 'page',              // 端口唯一标识
-    name: '浏览器',           // 端口显示名称
+    name: '网页',           // 端口显示名称
     type: 'page',            // 数据类型（可字符串或数组多类型，见下）
     required: true,          // 是否必连
     description: '浏览器'     // 端口说明

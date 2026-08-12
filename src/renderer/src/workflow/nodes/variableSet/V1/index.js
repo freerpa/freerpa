@@ -1,4 +1,4 @@
-import { RiSaveLine } from '@remixicon/vue'
+import { RiLoginBoxLine } from '@remixicon/vue'
 import { IO_FIELD_MAP_NAME_ID } from '../../../io-conventions.js'
 /**
  * @file: 设置变量节点
@@ -7,7 +7,7 @@ import { IO_FIELD_MAP_NAME_ID } from '../../../io-conventions.js'
 export default {
   type: 'variableSet',
   name: '设置变量',
-  icon: RiSaveLine,
+  icon: RiLoginBoxLine,
   description: '设置全局变量',
   view: false,
   config: {

@@ -126,7 +126,6 @@
         </template>
         <template #content>
           <a-table
-            size="mini"
             style="width: 510px"
             :scroll="{ x: 500, y: 200 }"
             :columns="columns"

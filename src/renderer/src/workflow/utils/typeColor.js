@@ -10,6 +10,7 @@ export const typeColor = {
   websocket: '#40E0D0',
   tempStore: '#86909C',
   dataQuery: '#F5319D',
+  dbConnection: '#B71C1C',
   counter: '#CB272D',
   worksheet: '#207345',
   timer: '#FFD700'
@@ -22,10 +23,11 @@ export const typeText = {
   array: '数组',
   object: '对象',
   any: '任意',
-  page: '浏览器',
+  page: '网页',
   websocket: 'WebSocket',
   tempStore: '暂存器',
   dataQuery: '数据标识',
+  dbConnection: '数据库',
   counter: '计数器',
   worksheet: '工作表',
   timer: '计时器'

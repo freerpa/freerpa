@@ -10,6 +10,7 @@ import path from 'path'
 import { encodeLine, LineDecoder } from '../worker/protocol.js'
 import { sendToRenderer } from './rendererUtils.js'
 import { handleRpc, clearFlowBrowsers } from './rpc-handlers.js'
+import { dbCloseAll } from '../db-manager.js'
 import { resolveWorkflowPaths } from '../paths.js'
 
 class EngineHost extends EventEmitter {
@@ -81,6 +82,7 @@ class EngineHost extends EventEmitter {
         this.#trackFlow(msg)
         if (msg.flowId && ['completed', 'stopped', 'error'].includes(msg.data?.state)) {
           clearFlowBrowsers(msg.flowId) // 清理浏览器归属记录
+          dbCloseAll(msg.flowId).catch(() => {}) // 关闭该工作流打开的外部数据库连接
         }
         sendToRenderer(msg.channel, msg.data)
         break

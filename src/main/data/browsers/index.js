@@ -24,7 +24,7 @@ const ensureTable = async (db) => {
 
 const crud = createEntityCrud({
   table: 'browsers',
-  entityName: '浏览器',
+  entityname: '网页',
   ensureTable,
   keywordCols: ['name', 'description'],
   createCols: ['name', 'description', 'category_id', 'kernel_id', 'proxy_url', 'config'],

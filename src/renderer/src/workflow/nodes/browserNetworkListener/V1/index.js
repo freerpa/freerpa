@@ -214,7 +214,7 @@ export default {
   inputs: [
     {
       id: 'page',
-      name: '浏览器',
+      name: '网页',
       type: 'page',
       required: true
     }

@@ -12,7 +12,6 @@ export default {
         writeData: {
           id: 'writeData',
           name: '数据',
-          nolabel: true,
           description: '写入工作表的数据',
           type: 'array',
           default: '',

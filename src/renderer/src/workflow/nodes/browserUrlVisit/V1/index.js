@@ -5,7 +5,7 @@ import { IconLink } from '@arco-design/web-vue/es/icon'
 
 export default {
   type: 'browserUrlVisit',
-  name: 'URL操作',
+  name: '访问地址',
   icon: IconLink,
   description: '访问指定的URL地址或等待页面加载',
   config: {
@@ -66,7 +66,7 @@ export default {
   inputs: [
     {
       id: 'page',
-      name: '浏览器',
+      name: '网页',
       type: 'page',
       required: true,
       description: '浏览器'

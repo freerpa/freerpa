@@ -60,7 +60,7 @@ export const categories = {
   },
   globalVariable: {
     name: '全局变量',
-    nodes: resolveNodes('variableSet', 'variableGet', 'variableDelete')
+    nodes: resolveNodes('variableSet', 'variableGet')
   },
   time: {
     name: '时间计数',
@@ -81,7 +81,7 @@ export const categories = {
   },
   data: {
     name: '数据存储',
-    nodes: resolveNodes('dataSave', 'dataRead', 'dataDelete', 'dataUpdate', 'dataTemp', 'dataTempClear')
+    nodes: resolveNodes('dataSave', 'dataRead', 'dataDelete', 'dataUpdate', 'dataTemp', 'dataTempClear', 'dbConnect', 'dbExecute')
   },
   network: {
     name: '网络操作',

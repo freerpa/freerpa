@@ -11,6 +11,7 @@ import {
 import { matchTemplate } from '../../browser/selector/imageMatcher.js'
 import { sendToRendererAsync } from './rendererUtils.js'
 import { getModelData, updateModelData, deleteModelData, batchCreateModelData } from '../../data'
+import { dbConnect, dbQuery, dbClose, dbCloseAll } from '../db-manager.js'
 
 // 浏览器内核归属：flowId → Set<envId>（仅允许工作流释放自己打开的环境引用）
 const openedBrowsers = new Map()
@@ -165,6 +166,11 @@ const HANDLERS = {
   'data.updateModelData': (args) => updateModelData(...args),
   'data.deleteModelData': (args) => deleteModelData(...args),
   'data.batchCreateModelData': (args) => batchCreateModelData(...args),
+  // 外部数据库（连接经 RPC 建立于主进程，worker 无网络能力；flowId 归属校验见实现）
+  'db.connect': (args, host, flowId) => dbConnect(flowId, args[0] || {}),
+  'db.query': (args) => dbQuery(args[0], args[1]),
+  'db.close': (args) => dbClose(args[0]),
+  'db.closeAll': (args, host, flowId) => dbCloseAll(flowId || args[0]),
   sendToRendererAsync: sendToRendererAsyncRpc,
   matchTemplate: (args) => matchTemplate(args[0], args[1]),
   'engine.registerNodeEvent': registerNodeEvent,

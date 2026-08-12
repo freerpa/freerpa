@@ -1,4 +1,4 @@
-import { RiEyeLine } from '@remixicon/vue'
+import { RiLogoutBoxLine } from '@remixicon/vue'
 import { IO_FIELD_MAP_NAME_ID } from '../../../io-conventions.js'
 /**
  * @file: 读取变量节点
@@ -7,7 +7,7 @@ import { IO_FIELD_MAP_NAME_ID } from '../../../io-conventions.js'
 export default {
   type: 'variableGet',
   name: '读取变量',
-  icon: RiEyeLine,
+  icon: RiLogoutBoxLine,
   description: '读取全局变量',
   view: false,
   config: {
