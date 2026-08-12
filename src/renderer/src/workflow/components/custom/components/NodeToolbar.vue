@@ -1,18 +1,10 @@
 <template>
-  <div class="node-toolbar-box" v-if="!isExecuting && !disabled" :style="[alwaysVisible ? { display: 'block' } : {}]">
+  <div
+    class="node-toolbar-box"
+    v-if="hasTools && !isExecuting && !disabled"
+    :style="[alwaysVisible ? { display: 'block' } : {}]"
+  >
     <div class="node-toolbar">
-      <!-- Global node toggle -->
-      <a-tooltip v-if="nodeDefinition.type !== 'workflowEnd'">
-        <template #content>
-          设为全局：{{ global ? '是' : '否' }} <br />
-          全局节点：节点输出可被 <b>所有</b> 节点引用 <br />
-          普通节点：节点输出可被 <b>同级</b> 节点引用
-        </template>
-        <IconSwitch :modelValue="global" @click="$emit('action', 'global')">
-          <icon-public />
-        </IconSwitch>
-      </a-tooltip>
-
       <template v-if="nodeDefinition.type !== 'workflowStart'">
         <template v-if="nodeDefinition.type !== 'workflowEnd'">
           <a-tooltip content="重命名：双击标题可快速编辑">
@@ -34,24 +26,25 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import {
   IconEdit,
   IconCopy,
   IconDelete,
-  IconStop,
-  IconPublic
+  IconStop
 } from '@arco-design/web-vue/es/icon'
-import IconSwitch from './iconSwitch.vue'
 
 defineEmits(['action'])
 
-defineProps({
+const props = defineProps({
   nodeDefinition: { type: Object, required: true },
-  global: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
   isExecuting: { type: Boolean, default: false },
   alwaysVisible: { type: Boolean, default: false }
 })
+
+// 是否存在可显示的工具：workflowStart 无任何工具（编辑/复制/停用/删除均不展示），不渲染空工具栏
+const hasTools = computed(() => props.nodeDefinition.type !== 'workflowStart')
 </script>
 
 <style lang="less" scoped>

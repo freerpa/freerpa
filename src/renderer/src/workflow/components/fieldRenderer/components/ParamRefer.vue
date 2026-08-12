@@ -143,7 +143,7 @@ import {
   IconExclamationPolygonFill
 } from '@arco-design/web-vue/es/icon'
 import { useFlowStore } from '../../../store'
-import { getNodeParamsTreeData, getTypeColor, getGlobleNodes, typeColor } from '../../../utils'
+import { getNodeParamsTreeData, getTypeColor, typeColor } from '../../../utils'
 import ModalPopover from '../../ModalPopover.vue'
 import fieldRenders from '../index.js'
 
@@ -180,7 +180,7 @@ const props = defineProps({
     type: String,
     default: 'text'
   },
-  // 数据源范围：'default'（同级 + 全局节点，按允许类型过滤）| 'parentLevel'（父级同级节点，全类型，workflowStart 子流程场景）
+  // 数据源范围：'default'（同级节点，按允许类型过滤）| 'parentLevel'（父级同级节点，全类型，workflowStart 子流程场景）
   dataSourceMode: {
     type: String,
     default: 'default'
@@ -240,14 +240,12 @@ const nodeParamsData = computed(() => {
       Object.keys(typeColor)
     )
   }
-  const globalNodes = getGlobleNodes(allNodes)
   const sameLevelNodes = allNodes.filter(
-    (node) =>
-      node.parentNode === thisNode?.parentNode && node.id !== thisNodeId && !node.data?.global
+    (node) => node.parentNode === thisNode?.parentNode && node.id !== thisNodeId
   )
   //可引用参数节点为同级且不是当前节点
   return getNodeParamsTreeData(
-    [...globalNodes, ...sameLevelNodes],
+    sameLevelNodes,
     props.allTypes ? ['string', 'number', 'boolean', 'array', 'object'] : allowTypes.value
   )
 })

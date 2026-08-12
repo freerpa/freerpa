@@ -1,16 +1,15 @@
 /**
  * 节点引用生命周期维护 —— 保留可读名字记号（{{节点名.输出名}}）前提下，堵住「改名/删除后引用失效」：
- * - renameNodeReferences：节点改名后，全图扫描 config 中的引用并同步新名（支持 [全局]主流程-前缀形式）
+ * - renameNodeReferences：节点改名后，全图扫描 config 中的引用并同步新名
  * - countNodeReferences：统计某节点被引用次数（删除前提示）
- * 说明：普通节点引用形式为 {{节点名.输出名}}；全局节点经 getGlobleNodes 改写为 {{[全局]主流程-父链-节点名.输出名}}，
- * 故匹配允许可选的 [全局...] 前缀，只替换叶子节点名段。
+ * 说明：节点引用形式为 {{节点名.输出名}}。
  */
 
 const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-/** 匹配引用 token 中的节点名段：{{ 前缀+旧名. （前缀可为 [全局]...- 或空），lookahead 不消费 '.' */
+/** 匹配引用 token 中的节点名段：{{ 旧名. （lookahead 不消费 '.' */
 const buildRefRe = (name) =>
-  new RegExp(`\\{\\{((?:\\[[^\\}]*\\])?[^{}]*?)${escapeRegExp(name)}(?=\\.)`, 'g')
+  new RegExp(`\\{\\{([^{}]*?)${escapeRegExp(name)}(?=\\.)`, 'g')
 
 /** 递归替换对象内所有字符串中的节点名引用，返回替换次数 */
 export const renameNodeReferences = (nodes, oldName, newName) => {

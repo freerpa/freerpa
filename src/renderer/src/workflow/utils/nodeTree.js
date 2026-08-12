@@ -1,4 +1,3 @@
-import { deepClone } from './index';
 // 构建参数树数据
 export const getNodeParamsTreeData = (
   nodes,
@@ -47,32 +46,4 @@ export const getLeafPathMap = (nodes) => {
   }
   Array.isArray(tree) ? tree.forEach((node) => traverse(node)) : traverse(tree)
   return map
-}
-
-
-//获取全局节点
-export const getGlobleNodes = (nodes) => {
-  const globalNodes = deepClone(nodes.filter((n) => n.data?.global))
-  const nodesMap = new Map()
-  nodes.forEach((n) => {
-    nodesMap.set(n.id, n)
-  })
-  globalNodes.forEach((node) => {
-    let isHasParent = true
-    let nowNode = node
-    let parentNames = [nowNode.data.name]
-    while (isHasParent) {
-      if (nodesMap.get(nowNode.parentNode)) {
-        nowNode = nodesMap.get(nowNode.parentNode)
-        if (nowNode.id.includes('subFlow')) {
-          continue
-        }
-        parentNames.push(nowNode.data.name)
-      } else {
-        isHasParent = false
-      }
-    }
-    node.data.name = '[全局]主流程-' + parentNames.reverse().join('-')
-  })
-  return globalNodes
 }

@@ -78,7 +78,7 @@ export class ConnectionRules {
     // }
 
     //非同级节点不能连线（恢复历史除外）
-    if (sourceNode.parentNode !== targetNode.parentNode && !sourceNode.data?.global && !isHistorying) {
+    if (sourceNode.parentNode !== targetNode.parentNode && !isHistorying) {
       return false
     }
 

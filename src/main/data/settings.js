@@ -47,3 +47,9 @@ export const upsertSetting = async (db, key, value) => {
     [key, raw === undefined ? 'null' : raw]
   )
 }
+
+/** 删除配置 */
+export const removeSetting = async (db, key) => {
+  await ensureSettingsTable(db)
+  await db.run('DELETE FROM settings WHERE key = ?', key)
+}

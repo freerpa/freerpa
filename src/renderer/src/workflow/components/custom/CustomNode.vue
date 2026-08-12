@@ -12,7 +12,6 @@
     <NodeToolbar
       v-if="!isExecuting && !data?.deactivate"
       :node-definition="nodeDefinition"
-      :global="data?.global"
       :disabled="data?.deactivate"
       :is-executing="isExecuting"
       @action="actionSelect"

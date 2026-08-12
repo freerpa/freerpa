@@ -58,6 +58,10 @@ export const categories = {
       'workflowSubWorkflow'
     )
   },
+  globalVariable: {
+    name: '全局变量',
+    nodes: resolveNodes('variableSet', 'variableGet', 'variableDelete')
+  },
   time: {
     name: '时间计数',
     nodes: resolveNodes(
@@ -76,7 +80,7 @@ export const categories = {
     )
   },
   data: {
-    name: '本地数据',
+    name: '数据存储',
     nodes: resolveNodes('dataSave', 'dataRead', 'dataDelete', 'dataUpdate', 'dataTemp', 'dataTempClear')
   },
   network: {

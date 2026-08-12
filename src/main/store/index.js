@@ -5,7 +5,7 @@
  * 启动时序：bootstrap 在 createWindow 前 await initDatabase() → store.load(db)；
  * 退出前 await flush() 确保未落库写入完成。
  */
-import { loadAllSettings, upsertSetting } from '../data/settings.js'
+import { loadAllSettings, upsertSetting, removeSetting } from '../data/settings.js'
 
 let cache = {}
 let dbRef = null
@@ -25,6 +25,18 @@ export const load = async (db) => {
 /** 读取配置（同步，读内存缓存） */
 export const get = (key) => {
   return cache[key]
+}
+
+/** 列出全部配置（配置中心用；同步返回内存缓存快照） */
+export const list = () => ({ ...cache })
+
+/** 删除配置：更新内存缓存 + 移除未落库的批量写 + 异步串行删除 */
+export const remove = (key) => {
+  delete cache[key]
+  writeMap.delete(key)
+  if (dbRef) {
+    pending = pending.then(() => removeSetting(dbRef, key)).catch(() => {})
+  }
 }
 
 /** 写入配置：更新内存缓存 + 异步串行写库（短窗口合并，队列防止并发覆盖） */

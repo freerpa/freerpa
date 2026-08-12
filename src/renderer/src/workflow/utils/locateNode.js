@@ -1,6 +1,6 @@
 //定位节点
 export const locateNode = (vueFlowRef, nodeIds) => {
-  if (nodeIds.length > 0) {
+  if (nodeIds?.length > 0) {
     vueFlowRef.removeSelectedEdges()
     vueFlowRef.removeSelectedNodes()
     nodeIds.forEach((nodeId) => {

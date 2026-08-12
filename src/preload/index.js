@@ -181,7 +181,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 应用配置存储模块API
   store: {
     get: (key) => ipcRenderer.invoke('store:get', key),
-    set: (key, value) => ipcRenderer.invoke('store:set', key, value)
+    set: (key, value) => ipcRenderer.invoke('store:set', key, value),
+    list: () => ipcRenderer.invoke('store:list'),
+    remove: (key) => ipcRenderer.invoke('store:remove', key)
   },
   // AI 模型模块API
   ai: {

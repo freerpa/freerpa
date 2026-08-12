@@ -106,9 +106,9 @@ export function useNodeConfig(props, flowStore, isPreview) {
       }
     )
 
-    // Watch deactivate/global changes for history
+    // Watch deactivate changes for history
     watch(
-      () => [props.data.deactivate, props.data.global],
+      () => props.data.deactivate,
       () => {
         flowStore.onNodesChange([{ id: props.id, type: 'data' }])
       }

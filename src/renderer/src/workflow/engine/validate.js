@@ -7,7 +7,7 @@
  * 错误统一为 { code, nodeId?, nodeIds?, message }，code 便于定位与展示分级。
  */
 import nodes from '@nodes-path'
-import { getNodeGroupBySubFlow, getGlobleNodes, getLeafPathMap, paramReferRegex } from '../utils'
+import { getNodeGroupBySubFlow, getLeafPathMap, paramReferRegex } from '../utils'
 
 /** 构建工作流执行数据（深拷贝 config/inputs/outputs，排除 comment/subFlow 容器与停用节点）。id 为工作流 ID（engine 传入；检测场景可省略） */
 export const getFlowData = (store, id) => {
@@ -61,13 +61,9 @@ export const resolveParamRefs = (flowData, vueFlowRef) => {
   const errors = []
   // 按照子流程分组（root 为主流程）
   const NodeGroupBySubFlow = getNodeGroupBySubFlow(vueFlowRef.getNodes)
-  // 全局节点（参数可跨容器引用）
-  const globalNodes = getGlobleNodes(vueFlowRef.getNodes)
   const LeafPathMaps = new Map()
   Object.keys(NodeGroupBySubFlow).forEach((parent) => {
     const groupNodes = NodeGroupBySubFlow[parent]
-    // 合并全局参数节点
-    groupNodes.push(...globalNodes)
     LeafPathMaps.set(parent, getLeafPathMap(groupNodes))
   })
   // 替换配置中的参数路径为节点 id
@@ -145,16 +141,18 @@ export const findMissingInputs = (flowData) => {
 }
 
 /** 子流程结构检测：subFlow 节点必须存在容器（id-subFlow）与容器内起始节点，否则渲染/执行会崩溃 */
-const findSubFlowBroken = (flowData) => {
+const findSubFlowBroken = (flowData, vueFlowRef) => {
   const errors = []
   flowData.nodes
     .filter((node) => node.subFlow)
     .forEach((node) => {
-      const container = flowData.nodes.find((n) => n.id === node.id + '-subFlow')
+      // 容器节点（type='subFlow'）被 getFlowData 排除，需在画布节点上查找
+      const container = vueFlowRef.getNodes.find((n) => n.id === node.id + '-subFlow')
       if (!container) {
         errors.push({
           code: 'subflow-structure',
           nodeId: node.id,
+          nodeIds: [node.id],
           message: `节点【${node.name}】缺少子流程容器，请删除后重新添加`
         })
         return
@@ -166,6 +164,7 @@ const findSubFlowBroken = (flowData) => {
         errors.push({
           code: 'subflow-structure',
           nodeId: node.id,
+          nodeIds: [node.id],
           message: `节点【${node.name}】子流程容器缺少起始节点，请删除后重新添加`
         })
       }
@@ -218,7 +217,7 @@ export const quickValidateWorkflow = (store) => {
   }
 
   // 4. 子流程结构（容器/起始节点缺失）
-  errors.push(...findSubFlowBroken(flowData))
+  errors.push(...findSubFlowBroken(flowData, store.vueFlowRef))
 
   // 5. 参数引用解析（在副本上替换并收集错误，不修改画布数据）
   const { errors: paramRefErrors } = resolveParamRefs(flowData, store.vueFlowRef)

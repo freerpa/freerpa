@@ -23,7 +23,7 @@ export function useNodeIO(props, flowStore, nodeDefinition, allConfigFieldsWithG
         (node) => node.data.type === 'workflowStart' && node.parentNode === props.id + '-subFlow'
       )
       if (startNode) {
-        startNodeOutputs = startNode.data.outputs.filter((output) => !output.isConfig)
+        startNodeOutputs = (startNode.data.outputs || []).filter((output) => !output.isConfig)
       }
     }
 
@@ -79,7 +79,7 @@ export function useNodeIO(props, flowStore, nodeDefinition, allConfigFieldsWithG
           (node) => node.data.type === 'workflowEnd' && node.parentNode === props.id + '-subFlow'
         )
         if (endNode) {
-          endNodeInputs = endNode.data.inputs
+          endNodeInputs = endNode.data.inputs || []
         }
       }
 
