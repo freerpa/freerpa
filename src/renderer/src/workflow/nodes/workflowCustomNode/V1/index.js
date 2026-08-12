@@ -15,10 +15,10 @@ fields.type.options = [
 ]
 export default {
   // 节点名称
-  name: '自定义',
+  name: '自定义脚本',
   // 节点类型
   type: 'workflowCustomNode',
-  description: '使用 JavaScript 代码实现自定义逻辑，沙箱环境，无法传递不可序列化对象，不支持Node.js模块，可使用基于浏览器的远程es6模块调用',
+  description: '使用 JavaScript 代码实现自定义逻辑，支持node模块和远程es6模块调用',
   // 节点图标
   icon: IconCode,
   view: true,
@@ -44,9 +44,8 @@ export default {
           nolabel: true,
           default: `// 在这里编写你的javascript代码
 // 你可以使用 inputs 获取输入数据,config 获取配置数据
-// 注意：沙箱环境，无法传递不可序列化对象
 // 使用 complete() 完成节点并输出数据 如：complete({输出参数1: 输出数据1,输出参数2: 输出数据2})
-// 支持基于浏览器的远程es6模块调用 如：
+// 支持远程es6模块调用，需开放对应权限（默认开放）。如：
 const { default : md5 } = await import("https://cdn.jsdelivr.net/npm/md5@2.3.0/+esm");
 // 基本示例
 complete({

@@ -10,7 +10,6 @@ files:
   - '!electron.*{js,ts,mjs,cjs}'
   - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md,README.en.md,eslint.config.mjs,reasonix.toml,.editorconfig,.DS_Store}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml,deno.lock,yarn.lock}'
-  - '!engine.bin'
   - '!*.zip'
 asar: true
 # deno 二进制与 worker 资源经 extraResources 分发（asar 外），不打包进 asar

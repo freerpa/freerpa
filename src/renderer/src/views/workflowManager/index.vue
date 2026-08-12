@@ -34,7 +34,7 @@
                 <a-doption @click="handleEdit(workflow)"><icon-edit /> 编辑</a-doption>
                 <a-doption @click="handleCopy(workflow)"><icon-copy /> 复制</a-doption>
                 <a-doption :disabled="getStatus(workflow.id) === 'running'" @click="handleDelete(workflow, index)"><icon-delete /> 删除</a-doption>
-                <a-doption @click="handleExport(workflow)">导出</a-doption>
+                <a-doption @click="handleExport(workflow)"><icon-export /> 导出</a-doption>
               </template>
             </a-dropdown>
           </a-space>
@@ -59,7 +59,7 @@
 <script setup>
 import { ref, watch, onActivated } from 'vue'
 import { Message, Modal } from '@arco-design/web-vue'
-import { IconEdit, IconDelete, IconMoreVertical, IconCopy } from '@arco-design/web-vue/es/icon'
+import { IconEdit, IconDelete, IconMoreVertical, IconCopy, IconExport } from '@arco-design/web-vue/es/icon'
 import { RiFlowChart } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
 import WorkflowInfoEditor from './components/WorkflowInfoEditor.vue'

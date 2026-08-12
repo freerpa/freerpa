@@ -24,7 +24,7 @@ export default {
         },
         cdpUrl: {
           id: 'cdpUrl',
-          name: 'CDP 连接地址',
+          name: 'CDP地址',
           type: 'input',
           default: '',
           description: 'CDP连接地址',
@@ -34,7 +34,7 @@ export default {
         },
         envId: {
           id: 'envId',
-          name: '浏览器环境',
+          name: '浏览器',
           type: 'browser',
           required: true,
           description: '选择浏览器运行环境',

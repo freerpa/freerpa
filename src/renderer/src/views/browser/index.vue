@@ -32,7 +32,7 @@
             <template #content>
               <a-doption @click="handleEdit(env)"><icon-edit /> 编辑</a-doption>
               <a-doption @click="handleDelete(env, index)"><icon-delete /> 删除</a-doption>
-              <a-doption @click="handleExport(env)">导出</a-doption>
+              <a-doption @click="handleExport(env)"><icon-export /> 导出</a-doption>
             </template>
           </a-dropdown>
         </template>
@@ -61,7 +61,7 @@
 <script setup>
 import { ref, watch, onActivated, onMounted, onUnmounted, reactive } from 'vue'
 import { Message, Modal } from '@arco-design/web-vue'
-import { IconEdit, IconDelete, IconMoreVertical, IconStop } from '@arco-design/web-vue/es/icon'
+import { IconEdit, IconDelete, IconMoreVertical, IconStop, IconExport } from '@arco-design/web-vue/es/icon'
 import { RiChromeLine } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
 import BrowserEditor from './components/BrowserEditor.vue'

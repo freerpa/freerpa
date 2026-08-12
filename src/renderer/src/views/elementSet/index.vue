@@ -32,8 +32,8 @@
               <a-button style="padding: 0 0px" type="text"><icon-more-vertical /></a-button>
               <template #content>
                 <a-doption @click="handleEdit(es)"><icon-edit /> 编辑</a-doption>
-                <a-doption @click="handleExport(es)"><icon-export /> 导出</a-doption>
                 <a-doption @click="handleDelete(es, index)"><icon-delete /> 删除</a-doption>
+                <a-doption @click="handleExport(es)"><icon-export /> 导出</a-doption>
               </template>
             </a-dropdown>
           </a-space>

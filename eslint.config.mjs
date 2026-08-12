@@ -10,7 +10,6 @@ export default [
       'build/**',
       'node_modules/**',
       'resources/**',
-      'engine.bin',
       '.reasonix/**',
       '.trae/**',
       '.vscode/**'
