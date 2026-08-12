@@ -97,7 +97,7 @@ const execute = async (node, context) => {
       cleanup()
       // 解析子协议
       const protocolList = protocols ? protocols.split(',').map((p) => p.trim()) : []
-      const headersObj = headers.reduce((acc, header) => {
+      const headersObj = (headers || []).reduce((acc, header) => {
         acc[header.key] = header.value
         return acc
       }, {})
@@ -198,13 +198,8 @@ const execute = async (node, context) => {
     }
   }
 
-  // 开始连接
-  try {
-    connectWebSocket()
-  } catch (error) {
-    cleanup()
-    throw error
-  }
+  // 开始连接（connectWebSocket 内部已有 try/catch，await 使初始化错误正确传播，避免挂起）
+  await connectWebSocket()
 }
 
 export default execute

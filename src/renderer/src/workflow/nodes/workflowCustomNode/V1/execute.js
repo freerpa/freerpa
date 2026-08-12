@@ -7,11 +7,11 @@ import { processParams } from '@/common'
 
 const execute = async (node, context) => {
   const { inputs, config } = node
-  const { complete, runCode } = context
+  const { complete } = context
   
   const { code, params = [], inputs: inputParams = [] } = config
-  const myConfig = processParams(params, {}, runCode)
-  const ins = processParams(inputParams, inputs, runCode)
+  const myConfig = processParams(params, {})
+  const ins = processParams(inputParams, inputs)
 
   // 用户代码内调用 complete(outputs) 或异步返回后完成节点；错误向上传播
   await new Promise((resolve, reject) => {

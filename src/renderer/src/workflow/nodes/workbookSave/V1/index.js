@@ -3,9 +3,9 @@ import { RiSave3Line } from "@remixicon/vue";
 
 export default {
   type: 'workbookSave',
-  name: '保存工作表',
+  name: '保存工作簿',
   icon: RiSave3Line,
-  description: '保存工作表到文件',
+  description: '将 Excel 工作簿整体保存为 .xlsx 文件',
   view: false,
   config: {
     basic: {

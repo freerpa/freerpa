@@ -8,6 +8,9 @@ const execute = async (node, context) => {
   const { type } = config
 
   
+  if (!inputs.counter) {
+    throw new Error('请先连接计数器节点（timeCounter）')
+  }
   let count = 0
   if (type === 'clear') {
     count = inputs.counter.clear()

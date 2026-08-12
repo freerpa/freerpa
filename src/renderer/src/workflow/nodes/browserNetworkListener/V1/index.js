@@ -6,7 +6,7 @@ const mode = {
   id: 'mode',
   name: '模式',
   type: 'radio',
-  description: '全部满足：所有规则都必须满足；任一满足：任意一个规则满足即可（常驻监听，需 workflowEnd 或手动停止结束流程）',
+  description: '全部满足：所有规则都必须满足；任一满足：任意一个规则满足即可',
   options: [
     { label: '全部满足', value: 'all' },
     { label: '任一满足', value: 'any' }

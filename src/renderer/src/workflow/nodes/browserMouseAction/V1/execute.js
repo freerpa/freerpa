@@ -137,14 +137,16 @@ const execute = async (node, context) => {
           }
         }
         break
-      case 'wheel':
+      case 'wheel': {
         const boundingBox = await element.boundingBox();
+        if (!boundingBox) throw new Error(`未找到元素: ${name}`)
         await page.mouse.move(
           boundingBox.x + boundingBox.width / 2,
           boundingBox.y + boundingBox.height / 2,
         );
         await page.mouse.wheel({ deltaX: wheelDeltaX, deltaY: wheelDeltaY })
         break
+      }
     }
   }
 

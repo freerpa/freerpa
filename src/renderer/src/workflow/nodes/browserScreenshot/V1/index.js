@@ -102,7 +102,10 @@ export default {
           id: 'otherConfig',
           name: '其他配置',
           type: 'checkbox',
-          options: [{ label: '等待动画完成', value: 'waitForAnimations' }],
+          options: [
+            { label: '等待动画完成', value: 'waitForAnimations' },
+            { label: '隐藏滚动条', value: 'hideScrollbar' }
+          ],
           default: [],
           description: '',
           quickConfig: true

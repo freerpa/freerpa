@@ -7,7 +7,7 @@ export default {
   type: 'networkHttpRequest',
   name: 'HTTP请求',
   icon: IconWifi,
-  description: '发送HTTP请求',
+  description: '发送 HTTP 请求，支持 GET/POST/PUT/PATCH/DELETE/HEAD/OPTIONS、自定义请求头、代理、form-data/urlencoded/json/xml/plain/html 请求体',
   view: true,
   config: {
     basic: {
@@ -178,20 +178,18 @@ export default {
   },
   inputs: [],
   outputs: [
-    // 响应码
     {
-      id: 'url',
+      id: 'requestUrl',
       name: '请求地址',
       type: 'string',
-      description: '请求地址'
+      description: '最终请求的 URL 地址'
     },
     {
       id: 'response',
       name: '响应信息',
       type: 'object',
-      description: '完整的响应信息对象'
+      description: '完整响应对象（含 status/headers/data）'
     },
-    // 响应码
     {
       id: 'statusCode',
       name: '响应码',
@@ -202,7 +200,7 @@ export default {
       id: 'responseData',
       name: '响应数据',
       type: 'any',
-      description: '请求响应数据'
+      description: '响应体数据（已按 Content-Type 解析；response.data 与之相同）'
     }
   ]
 }

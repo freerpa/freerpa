@@ -7,7 +7,7 @@ export default {
   type: 'browserInjectScript',
   name: 'JS注入',
   icon: RiJavascriptLine,
-  description: '向页面注入JavaScript代码',
+  description: '向页面注入JavaScript代码，默认async执行',
   config: {
     basic: {
       name: '基础配置',
@@ -18,7 +18,7 @@ export default {
           type: 'code',
           language: 'javascript',
           quickConfig: true,
-          description: '要注入的JavaScript代码',
+          description: '要注入的JavaScript代码，无需函数包裹',
           default: '// 在这里编写JavaScript代码\n\n\n\n'
         }
       }

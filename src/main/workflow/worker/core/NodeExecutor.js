@@ -234,15 +234,6 @@ class NodeExecutor extends EventEmitter {
         }
         await this.context.engine.retryFlow()
       },
-      // 执行代码：worker 内直接执行，隔离由 deno 权限模型保证（最小权限）
-      runCode: (code, context = {}) => {
-        const sandbox = { ...context, data: JSON.stringify(context.data ?? '') }
-        const runner = new Function(
-          'sandbox',
-          `with (sandbox) { data = JSON.parse(data); return eval(${JSON.stringify(code)}) }`
-        )
-        return runner(sandbox)
-      },
       apis: {
         getBrowserDetail: (id) => bridge.rpc('getBrowserDetail', id)
       },

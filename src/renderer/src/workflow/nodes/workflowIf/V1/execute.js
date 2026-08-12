@@ -6,7 +6,6 @@ import isBetween from 'dayjs/plugin/isBetween'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
 
-let runCode = null
 // 加载dayjs插件
 dayjs.extend(isBetween)
 dayjs.extend(isSameOrBefore)
@@ -44,8 +43,17 @@ const operators = {
     return !operators.isNull(data)
   },
   // 布尔值判断
-  isTrue: (data) => data === true || !!data,
-  isFalse: (data) => data === false || !data,
+  // 布尔判断：严格匹配布尔值，字符串 'true'/'false' 归一化后判断（避免 0/' '/'' 误判）
+  isTrue: (data) => {
+    if (typeof data === 'boolean') return data === true
+    if (typeof data === 'string') return data.toLowerCase() === 'true'
+    return !!data
+  },
+  isFalse: (data) => {
+    if (typeof data === 'boolean') return data === false
+    if (typeof data === 'string') return data.toLowerCase() === 'false'
+    return !data
+  },
   // 正则匹配
   regex: (data, regex) => {
     try {
@@ -60,21 +68,21 @@ const operators = {
   before: (data, date) => {
     try {
       return dayjs(data).isBefore(dayjs(date))
-    } catch (error) {
+    } catch {
       return false
     }
   },
   after: (data, date) => {
     try {
       return dayjs(data).isAfter(dayjs(date))
-    } catch (error) {
+    } catch {
       return false
     }
   },
   between: (data, startDate, endDate) => {
     try {
       return dayjs(data).isBetween(dayjs(startDate), dayjs(endDate), null, '[]')
-    } catch (error) {
+    } catch {
       return false
     }
   },
@@ -83,28 +91,28 @@ const operators = {
   today: (data) => {
     try {
       return dayjs(data).isSame(dayjs(), 'day')
-    } catch (error) {
+    } catch {
       return false
     }
   },
   thisWeek: (data) => {
     try {
       return dayjs(data).isSame(dayjs(), 'week')
-    } catch (error) {
+    } catch {
       return false
     }
   },
   thisMonth: (data) => {
     try {
       return dayjs(data).isSame(dayjs(), 'month')
-    } catch (error) {
+    } catch {
       return false
     }
   },
   thisYear: (data) => {
     try {
       return dayjs(data).isSame(dayjs(), 'year')
-    } catch (error) {
+    } catch {
       return false
     }
   },
@@ -112,7 +120,8 @@ const operators = {
   // 自定义判断
   custom: (data, code) => {
     try {
-      return runCode(`(function(){${code}})()`, { data })
+      // deno worker 内直接执行（沙箱由 deno 权限模型保证），code 为函数体，data 为参数
+      return new Function('data', code)(data)
     } catch (error) {
       console.error('自定义判断函数执行错误:', error)
       return false
@@ -157,7 +166,6 @@ const executeRule = ({ operator, data, value, startDate, endDate, regex, customC
 const execute = async (node, context) => {
   const { config } = node
   const { complete } = context
-  runCode = context.runCode
   
   const { matchType = 'and', rules = [] } = config
 

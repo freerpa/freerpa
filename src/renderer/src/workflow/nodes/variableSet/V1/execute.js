@@ -7,7 +7,7 @@ import { processParams } from '@/common'
 
 const execute = async (node, context) => {
   const { inputs, config } = node
-  const { complete, global, runCode } = context
+  const { complete, global } = context
   const { variables = [] } = config
 
   // 初始化全局变量存储
@@ -15,9 +15,9 @@ const execute = async (node, context) => {
     global.variables = {}
   }
 
-  // processParams(variables, inputs, runCode)：
+  // processParams(variables, inputs)：
   // 对每个变量取 inputs[变量名] ?? 配置默认值，并按 type 做类型转换
-  const output = processParams(variables, inputs || {}, runCode)
+  const output = processParams(variables, inputs || {})
   Object.assign(global.variables, output)
 
   complete(output)

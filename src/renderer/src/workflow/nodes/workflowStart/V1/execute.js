@@ -6,7 +6,7 @@ import { processParams } from '@/common'
 
 const execute = async (node, context) => {
   const { inputs, config } = node
-  const { complete, runCode, engine } = context
+  const { complete, engine } = context
 
   
   const { params = [], config: configParams = [] } = config
@@ -14,7 +14,7 @@ const execute = async (node, context) => {
   if (engine.isSubFlow) {
     complete({ ...inputs })
   } else {
-    const inputsOutputs = processParams(params, inputs, runCode)
+    const inputsOutputs = processParams(params, inputs)
     const configOutputs = configParams.reduce((acc, param) => {
       acc[param.name] = param[param.type + 'Value']
       return acc

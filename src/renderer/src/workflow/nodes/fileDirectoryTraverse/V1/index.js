@@ -45,7 +45,7 @@ export default {
           name: '最大深度',
           type: 'number',
           default: 10,
-          description: '递归读取的最大深度（0表示无限制）', 
+          description: '递归读取的最大深度（0 或空=仅当前层）', 
           min: 0,
           show: '${isDeep}',
           quickConfig: true

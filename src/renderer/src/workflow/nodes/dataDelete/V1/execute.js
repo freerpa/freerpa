@@ -6,6 +6,9 @@ const execute = async (node, context) => {
   const { inputs } = node
   const { complete } = context
 
+  if (!inputs.query) {
+    throw new Error('请先连接数据读取节点（dataRead/dataSave）的「数据标识」输出')
+  }
   const { modelId, ids } = inputs.query
 
   

@@ -14,17 +14,17 @@ export default {
           id: 'browser',
           name: '打开方式',
           type: 'radio',
-          default: 'FreeRPA',
+          default: 'builtin',
           description: '支持内置浏览器和CDP连接',
           options: [
-            { label: '内置浏览器', value: 'FreeRPA' },
+            { label: '内置浏览器', value: 'builtin' },
             { label: 'CDP连接', value: 'cdp' }
           ],
           quickConfig: true
         },
         cdpUrl: {
           id: 'cdpUrl',
-          name: '地址',
+          name: 'CDP 连接地址',
           type: 'input',
           default: '',
           description: 'CDP连接地址',
@@ -34,12 +34,12 @@ export default {
         },
         envId: {
           id: 'envId',
-          name: '网页',
+          name: '浏览器环境',
           type: 'browser',
           required: true,
           description: '选择浏览器运行环境',
           quickConfig: true,
-          show: '${browser} === "FreeRPA"',
+          show: '${browser} === "builtin"',
           onChange: async (val, formData) => {
             if (!val) return
             const env = await window.electronAPI.browserLocal.getBrowser(val)
@@ -52,7 +52,7 @@ export default {
           id: 'proxyUrl',
           name: '代理地址',
           type: 'text',
-          show: '${browser} === "FreeRPA" && !!${envId}',
+          show: '${browser} === "builtin" && !!${envId}',
           description: '协议://用户名:密码@地址:端口',
           quickConfig: true
         },
@@ -75,13 +75,13 @@ export default {
             { label: '自定义参数', value: '--custom-arg' },
           ],
           description: '无头模式可以有效提升性能，但操作受限。',
-          show: "${browser} === 'FreeRPA'",
+          show: "${browser} === 'builtin'",
           quickConfig: true
         },
         extraArgs: {
           id: 'extraArgs',
           name: '启动参数',
-          show: '${launchOptions}.includes("--custom-arg") && ${browser} === "FreeRPA"',
+          show: '${launchOptions}.includes("--custom-arg") && ${browser} === "builtin"',
           type: 'array',
           default: [],
           fields: [
@@ -101,6 +101,6 @@ export default {
   },
   inputs: [],
   outputs: [
-    { id: 'page', name: '网页', type: 'page', description: '打开的网页' }
+    { id: 'page', name: '网页', type: 'page', description: '浏览器页面对象（供其他网页控制节点使用）' }
   ]
 }

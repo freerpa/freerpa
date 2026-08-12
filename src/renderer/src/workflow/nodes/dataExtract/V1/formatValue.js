@@ -1,11 +1,11 @@
 /**
  * @file: 值格式化（与 dataParser 的 formatValue.js 保持逐字一致——prod 构建要求节点目录自包含，无法跨目录共享）
- * custom 分支经 runCode 执行用户自定义格式化
+ * custom 分支在 deno worker 内直接执行用户自定义格式化（沙箱由 deno 权限模型保证）
  */
 import dayjs from 'dayjs'
 
 /** 格式化数据 */
-export const formatValue = (value, source, format, runCode) => {
+export const formatValue = (value, source, format) => {
   if (!format || !format.type || format.type === 'none') return value
 
   try {
@@ -63,7 +63,8 @@ export const formatValue = (value, source, format, runCode) => {
 
       case 'custom': {
         if (format.customFormat) {
-          return runCode(`(function(){${format.customFormat}})()`, { data: value, source })
+          // deno worker 内直接执行（沙箱由 deno 权限模型保证），customFormat 为函数体，data/source 为参数
+          return new Function('data', 'source', format.customFormat)(value, source)
         }
         return value
       }

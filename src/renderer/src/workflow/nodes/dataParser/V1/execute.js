@@ -3,9 +3,6 @@
  */
 import { formatValue } from './formatValue.js'
 
-let runCode = null
-
-// 格式化数据
 // 解析数据
 const parseData = (source, rules) => {
   // 如果规则为空,则返回源数据
@@ -16,17 +13,17 @@ const parseData = (source, rules) => {
   const result = {}
   for (const { selector, field, format } of rules) {
     try {
-      // 获取源数据数组
+      // 获取源数据（路径缺失返回 undefined 而非路径片段；中间 null/undefined 安全短路）
       let data = source
-      data = selector.split('.').reduce((obj, key) => obj.hasOwnProperty(key) ? obj[key] : key, source)
+      data = selector.split('.').reduce((obj, key) => obj?.[key], source)
 
       // 应用格式化
       if (format) {
-        data = formatValue(data, source, format, runCode)
+        data = formatValue(data, source, format)
       }
       result[field] = data
-    } catch (error) {
-      result[field] = 'error:' + error.message
+    } catch {
+      result[field] = undefined
     }
   }
   return result
@@ -35,7 +32,6 @@ const parseData = (source, rules) => {
 const execute = async (node, context) => {
   const { inputs, config } = node
   const { complete } = context
-  runCode = context.runCode
 
   
   const { dataPath, rules = [], onlyValue = false } = config

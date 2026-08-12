@@ -6,7 +6,7 @@ import dayjs from 'dayjs'
 const execute = async (node, context) => {
   const { config } = node
   const { complete } = context
-  const { timeType = 'timestamp', format = 'YYYY-MM-DD HH:mm:ss' } = config
+  const { timeType = 'format', format = 'YYYY-MM-DD HH:mm:ss' } = config
 
   try {
     const time = timeType === 'timestamp' ? dayjs().unix() : dayjs().format(format)

@@ -26,6 +26,13 @@ export default {
           ],
           default: 'mysql',
           description: '要连接的数据库类型',
+          onChange: (value, formData) => {
+            // 切换类型时按默认端口回填（仅当端口未手动填写）
+            const defaults = { mysql: 3306, postgres: 5432, mssql: 1433, sqlite: null }
+            if (!formData.value.port && defaults[value]) {
+              formData.value.port = defaults[value]
+            }
+          },
           quickConfig: true
         },
         host: {
@@ -42,9 +49,8 @@ export default {
           id: 'port',
           name: '端口',
           type: 'number',
-          default: 3306,
           show: '${dbType} !== "sqlite"',
-          description: '数据库端口，留空使用默认端口',
+          description: '数据库端口（MySQL 默认 3306，PostgreSQL 5432，SQL Server 1433），留空使用默认端口',
           quickConfig: true
         },
         database: {

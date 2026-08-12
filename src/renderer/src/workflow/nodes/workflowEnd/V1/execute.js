@@ -6,11 +6,11 @@ import { processParams } from '@/common'
 
 const execute = async (node, context) => {
   const { inputs, config } = node
-  const { stopWorkflow, runCode } = context
+  const { stopWorkflow } = context
 
   
   const { params = [] } = config
-  stopWorkflow(processParams(params, inputs, runCode))
+  await stopWorkflow(processParams(params, inputs))
 
 }
 

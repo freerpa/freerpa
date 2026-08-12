@@ -167,7 +167,8 @@ const execute = async ({ config }, context) => {
     contentType.includes('xml') ||
     contentType.includes('html')
   ) {
-    data = res.data.toString()
+    // responseType 为 arraybuffer，需用 TextDecoder 解码（ArrayBuffer.toString() 返回 "[object ArrayBuffer]"）
+    data = new TextDecoder().decode(res.data)
   } else {
     // 二进制数据
     data = res.data
@@ -182,7 +183,7 @@ const execute = async ({ config }, context) => {
 
   // 准备输出结果
   const output = {
-    url: finalUrl,
+    requestUrl: finalUrl,
     statusCode: response.status,
     response: response,
     responseData: response.data

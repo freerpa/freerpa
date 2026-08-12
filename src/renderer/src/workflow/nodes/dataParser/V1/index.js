@@ -6,9 +6,9 @@ import { format } from '../../common'
 
 export default {
   type: 'dataParser',
-  name: '映射转换',
+  name: '数据解析',
   icon: IconSwap,
-  description: '映射转换节点，根据规则映射转换数据字段',
+  description: '数据解析节点，根据规则按数据路径提取并转换数据字段，支持格式化输出',
   view: false,
   config: {
     basic: {
@@ -72,13 +72,13 @@ export default {
           fields: {
             selector: {
               id: 'selector',
-              name: '目标字段',
+              name: '数据路径',
               type: 'string',
               description: '要选取的目标字段'
             },
             field: {
               id: 'field',
-              name: '输出字段',
+              name: '输出字段名',
               type: 'string',
               description: '输出的字段名'
             },

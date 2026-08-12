@@ -41,7 +41,7 @@ SELECT * FROM table_name`,
       id: 'result',
       name: '执行结果',
       type: 'any',
-      description: 'SQL 执行结果：查询返回行数组，写操作返回影响行数'
+      description: 'SQL 执行结果对象 { rows, affectedRows }：rows 为查询行数组，affectedRows 为影响行数'
     }
   ]
 }

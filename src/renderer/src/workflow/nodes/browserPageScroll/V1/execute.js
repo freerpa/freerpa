@@ -51,7 +51,8 @@ const execute = async (node, context) => {
   }
   // 滚动到指定位置
   else if (scrollType === 'position') {
-    const { x = 0, y = 0, relative = false } = config.position || {}
+    // x/y/relative 为 config 顶层字段（见 index.js），此处直接解构
+    const { x = 0, y = 0, relative = false } = config
     await page_eval(
       page,
       `(scrollAreaElement, x, y, relative, behavior) => {

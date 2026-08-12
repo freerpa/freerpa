@@ -14,9 +14,9 @@ export { puppeteer }
 export * from 'puppeteer-core'
 
 // ═══════════ 参数处理 ═══════════
-export const processParams = (params, data, runCode) => {
+export const processParams = (params, data) => {
   const result = {}
-  if (params.length) {
+  if (params?.length) {
     params.forEach((param) => {
       let type = param.type
       if (Array.isArray(param.type)) {
@@ -26,14 +26,15 @@ export const processParams = (params, data, runCode) => {
       let value = data[param.name] ?? param[type + 'Value']
 
       // 数组/对象/任意类型：字符串值解析为对应类型
+      // deno worker 内直接执行（沙箱由 deno 权限模型保证），无需 runCode 包装
       if (
         ['array', 'object', 'any'].includes(type) &&
-        !data.hasOwnProperty(param.name) &&
+        !Object.prototype.hasOwnProperty.call(data, param.name) &&
         typeof value === 'string'
       ) {
         try {
-          value = runCode(`(function(){return ${value}})()`)
-        } catch (error) {
+          value = new Function(`return (${value})`)()
+        } catch {
           throw new Error(`参数 ${param.name} 格式错误`)
         }
       }
@@ -80,7 +81,7 @@ export const getCorrectDirectorySync = (fs, targetPath) => {
   try {
     const stats = fs.statSync(targetPath)
     return stats.isDirectory() ? targetPath : path.dirname(targetPath)
-  } catch (err) {
+  } catch {
     return targetPath
   }
 }

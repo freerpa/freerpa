@@ -62,7 +62,7 @@ const execute = async (node, context) => {
     })
 
     const doTrigger = async () => {
-      const _params = processParams(params, {}, context.runCode)
+      const _params = processParams(params, {})
       count++
       if (maxTimes !== 0 && count >= maxTimes) {
         if (cronInstance) {
@@ -76,7 +76,6 @@ const execute = async (node, context) => {
 
     if (enableSchedule) {
       const cronExpr = buildCronExpression(config)
-      console.error('Cron expression:', config, cronExpr)
 
       cronInstance = new Cron(cronExpr, {
         timezone: 'Asia/Shanghai'
@@ -90,7 +89,9 @@ const execute = async (node, context) => {
 
     onNodeEvent((event) => {
       if (event.type === 'confirm') {
-        doTrigger()
+        doTrigger().catch((error) => {
+          console.error('定时触发失败:', error)
+        })
       }
     })
   } catch (error) {

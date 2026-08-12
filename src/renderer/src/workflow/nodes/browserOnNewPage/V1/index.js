@@ -7,7 +7,7 @@ export default {
   type: 'browserOnNewPage',
   name: '监听新页面',
   icon: RiWindowLine,
-  description: '监听新页面打开事件（常驻监听，需 workflowEnd 或手动停止结束流程）',
+  description: '监听新页面打开事件',
   view: false,
   config: {
     basic: {

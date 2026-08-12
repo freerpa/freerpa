@@ -4,7 +4,7 @@
 import { IconList } from '@arco-design/web-vue/es/icon'
 
 export default {
-  type: 'dataReadV3',
+  type: 'dataRead',
   name: '数据读取',
   icon: IconList,
   description: '从数据表中读取数据',

@@ -5,9 +5,9 @@
 import { openBrowser, puppeteer } from '@/common'
 
 const execute = async (node, context) => {
-  const { browser = 'FreeRPA' } = node.config
+  const { browser = 'builtin' } = node.config
   
-  if (browser === 'FreeRPA') {
+  if (browser === 'builtin') {
     await freeRpaBrowser(node, context)
   } else if (browser === 'cdp') {
     await cdpBrowser(node, context)
@@ -32,12 +32,12 @@ const freeRpaBrowser = async (node, context) => {
   if (envId) {
     env = await apis.getBrowserDetail(envId) || env
   }
-  const headless = launchOptions.includes('--headless=new')
+  const headless = (launchOptions || []).includes('--headless=new')
   
   const { page, close: closeBrowser } = await openBrowser(env, {
     headless,
     proxy: proxyUrl,
-    extraArgs: [...extraArgs, ...launchOptions.filter(arg => arg !== '--custom-arg')]
+    extraArgs: [...(extraArgs || []), ...(launchOptions || []).filter(arg => arg !== '--custom-arg')]
   })
 
   // 注入脚本
@@ -63,12 +63,14 @@ const cdpBrowser = async (node, context) => {
   const { next, onBeforeDestroy, global } = context
   const { cdpUrl, script } = node.config
   
-  if (!cdpUrl.startsWith('ws')) throw new Error('CDP连接URL必须以ws开头')
+  if (!cdpUrl?.startsWith('ws')) throw new Error('CDP连接URL必须以ws开头')
   const browser = await puppeteer.connect({
     browserWSEndpoint: cdpUrl,
     defaultViewport: null
   })
   const pages = await browser.pages()
+  // 初始化全局已打开 CDP 页面集合（旧工作流/漏配时可能为 undefined）
+  global.opendCdpBrowser = global.opendCdpBrowser || []
   let page = null
   if (pages.length > 0 && !global.opendCdpBrowser.includes(pages[0].target()._targetId)) {
     page = pages[0]
@@ -79,7 +81,10 @@ const cdpBrowser = async (node, context) => {
   for (const p of pages) {
     try { if (!global.opendCdpBrowser.includes(p.target()._targetId)) await p.close() } catch (_) { }
   }
-  await page.evaluateOnNewDocument(script)
+  // 与内置浏览器分支一致：script 为空时跳过注入
+  if (script) {
+    await page.evaluateOnNewDocument(script)
+  }
   onBeforeDestroy(async () => {
     global.opendCdpBrowser = global.opendCdpBrowser.filter(id => id !== page.target()._targetId)
     await page.close()

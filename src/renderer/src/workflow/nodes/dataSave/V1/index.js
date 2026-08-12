@@ -59,7 +59,7 @@ export default {
       description: '用于删除和修改数据'
     },
     {
-      id: 'data',
+      id: 'savedCount',
       name: '保存条数',
       type: 'number',
       description: '本次保存成功的数据条数'

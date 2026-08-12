@@ -5,7 +5,7 @@ import { processParams, getHttpServer } from '@/common'
 
 const execute = async ({ config, inputs }, context) => {
   const { route = '/' } = config
-  const { next, onBeforeDestroy, executeSubFlow, sendNodeEvent, runCode, global } = context
+  const { next, onBeforeDestroy, executeSubFlow, sendNodeEvent, global } = context
   const handler = async (req) => {
     const reqUrl = new URL(req.url, 'http://localhost')
     const reqParams = reqUrl.searchParams.keys().reduce((prev, cur) => {
@@ -15,7 +15,7 @@ const execute = async ({ config, inputs }, context) => {
 
     const { params = [], config: configParams = [] } = config
     //输入处理（没有输入参数，直接使用默认值）
-    const inputsOutputs = processParams(params, inputs, runCode)
+    const inputsOutputs = processParams(params, inputs)
     //配置参数处理（取对应类型值）
     const configOutputs = configParams.reduce((acc, param) => {
       acc[param.name] = param[param.type + 'Value']

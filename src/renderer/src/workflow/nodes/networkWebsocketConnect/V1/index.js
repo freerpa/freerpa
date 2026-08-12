@@ -7,7 +7,7 @@ export default {
   type: 'networkWebsocketConnect',
   name: 'WebSocket连接',
   icon: IconThunderbolt,
-  description: '建立WebSocket连接（常驻监听，需 workflowEnd 或手动停止结束流程）',
+  description: '建立WebSocket连接',
   config: {
     basic: {
       name: '基础配置',
@@ -37,6 +37,7 @@ export default {
           id: 'headers',
           name: '请求头',
           type: 'array',
+          defaultValue: [],
           codeView: {
             type: 'object',
             key: 'key',
@@ -56,7 +57,7 @@ export default {
               required: true
             }
           },
-          description: 'HTTP请求头'
+          description: 'WebSocket 握手请求头'
         }
       }
     },

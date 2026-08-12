@@ -3,9 +3,9 @@ import { RiFileExcelLine } from "@remixicon/vue";
 
 export default {
   type: 'workbookCreate',
-  name: '创建工作表',
+  name: '创建工作簿',
   icon: RiFileExcelLine,
-  description: '创建一张工作表,需要调用【保存工作表】节点才能保存',
+  description: '创建 Excel 工作簿（含默认 Sheet1），需调用【保存工作簿】节点保存为 .xlsx',
   view: false,
   config: {
     basic: {

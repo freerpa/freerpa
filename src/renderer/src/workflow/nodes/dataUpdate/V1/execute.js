@@ -8,6 +8,9 @@ const execute = async (node, context) => {
   const { inputs, config } = node
   const { complete } = context
 
+  if (!inputs.query) {
+    throw new Error('请先连接数据读取节点（dataRead/dataSave）的「数据标识」输出')
+  }
   const { modelId, ids } = inputs.query
   const updateItems = config.updateItems
   const updateObj = Object.fromEntries(updateItems.map((item) => [`${item.field}`, item.value]))

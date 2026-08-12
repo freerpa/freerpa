@@ -14,7 +14,7 @@ const execute = async (node, context) => {
     inputSelector,
     text,
     delay = 100,
-    mode = 'char',
+    mode = 'paste',
     inputConfig = ['clearFirst'],
     modifiers = [],
     keys = []

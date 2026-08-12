@@ -38,6 +38,7 @@ const configFields = computed(() => {
   const startNode = flowStore.vueFlowRef.getNodes.find(
     (node) => node.parentNode === props.node.id + '-subFlow' && node.data.type === 'workflowStart'
   )
+  if (!startNode) return []
   const fields =
     startNode.data.config.config?.map(buildConfigFields) || []
   fields.forEach((field) => {

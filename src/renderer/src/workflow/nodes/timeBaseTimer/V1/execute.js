@@ -24,6 +24,10 @@ const execute = async (node, context) => {
       })
     },
     start: function () {
+      // 重复 start 前先清除旧 interval，避免计时加速/泄漏
+      if (store.timer) {
+        clearInterval(store.timer)
+      }
       store.timer = setInterval(() => {
         store.second++
         const remainingSecond = timerSecond - store.second

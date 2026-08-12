@@ -2,6 +2,7 @@
  * @file: 文件保存节点执行器
  */
 import path from 'path'
+import { Buffer } from 'node:buffer' // deno ESM 无全局 Buffer，需显式导入
 import mime from 'mime-types'
 import axios from 'axios'
 import { safeWriteFileSync, getCorrectDirectorySync } from '@/common'

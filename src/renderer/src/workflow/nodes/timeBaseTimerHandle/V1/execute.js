@@ -7,6 +7,9 @@ const execute = async (node, context) => {
   const { complete } = context
   const { type } = config
   
+  if (!inputs.timer) {
+    throw new Error('请先连接计时器节点（timeBaseTimer）')
+  }
   if (type === 'clear') {
     inputs.timer.clear()
   } else if (type === 'start') {

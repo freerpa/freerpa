@@ -11,8 +11,8 @@ const execute = async (node, context) => {
   const {
     selector,
     deduplicate = false,
-    elementState = ['visible', 'inViewport'],
-    getAll = true,
+    elementState = [],
+    getAll = false,
     getType,
     attributeName,
     styleName,
@@ -145,7 +145,18 @@ const execute = async (node, context) => {
 
       // 根据元素状态过滤元素
       if (elementState.includes('visible')) {
-        elements = elements.filter((element) => element.isVisible())
+        // isVisible() 为异步（Promise），不能直接用 filter（Promise 恒为真值）
+        const _elements = []
+        for (const element of elements) {
+          try {
+            if (await element.isVisible()) {
+              _elements.push(element)
+            }
+          } catch {
+            // 元素已分离/不可见判断失败，跳过
+          }
+        }
+        elements = _elements
       }
       if (elementState.includes('inViewport')) {
         const _elements = []

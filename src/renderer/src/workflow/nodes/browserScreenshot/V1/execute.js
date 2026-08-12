@@ -16,9 +16,10 @@ const execute = async (node, context) => {
   const needHideScrollbar = otherConfig.includes('hideScrollbar')
   const needWaitForAnimations = otherConfig.includes('waitForAnimations')
 
-  // 隐藏滚动条
-  await page.addStyleTag({
-    content: `
+  // 隐藏滚动条（可选；截图后不恢复会污染后续页面，因此按选项启用）
+  if (needHideScrollbar) {
+    await page.addStyleTag({
+      content: `
         ::-webkit-scrollbar {
           display: none !important;
         }
@@ -26,7 +27,8 @@ const execute = async (node, context) => {
           scrollbar-width: none !important;
         }
       `
-  })
+    })
+  }
 
   // 等待动画完成
   if (needWaitForAnimations) {
