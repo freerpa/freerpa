@@ -41,9 +41,18 @@ export const bootstrap = async () => {
 
   // 一次性迁移旧配置（user-preferences JSON → settings 表），随后加载配置
   await migrateLegacyPreferences()
-  await loadStore(await initDatabase())
+  const appDb = await initDatabase()
+  await loadStore(appDb)
   // 首次启动写入最安全默认权限（含预置 FREERPA-DATA 目录）；已有配置则跳过
   ensureDefaultPermissions()
+
+  // 日活/使用统计上报（静默失败，不影响主流程）
+  try {
+    const { initStats } = await import('../stats/index.js')
+    await initStats(appDb)
+  } catch {
+    // 统计上报失败不阻塞启动
+  }
 
   app.on('second-instance', () => {
     try {

@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import MainLayout from '../layout/MainLayout.vue'
-import Home from '../views/Home.vue'
+import MarketView from '../views/MarketView.vue'
 import Workflow from '../views/workflowManager/index.vue'
 import Data from '../views/data/index.vue'
 import BrowserView from '../views/browser/index.vue'
@@ -12,8 +12,9 @@ const routes = [
     redirect: '/home',
     children: [
       {
+        // 首页 = 扩展市场（嵌入远程无头模式）
         path: 'home',
-        component: Home
+        component: MarketView
       },
       {
         path: 'workflow',
