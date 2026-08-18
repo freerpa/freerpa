@@ -7,8 +7,8 @@
       @menuItemClick="handleMenuClick"
     >
       <a-menu-item key="home">
-        <template #icon><ri-home2-line /></template>
-        <span>首页</span>
+        <template #icon><ri-puzzle-line /></template>
+        <span>扩展坞</span>
       </a-menu-item>
       <a-menu-item key="workflow">
         <template #icon><ri-flow-chart /></template>
@@ -46,7 +46,7 @@
     IconMenuUnfold,
   } from '@arco-design/web-vue/es/icon';
   import {
-    RiHome2Line,
+    RiPuzzleLine,
     RiFlowChart,
     RiChromeLine,
     RiDatabase2Line,

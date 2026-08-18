@@ -169,14 +169,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   // 打开路径API
   shell: {
-    openPath: (path) => ipcRenderer.invoke('shell:openPath', path)
+    openPath: (path) => ipcRenderer.invoke('shell:openPath', path),
+    openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url)
   },
   // 获取鼠标位置API
   app: {
     getMousePos: () => ipcRenderer.invoke('app:getMousePos'),
     startGetMousePos: () => ipcRenderer.invoke('app:startGetMousePos'),
     stopGetMousePos: () => ipcRenderer.invoke('app:stopGetMousePos'),
-    getPlatform: () => ipcRenderer.invoke('app:getPlatform')
+    getPlatform: () => ipcRenderer.invoke('app:getPlatform'),
+    getVersion: () => ipcRenderer.invoke('app:getVersion')
   },
   // 应用配置存储模块API
   store: {
@@ -246,9 +248,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   system: {
     showNotification: (options, eventCallback) => {
-      ipcRenderer.invoke('system:showNotification', options)
       ipcRenderer.on('system:showNotification:on:' + options.id, (event, params) => {
         eventCallback(params)
+      })
+      // 返回 invoke 的 Promise：主进程失败（如系统不支持通知）时渲染端可 catch（见 store onNotice）
+      return ipcRenderer.invoke('system:showNotification', options).then((res) => {
+        if (res && res.ok === false) {
+          throw new Error(res.error || '系统通知发送失败')
+        }
       })
     }
   }

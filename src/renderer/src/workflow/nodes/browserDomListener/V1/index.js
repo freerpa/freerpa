@@ -70,7 +70,7 @@ export default {
   inputs: [
     {
       id: 'page',
-      name: '网页',
+      name: '浏览器',
       type: 'page',
       required: true
     }

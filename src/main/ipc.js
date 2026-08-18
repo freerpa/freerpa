@@ -5,6 +5,7 @@ import { get, flush as flushStore } from './store/index'
 import { destroyTray } from './app/tray'
 import fs from 'fs'
 import path from 'path'
+import pkg from '../../package.json'
 export const register = () => {
   // 窗口控制
   ipcMain.on('window-min', () => global.mainWindow.minimize())
@@ -75,6 +76,10 @@ export const register = () => {
     shell.openPath(path)
   })
 
+  ipcMain.handle('shell:openExternal', async (event, url) => {
+    await shell.openExternal(url)
+  })
+
   ipcMain.handle('app:getMousePos', () => {
     const pos = screen.getCursorScreenPoint()
     return pos
@@ -91,20 +96,36 @@ export const register = () => {
     return process.platform
   })
 
+  ipcMain.handle('app:getVersion', () => {
+    // 用 package.json 的 version：dev/preview（electron-vite）下 app.getVersion() 不可靠，可能为空或返回 Electron 自身版本
+    return pkg.version
+  })
+
 
 
   ipcMain.handle('system:showNotification', (event, options) => {
-    const n = new Notification(options)
-    const eventCallback = (params) => {
-      sendToRenderer('system:showNotification:on:' + options.id, params)
-    }
-    n.on('click', () => {
-      global.mainWindow.show()
-      global.mainWindow.focus()
-      eventCallback({
-        action: 'click'
+    try {
+      if (!Notification.isSupported()) {
+        console.warn('[notice] 当前系统不支持系统通知（Notification.isSupported() = false）')
+        return { ok: false, error: '系统不支持通知' }
+      }
+      const n = new Notification(options)
+      const eventCallback = (params) => {
+        sendToRenderer('system:showNotification:on:' + options.id, params)
+      }
+      n.on('click', () => {
+        global.mainWindow.show()
+        global.mainWindow.focus()
+        eventCallback({
+          action: 'click'
+        })
       })
-    })
-    n.show()
+      n.show()
+      console.log('[notice] 系统通知已发送:', options?.title)
+      return { ok: true }
+    } catch (error) {
+      console.error('[notice] 系统通知发送失败:', error?.message || error)
+      return { ok: false, error: error?.message || String(error) }
+    }
   })
 }

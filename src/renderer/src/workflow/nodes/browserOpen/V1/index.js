@@ -2,9 +2,9 @@ import { RiChromeLine } from "@remixicon/vue"
 
 export default {
   type: 'browserOpen',
-  name: '打开网页',
+  name: '打开浏览器',
   icon: RiChromeLine,
-  description: '打开一个网页',
+  description: '打开一个浏览器',
   view: false,
   config: {
     basic: {
@@ -101,6 +101,6 @@ export default {
   },
   inputs: [],
   outputs: [
-    { id: 'page', name: '网页', type: 'page', description: '浏览器页面对象（供其他网页控制节点使用）' }
+    { id: 'page', name: '浏览器', type: 'page', description: '浏览器页面对象（供其他网页控制节点使用）' }
   ]
 }

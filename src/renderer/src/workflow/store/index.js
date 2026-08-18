@@ -203,6 +203,8 @@ export const useFlowStore = (id) =>
         if (params.action === 'click') {
           // 通知点击：暂无附加动作（原仅调试输出，已移除）
         }
+      }).catch((err) => {
+        console.error('[notice] 系统通知调用失败:', err?.message || err)
       })
     }
     const notices = ref([])

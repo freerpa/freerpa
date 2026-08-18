@@ -30,9 +30,9 @@
           <template #icon><RiServerLine /></template>
           网络服务
         </a-menu-item>
-        <a-menu-item key="config">
-          <template #icon><RiSettings4Line /></template>
-          配置中心
+        <a-menu-item key="about">
+          <template #icon><RiInformationLine /></template>
+          版本更新
         </a-menu-item>
       </a-menu>
     </div>
@@ -44,7 +44,7 @@
       <ShortcutManager v-if="activeTab === 'shortcut'" />
       <ModelManager v-if="activeTab === 'ai'" />
       <NetworkServerManager v-if="activeTab === 'network'" />
-      <ConfigManager v-if="activeTab === 'config'" />
+      <AboutManager v-if="activeTab === 'about'" />
     </div>
   </div>
 </template>
@@ -54,7 +54,7 @@
 defineOptions({ name: 'SettingsCenter' })
 
 import { ref } from 'vue'
-import { RiArchiveStackLine, RiPlugLine, RiShieldKeyholeLine, RiDatabase2Line, RiCommandLine, RiRobot2Line, RiServerLine, RiSettings4Line } from '@remixicon/vue'
+import { RiArchiveStackLine, RiPlugLine, RiShieldKeyholeLine, RiDatabase2Line, RiCommandLine, RiRobot2Line, RiServerLine, RiInformationLine } from '@remixicon/vue'
 import CacheManager from './components/CacheManager.vue'
 import PluginManager from './components/PluginManager.vue'
 import PermissionManager from './components/PermissionManager.vue'
@@ -62,7 +62,7 @@ import DataManager from './components/DataManager.vue'
 import ShortcutManager from './components/ShortcutManager.vue'
 import ModelManager from './components/ModelManager.vue'
 import NetworkServerManager from './components/NetworkServerManager.vue'
-import ConfigManager from './components/ConfigManager.vue'
+import AboutManager from './components/AboutManager.vue'
 
 // initialTab：设置中心打开时指定的初始选项卡（如「去安装」→ 本地插件）
 const props = defineProps({

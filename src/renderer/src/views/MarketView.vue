@@ -6,8 +6,6 @@
       :src="marketUrl"
       class="market-frame"
       frameborder="0"
-      allow="fullscreen"
-      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
     />
     <div v-else class="market-empty">
       <ri-apps-2-line style="font-size: 48px; color: rgb(var(--gray-5))" />

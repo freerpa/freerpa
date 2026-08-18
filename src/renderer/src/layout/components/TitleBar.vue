@@ -13,7 +13,7 @@
           <div class="tab-icon">
             <icon-home />
           </div>
-          主窗口
+          首页
         </div>
         <a-divider
           v-if="Object.keys(openedTabs).length > 0"
