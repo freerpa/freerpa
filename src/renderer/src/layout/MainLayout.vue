@@ -35,17 +35,25 @@
     >
       <SettingsCenter :initial-tab="settingsTab" />
     </a-modal>
+
+    <!-- 更新弹窗（可关闭；由标题栏「有更新」按钮/检查更新触发） -->
+    <UpdateModal
+      :visible="store.updateModalVisible"
+      :info="store.updateInfo"
+      @close="store.updateModalVisible = false"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, provide, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import TitleBar from './components/TitleBar.vue'
 import SideMenu from './components/SideMenu.vue'
 import SettingsCenter from '@/views/settings/index.vue'
 import Workflow from '@/workflow/index.vue'
 import DataViewer from '@/views/data/components/DataViewer.vue'
+import UpdateModal from '@/components/UpdateModal.vue'
 import { useStore } from '@/store'
 
 const store = useStore()
@@ -67,6 +75,8 @@ const onOpenSettingsCenter = (event) => {
 }
 onMounted(() => {
   window.addEventListener('open-settings-center', onOpenSettingsCenter)
+  // 启动自动检测更新：检测到新版本时亮起标题栏「有更新」按钮，点击打开更新弹窗（可关闭）
+  store.checkUpdate()
 })
 onUnmounted(() => {
   window.removeEventListener('open-settings-center', onOpenSettingsCenter)

@@ -79,6 +79,16 @@
       </div>
     </div>
     <div class="right">
+      <!-- 有更新：标题栏「有更新」按钮，点击打开更新弹窗 -->
+      <a-button
+        v-if="store.updateVisible"
+        class="update-btn"
+        size="mini"
+        type="primary"
+        @click="store.updateModalVisible = true"
+      >
+        <i class="icon-update-dot" />有更新
+      </a-button>
       <div class="window-controls" v-if="platform === 'win32'">
         <a-button type="text" @click="minimizeWindow">
           <icon-minus />
@@ -444,6 +454,21 @@ const closeDataViewer = async (tab) => {
     gap: 12px;
     flex: 0 0 auto;
 
+  }
+
+  .update-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    -webkit-app-region: no-drag;
+    font-weight: 500;
+    .icon-update-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #fff;
+      display: inline-block;
+    }
   }
 
   .window-controls {

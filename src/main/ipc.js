@@ -6,6 +6,7 @@ import { destroyTray } from './app/tray'
 import fs from 'fs'
 import path from 'path'
 import pkg from '../../package.json'
+import { API_CONFIG } from './api/config'
 export const register = () => {
   // 窗口控制
   ipcMain.on('window-min', () => global.mainWindow.minimize())
@@ -99,6 +100,63 @@ export const register = () => {
   ipcMain.handle('app:getVersion', () => {
     // 用 package.json 的 version：dev/preview（electron-vite）下 app.getVersion() 不可靠，可能为空或返回 Electron 自身版本
     return pkg.version
+  })
+
+  /** 语义化版本比较：1.10.0 > 1.9.0（逐段数字，避免字符串比较的坑） */
+  const compareVersions = (a, b) => {
+    const pa = String(a || '').split('.').map((n) => parseInt(n, 10) || 0)
+    const pb = String(b || '').split('.').map((n) => parseInt(n, 10) || 0)
+    const len = Math.max(pa.length, pb.length)
+    for (let i = 0; i < len; i++) {
+      const na = pa[i] || 0
+      const nb = pb[i] || 0
+      if (na > nb) return 1
+      if (na < nb) return -1
+    }
+    return 0
+  }
+
+  /** 版本接口的平台参数（与网站 fr_app_versions 平台字段一致） */
+  const updatePlatformKey = () => {
+    if (process.platform === 'darwin') return 'macos'
+    if (process.platform === 'win32') return 'windows'
+    return 'linux'
+  }
+
+  /**
+   * 检查更新：请求网站 GET /api/version/latest?platform=xxx
+   * 返回 { hasUpdate, version, updateLog, downloadUrl, currentVersion, error }
+   * 网络/接口异常不抛错，返回 error 供渲染端提示「检查更新失败」
+   */
+  ipcMain.handle('app:checkUpdate', async () => {
+    try {
+      const url = `${API_CONFIG.BASE_URL}/version/latest?platform=${updatePlatformKey()}`
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 10000)
+      let res
+      try {
+        res = await fetch(url, { signal: controller.signal })
+      } finally {
+        clearTimeout(timer)
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const body = await res.json()
+      const data = body?.data
+      if (!data || !data.version) {
+        return { hasUpdate: false, error: '' }
+      }
+      const hasUpdate = compareVersions(data.version, pkg.version) > 0
+      return {
+        hasUpdate,
+        version: data.version,
+        updateLog: data.updateLog || '',
+        downloadUrl: data.downloadUrl || '',
+        currentVersion: pkg.version
+      }
+    } catch (e) {
+      console.error('[update] 检查更新失败:', e?.message || e)
+      return { hasUpdate: false, error: e?.message || String(e) }
+    }
   })
 
 

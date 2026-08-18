@@ -30,7 +30,7 @@
           <template #icon><RiServerLine /></template>
           网络服务
         </a-menu-item>
-        <a-menu-item key="about">
+        <a-menu-item key="version">
           <template #icon><RiInformationLine /></template>
           版本更新
         </a-menu-item>
@@ -44,7 +44,7 @@
       <ShortcutManager v-if="activeTab === 'shortcut'" />
       <ModelManager v-if="activeTab === 'ai'" />
       <NetworkServerManager v-if="activeTab === 'network'" />
-      <AboutManager v-if="activeTab === 'about'" />
+      <VersionManager v-if="activeTab === 'version'" />
     </div>
   </div>
 </template>
@@ -62,7 +62,7 @@ import DataManager from './components/DataManager.vue'
 import ShortcutManager from './components/ShortcutManager.vue'
 import ModelManager from './components/ModelManager.vue'
 import NetworkServerManager from './components/NetworkServerManager.vue'
-import AboutManager from './components/AboutManager.vue'
+import VersionManager from './components/VersionManager.vue'
 
 // initialTab：设置中心打开时指定的初始选项卡（如「去安装」→ 本地插件）
 const props = defineProps({

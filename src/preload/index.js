@@ -178,7 +178,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     startGetMousePos: () => ipcRenderer.invoke('app:startGetMousePos'),
     stopGetMousePos: () => ipcRenderer.invoke('app:stopGetMousePos'),
     getPlatform: () => ipcRenderer.invoke('app:getPlatform'),
-    getVersion: () => ipcRenderer.invoke('app:getVersion')
+    getVersion: () => ipcRenderer.invoke('app:getVersion'),
+    checkUpdate: () => ipcRenderer.invoke('app:checkUpdate')
   },
   // 应用配置存储模块API
   store: {
