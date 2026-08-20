@@ -41,6 +41,10 @@
           >
             {{ isAllSelected ? '取消全选' : '全选' }}
           </a-checkbox>
+          <a-button size="small" type="primary" @click="handleBatchExport">
+            <template #icon><icon-export /></template>
+            批量导出
+          </a-button>
           <a-popconfirm
             content="确定将选中的项移入回收站？"
             ok-text="移入回收站"
@@ -104,7 +108,7 @@
 
 <script setup>
   import { ref, computed } from 'vue';
-  import { IconPlus, IconImport, IconRefresh, IconSearch } from '@arco-design/web-vue/es/icon';
+  import { IconPlus, IconImport, IconRefresh, IconSearch, IconExport } from '@arco-design/web-vue/es/icon';
   import Category from '@/components/Category.vue';
   import LoadMoreState from '@/components/LoadMoreState.vue';
 
@@ -128,6 +132,7 @@
     'scroll',
     'update:searchKeyword',
     'batchDelete',
+    'batchExport',
   ]);
 
   // 多选：选中 id 列表（当前已加载卡片）
@@ -167,6 +172,10 @@
 
   const handleBatchDelete = () => {
     emit('batchDelete', [...selectedIds.value]);
+  };
+
+  const handleBatchExport = () => {
+    emit('batchExport', [...selectedIds.value]);
   };
 
   const handleCategoryChange = (val) => {

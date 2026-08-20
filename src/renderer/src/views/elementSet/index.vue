@@ -16,6 +16,7 @@
     @category-change="onCategoryChange"
     @scroll="loadMore"
     @batch-delete="handleBatchDelete"
+    @batch-export="handleBatchExport"
   >
     <template #extra-actions>
       <a-button @click="showTrash = true"><template #icon><icon-delete /></template>回收站</a-button>
@@ -74,7 +75,7 @@ import RecycleBin from '@/components/RecycleBin.vue'
 import ElementSetEditor from './components/ElementSetEditor.vue'
 import CopyCountModal from '@/components/CopyCountModal.vue'
 import { debounce } from 'lodash-es'
-import { exportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
+import { exportToFile, batchExportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
 
 const { elementSet: elementSetAPI } = window.electronAPI
 const showTrash = ref(false)
@@ -167,25 +168,29 @@ const handleBatchDelete = async (ids) => {
   fetchElementSets(true)
 }
 
+const buildElementSetPayload = (full) => ({
+  title: full.title,
+  description: full.description,
+  category_id: full.category_id,
+  elements: (full.elements || []).map((el) => ({
+    name: el.name,
+    match_condition: el.match_condition,
+    selectors: (el.selectors || []).map((sel) => ({
+      type: sel.type,
+      text_subtype: sel.text_subtype,
+      expression: sel.expression
+    }))
+  }))
+})
+
 const handleExport = async (es) => {
   const full = await elementSetAPI.getElementSet(es.id)
-  await exportToFile(
-    async () => ({
-      title: full.title,
-      description: full.description,
-      category_id: full.category_id,
-      elements: (full.elements || []).map((el) => ({
-        name: el.name,
-        match_condition: el.match_condition,
-        selectors: (el.selectors || []).map((sel) => ({
-          type: sel.type,
-          text_subtype: sel.text_subtype,
-          expression: sel.expression
-        }))
-      }))
-    }),
-    MODULE_CONFIG.elementSet
-  )
+  await exportToFile(async () => buildElementSetPayload(full), MODULE_CONFIG.elementSet)
+}
+
+const handleBatchExport = async (ids) => {
+  const fulls = await Promise.all(ids.map((id) => elementSetAPI.getElementSet(id)))
+  await batchExportToFile(async () => fulls.map(buildElementSetPayload), MODULE_CONFIG.elementSet)
 }
 
 const handleImport = () => {

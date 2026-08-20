@@ -177,6 +177,48 @@ export async function exportToFile(getDataFn, config, extraFields = {}) {
 }
 
 /**
+ * 批量导出多个条目为单个文件（数据为数组，导入时自动还原为多条）
+ * @param {Function} getItemsFn - 异步函数，返回条目数据数组
+ * @param {Object} config - 模块配置 { header, ext, moduleKey, label }
+ */
+export async function batchExportToFile(getItemsFn, config) {
+  let loadingMsg = null
+  try {
+    loadingMsg = Message.loading({ content: '正在导出...', duration: 0 })
+    const items = await getItemsFn()
+    if (!items.length) {
+      loadingMsg.close()
+      Message.warning('没有可导出的数据')
+      return
+    }
+    const exportData = {
+      app_version: getAppVersion(),
+      exportTime: new Date().toISOString(),
+      [config.moduleKey]: items
+    }
+    const { deflate } = await import('pako')
+    const compressed = deflate(new TextEncoder().encode(JSON.stringify(exportData)))
+    const header = new Uint8Array(config.header)
+    const fileData = new Uint8Array(header.length + compressed.length)
+    fileData.set(header)
+    fileData.set(compressed, header.length)
+    const blob = new Blob([fileData])
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${config.label} - 批量导出(${items.length})${config.ext}`
+    a.click()
+    URL.revokeObjectURL(url)
+    loadingMsg.close()
+    Message.success(`导出成功 ${items.length} 个${config.label}`)
+  } catch (e) {
+    if (loadingMsg) loadingMsg.close()
+    Message.error('导出失败: ' + e.message)
+    throw e
+  }
+}
+
+/**
  * 批量导入文件（支持多选、自动匹配模块类型）
  * @param {Function} [onComplete] - 导入完成后的回调（所有文件处理完毕后调用）
  * @returns {Promise<Object>} 导入结果汇总
@@ -231,17 +273,18 @@ export function importFromFile(onComplete) {
             throw new Error('文件由更高版本软件创建，请升级后重试')
           }
 
-          // 6. 调用模块导入器
+          // 6. 调用模块导入器（兼容单个对象或批量数组）
           const data = importData[config.moduleKey]
-          if (MODULE_IMPORTERS[config.moduleKey]) {
-            await MODULE_IMPORTERS[config.moduleKey](data)
+          const dataList = Array.isArray(data) ? data : [data]
+          for (const single of dataList) {
+            if (MODULE_IMPORTERS[config.moduleKey]) {
+              await MODULE_IMPORTERS[config.moduleKey](single)
+            }
+            if (!summary[config.label]) {
+              summary[config.label] = { success: [], failed: [] }
+            }
+            summary[config.label].success.push(getDisplayName(single))
           }
-
-          // 7. 记录成功
-          if (!summary[config.label]) {
-            summary[config.label] = { success: [], failed: [] }
-          }
-          summary[config.label].success.push(getDisplayName(data))
         } catch (err) {
           // 尝试根据扩展名匹配标签
           const ext = '.' + file.name.split('.').pop()?.toLowerCase()

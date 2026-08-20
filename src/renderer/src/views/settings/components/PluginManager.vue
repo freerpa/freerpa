@@ -47,17 +47,20 @@
               </div>
             </template>
             <div class="plugin-body">
-              <p class="plugin-desc">{{ plg.description || '无描述' }}</p>
+              <p class="plugin-desc">
+                <span class="label">描述</span>
+                {{ plg.description || '无描述' }}
+              </p>
               <div v-if="plg.config && plg.config.length" class="plugin-config-preview">
-                <span class="label">配置项:</span>
+                <span class="label">配置</span>
                 <a-tag v-for="item in plg.config" :key="item.id" size="small">{{ item.name || item.id }}</a-tag>
               </div>
               <div v-if="plg.inputs && plg.inputs.length" class="plugin-io-preview">
-                <span class="label">输入:</span>
+                <span class="label">输入</span>
                 <a-tag v-for="inp in plg.inputs" :key="inp.id" size="small">{{ inp.name }}</a-tag>
               </div>
               <div v-if="plg.outputs && plg.outputs.length" class="plugin-io-preview">
-                <span class="label">输出:</span>
+                <span class="label">输出</span>
                 <a-tag v-for="out in plg.outputs" :key="out.id" size="small">{{ out.name }}</a-tag>
               </div>
             </div>
@@ -188,7 +191,7 @@
     }
     .empty-hint {
       color: var(--color-text-3);
-      font-size: 13px;
+      font-size: 12px;
       padding: 16px 0;
       text-align: center;
     }
@@ -213,29 +216,25 @@
         gap: 8px;
       }
       .plugin-body {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
         .plugin-desc {
-          color: var(--color-text-3);
-          font-size: 13px;
-          margin: 4px 0 8px;
-        }
-        .plugin-meta {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
+          color: var(--color-text-1);
           font-size: 12px;
-          color: var(--color-text-3);
         }
         .plugin-config-preview,
         .plugin-io-preview {
-          margin-top: 6px;
           display: flex;
           align-items: center;
-          gap: 6px;
           flex-wrap: wrap;
           font-size: 12px;
-          .label {
-            font-weight: 500;
-          }
+        }
+        .label {
+          width: 52px;
+          color: var(--color-text-3);
+          font-size: 12px;
+          display: inline-block;
         }
       }
     }

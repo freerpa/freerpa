@@ -122,6 +122,7 @@
 <script setup>
   import { ref, reactive, computed, onMounted } from 'vue';
   import { Message } from '@arco-design/web-vue';
+  import { IconPlus} from '@arco-design/web-vue/es/icon';
   import { getProviders, getPresetProviders, createProvider, updateProvider, deleteProvider } from '@/api/aiModels';
 
   const protocolOptions = [
@@ -290,7 +291,7 @@
       display: flex;
       align-items: flex-start;
       gap: 8px;
-      font-size: 13px;
+      font-size: 12px;
       line-height: 1.5;
     }
     &__label {

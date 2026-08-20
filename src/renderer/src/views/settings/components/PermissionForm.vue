@@ -64,6 +64,7 @@
       "
     >
       <a-switch v-model="value.process.enabled" />
+      &nbsp;<a-tag color="red" >危险权限：子进程有逃逸风险，建议仅在必要时开启。</a-tag>
     </a-form-item>
     <a-form-item v-if="value.process.enabled" label="命令白名单">
       <PermissionMultiSelect v-model="value.process.commands" placeholder="如 git / node" />
@@ -79,6 +80,7 @@
       "
     >
       <a-switch v-model="value.ffi.enabled" />
+      &nbsp;<a-tag color="red" >危险权限：原生库不受沙箱限制，请确保你信任所使用的本地库。</a-tag>
     </a-form-item>
     <a-form-item v-if="value.ffi.enabled" label="动态库白名单">
       <PermissionMultiSelect v-model="value.ffi.paths" placeholder="如 /usr/lib/libfoo.so" />

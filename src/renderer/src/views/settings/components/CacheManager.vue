@@ -2,25 +2,22 @@
   <div class="cache-manager">
     <a-card title="缓存管理" :bordered="false">
       <template #extra>
-        <a-popover
-          content="缓存包含浏览器 Session 数据（Cookie、LocalStorage 等）和 Chromium 运行时临时文件。清空缓存不会影响您的浏览器配置和工作流数据。"
-        >
-          <icon-info-circle class="info-icon" />
-        </a-popover>
-      </template>
-
-      <div class="cache-info">
-        <div class="size-display">
+        <div class="extra-content">
+          <a-popover
+            content="缓存包含浏览器 Session 数据（Cookie、LocalStorage 等）和 Chromium 运行时临时文件。清空缓存不会影响您的浏览器配置和工作流数据。"
+          >
+            <icon-info-circle class="info-icon" />
+          </a-popover>
           <span class="label">当前缓存大小：</span>
           <a-tag :color="sizeColor" size="large">{{ totalLabel || '计算中...' }}</a-tag>
-          <a-button type="outline" size="medium" style="margin-left: 12px" @click="refresh" :loading="loading">
+          <a-button type="outline" size="medium" @click="refresh" :loading="loading">
             <template #icon><icon-refresh /></template>
             刷新
           </a-button>
         </div>
+      </template>
 
-        <a-divider />
-
+      <div class="cache-info">
         <div class="cache-details" v-if="details.length">
           <div class="detail-item" v-for="d in details" :key="d.path">
             <span class="detail-path">{{ d.path }}</span>
@@ -100,11 +97,13 @@
         }
       }
       .cache-details {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
         .detail-item {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 8px 0;
           .detail-path {
             font-size: 12px;
             color: var(--color-text-3);
@@ -121,5 +120,10 @@
     cursor: pointer;
     color: var(--color-text-3);
     font-size: 16px;
+  }
+  .extra-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 </style>

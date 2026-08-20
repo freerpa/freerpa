@@ -16,6 +16,7 @@
     @category-change="onCategoryChange"
     @scroll="loadMore"
     @batch-delete="handleBatchDelete"
+    @batch-export="handleBatchExport"
   >
     <template #extra-actions>
       <a-button @click="showTrash = true"><template #icon><icon-delete /></template>回收站</a-button>
@@ -79,7 +80,7 @@ import RecycleBin from '@/components/RecycleBin.vue'
 import CopyCountModal from '@/components/CopyCountModal.vue'
 import { useStore } from '@/store'
 import { storeToRefs } from 'pinia'
-import { exportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
+import { exportToFile, batchExportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
 import { debounce } from 'lodash-es'
 
 const store = useStore()
@@ -163,13 +164,20 @@ const handleBatchDelete = async (ids) => {
   fetchModels(true)
 }
 
+const buildModelPayload = (modelData) => ({
+  name: modelData.name,
+  description: modelData.description,
+  fields: JSON.parse(modelData.fields)
+})
+
 const handleExport = async (model) => {
   const modelData = await dataAPI.getModel(model.id)
-  await exportToFile(
-    async () => ({ name: model.name, description: model.description, fields: JSON.parse(modelData.fields) }),
-    MODULE_CONFIG.model,
-    { data: [] }
-  )
+  await exportToFile(async () => buildModelPayload(modelData), MODULE_CONFIG.model, { data: [] })
+}
+
+const handleBatchExport = async (ids) => {
+  const modelDataList = await Promise.all(ids.map((id) => dataAPI.getModel(id)))
+  await batchExportToFile(async () => modelDataList.map(buildModelPayload), MODULE_CONFIG.model)
 }
 
 const handleImport = () => {

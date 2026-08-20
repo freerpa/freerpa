@@ -48,7 +48,6 @@ const savePort = async () => {
 <style lang="less" scoped>
 .network-server-manager {
   .port-section {
-    padding: 12px 0;
     .port-row {
       display: flex;
       align-items: center;

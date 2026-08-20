@@ -16,6 +16,7 @@
     @category-change="onCategoryChange"
     @scroll="loadMore"
     @batch-delete="handleBatchDelete"
+    @batch-export="handleBatchExport"
   >
     <template #extra-actions>
       <a-button @click="showTrash = true"><template #icon><icon-delete /></template>回收站</a-button>
@@ -74,7 +75,7 @@ import RecycleBin from '@/components/RecycleBin.vue'
 import BrowserOpenModal from './components/BrowserOpenModal.vue'
 import CopyCountModal from '@/components/CopyCountModal.vue'
 import { debounce } from 'lodash-es'
-import { exportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
+import { exportToFile, batchExportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
 
 const { browserLocal: browserAPI } = window.electronAPI
 const showTrash = ref(false)
@@ -167,12 +168,22 @@ const handleCloseBrowser = async (env) => {
   } finally { loadingMap[env.id] = false }
 }
 
+const buildBrowserPayload = (d) => ({
+  name: d.name,
+  description: d.description,
+  category_id: d.category_id,
+  kernel_id: d.kernel_id,
+  proxy_url: d.proxy_url
+})
+
 const handleExport = async (env) => {
   const envData = await browserAPI.getBrowser(env.id)
-  await exportToFile(
-    async () => ({ name: envData.name, description: envData.description, category_id: envData.category_id, kernel_id: envData.kernel_id, proxy_url: envData.proxy_url }),
-    MODULE_CONFIG.browser
-  )
+  await exportToFile(async () => buildBrowserPayload(envData), MODULE_CONFIG.browser)
+}
+
+const handleBatchExport = async (ids) => {
+  const envDataList = await Promise.all(ids.map((id) => browserAPI.getBrowser(id)))
+  await batchExportToFile(async () => envDataList.map(buildBrowserPayload), MODULE_CONFIG.browser)
 }
 
 const handleImport = () => {

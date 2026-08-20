@@ -16,6 +16,7 @@
     @category-change="onCategoryChange"
     @scroll="loadMore"
     @batch-delete="handleBatchDelete"
+    @batch-export="handleBatchExport"
   >
     <template #extra-actions>
       <a-button @click="showTrash = true"><template #icon><icon-delete /></template>回收站</a-button>
@@ -73,7 +74,7 @@ import { useFlowStore } from '@/workflow/store'
 import { useStore } from '@/store'
 import { storeToRefs } from 'pinia'
 import { debounce } from 'lodash-es'
-import { exportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
+import { exportToFile, batchExportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
 
 const { workflow: workflowAPI } = window.electronAPI
 const showTrash = ref(false)
@@ -151,12 +152,16 @@ const handleBatchDelete = async (ids) => {
   fetchWorkflows(true)
 }
 
+const buildWorkflowPayload = (full) => ({ name: full.name, description: full.description, graph: full.graph })
+
 const handleExport = async (workflow) => {
   const full = await workflowAPI.getWorkflow(workflow.id)
-  await exportToFile(
-    async () => ({ name: full.name, description: full.description, graph: full.graph }),
-    MODULE_CONFIG.workflow
-  )
+  await exportToFile(async () => buildWorkflowPayload(full), MODULE_CONFIG.workflow)
+}
+
+const handleBatchExport = async (ids) => {
+  const fulls = await Promise.all(ids.map((id) => workflowAPI.getWorkflow(id)))
+  await batchExportToFile(async () => fulls.map(buildWorkflowPayload), MODULE_CONFIG.workflow)
 }
 
 const handleImport = () => {

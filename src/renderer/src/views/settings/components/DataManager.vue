@@ -56,8 +56,7 @@
       .label {
         padding-right: 8px;
         white-space: nowrap;
-        min-width: 100px;
-        text-align: right;
+        text-align: left;
       }
       .path-text {
         font-size: 13px;
