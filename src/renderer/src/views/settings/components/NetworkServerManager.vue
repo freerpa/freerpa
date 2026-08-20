@@ -54,7 +54,6 @@ const savePort = async () => {
       align-items: center;
       gap: 12px;
       .label {
-        font-weight: 500;
       }
     }
     .hint {

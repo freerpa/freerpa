@@ -3,19 +3,19 @@
     <a-card title="版本更新" :bordered="false">
       <!-- 当前版本 -->
       <div class="update-section">
-        <h3 class="update-title">当前版本 {{ version }}</h3>
+        <h3 class="update-title">当前版本 <b>V{{ version }}</b></h3>
+
         <div class="update-actions">
           <a-button type="primary" :loading="checking" @click="checkUpdate">检查更新</a-button>
           <a-button type="primary" status="danger" v-if="canUpdate" @click="goDownload">立即更新</a-button>
         </div>
-
         <!-- 检查结果 -->
         <div v-if="checkResult && !updateError" class="check-result">
           <a-alert v-if="checkResult.hasUpdate" type="success">发现新版本 V{{ checkResult.version }}</a-alert>
-          <a-alert v-else type="normal" title="当前已是最新版本" />
+          <a-alert v-else type="normal">当前已是最新版本</a-alert>
         </div>
         <div v-if="updateError" class="check-result">
-          <a-alert type="error" :title="updateError" />
+          <a-alert type="error">{{ updateError }}</a-alert>
         </div>
       </div>
     </a-card>
@@ -84,6 +84,7 @@
   .version-manager {
     .update-section {
       .update-title {
+        font-weight: 400;
         font-size: 16px;
         margin-bottom: 16px;
       }

@@ -241,11 +241,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getDefaults: () => ipcRenderer.invoke('permissions:getDefaults')
   },
   plugin: {
-    addDir: () => ipcRenderer.invoke('plugin:addDir'),
-    removeDir: (dir) => ipcRenderer.invoke('plugin:removeDir', dir),
-    getDirs: () => ipcRenderer.invoke('plugin:getDirs'),
     list: () => ipcRenderer.invoke('plugin:list'),
-    get: (pluginId) => ipcRenderer.invoke('plugin:get', pluginId)
+    get: (pluginId) => ipcRenderer.invoke('plugin:get', pluginId),
+    getRoot: () => ipcRenderer.invoke('plugin:getRoot'),
+    installFrp: () => ipcRenderer.invoke('plugin:installFrp'),
+    importDev: () => ipcRenderer.invoke('plugin:importDev'),
+    packFrp: (srcDir) => ipcRenderer.invoke('plugin:packFrp', srcDir),
+    uninstall: (pluginId, version) => ipcRenderer.invoke('plugin:uninstall', pluginId, version),
+    /** 安装/打包进度监听，返回取消订阅函数 */
+    onProgress: (callback) => {
+      const listener = (_event, payload) => callback(payload)
+      ipcRenderer.on('plugin:progress', listener)
+      return () => ipcRenderer.removeListener('plugin:progress', listener)
+    }
   },
   system: {
     showNotification: (options, eventCallback) => {

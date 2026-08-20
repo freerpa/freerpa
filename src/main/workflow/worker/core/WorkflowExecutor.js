@@ -27,6 +27,7 @@ class WorkflowExecutor extends EventEmitter {
     this.isSubFlow = options.isSubFlow || false
     this.ioRoots = options.ioRoots || []
     this.pluginRoots = options.pluginRoots || [] // 插件目录（主进程 init 注入，pluginCall 执行器据此定位插件）
+    this.devPluginDirs = options.devPluginDirs || [] // 开发版插件挂载目录（主进程 init 注入，开发版优先）
     this.subFlows = new Map()
     this.allNodes = options.allNodes
     this.allEdges = options.allEdges
@@ -339,6 +340,7 @@ class WorkflowExecutor extends EventEmitter {
         isSubFlow: true,
         ioRoots: this.ioRoots,
         pluginRoots: this.pluginRoots, // 子流程内的插件节点同样需要插件目录定位（此前遗漏导致子流程插件必失败）
+        devPluginDirs: this.devPluginDirs, // 子流程开发版插件目录同步传递
         nodes: childNodes,
         edges: childEdges,
         allNodes: this.allNodes,

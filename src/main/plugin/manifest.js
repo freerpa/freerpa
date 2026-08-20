@@ -1,119 +1,140 @@
 /**
- * @file: 插件描述解析与目录扫描（manifest 单点解析）
+ * @file: 插件元数据解析与列表（新安装式体系，推翻旧目录发现机制）
  *
- * 目录约定（与内置节点 nodes/{type}/V{num}/ 完全一致）：
- *   {插件根目录}/{pluginId}/V{n}/index.js（描述模块）+ execute.js（执行器）
- * 版本目录扫描与最高版本选择复用 pluginLayout 纯函数（与 worker 执行器同一实现，避免双实现漂移）。
+ * 布局：
+ *   - 正式版：{userData}/plugin/{pluginId}@{version}/package.json
+ *   - 开发版：外部目录挂载（store.js 挂载记录），识别码 {pluginId}@dev
  *
- * 描述模块兼容多层导出结构：ESM default / CommonJS module.exports /
- * {default:{...}}（TS/Babel 产物）/ 命名导出。
+ * 元数据统一来自 package.json（标准 npm 项目）：
+ *   name=插件ID、version=版本、description=简介、main=执行器主文件（相对 package.json）
+ *   freerpa={ config, inputs, outputs, clientVersion }（插件声明）
  *
- * 注意：渲染端节点注册与配置面板消费的是本模块返回的归一结构
- * （name/version/config/inputs/outputs 等），不要再各自解包描述模块。
+ * 开发版优先原则：同一插件 ID 存在开发版时，执行与展示均以开发版为准（验证/调试场景）。
  */
 import fs from 'fs'
 import path from 'path'
-import { pathToFileURL } from 'url'
-import { getPluginDirs } from './store.js'
-import { listVersionDirs, getLatestVersionDir } from '../../renderer/src/workflow/utils/pluginLayout.js'
+import { getPluginRoot, getDevPlugins } from './store.js'
 
-/** 解包描述模块 default 导出（最多 3 层），返回归一后的插件定义对象 */
-function unwrapDefault(pluginModule) {
-  let pluginDef = pluginModule.default
-  let depth = 0
-  while (
-    pluginDef &&
-    typeof pluginDef === 'object' &&
-    pluginDef.name === undefined &&
-    pluginDef.default &&
-    typeof pluginDef.default === 'object' &&
-    depth < 3
-  ) {
-    pluginDef = pluginDef.default
-    depth++
+/** 解析正式版目录名：{pluginId}@{version}；不满足返回 null */
+export function parsePluginDirName(dirName) {
+  const at = dirName.lastIndexOf('@')
+  if (at <= 0 || at === dirName.length - 1) return null
+  return { pluginId: dirName.slice(0, at), version: dirName.slice(at + 1) }
+}
+
+/** semver 数字序列比较（1 / 1.2 / 1.2.3）：a>b → 1，a<b → -1，相等 → 0 */
+export function compareSemver(a, b) {
+  const pa = String(a ?? '').split('.').map((n) => parseInt(n, 10) || 0)
+  const pb = String(b ?? '').split('.').map((n) => parseInt(n, 10) || 0)
+  const len = Math.max(pa.length, pb.length)
+  for (let i = 0; i < len; i++) {
+    const va = pa[i] || 0
+    const vb = pb[i] || 0
+    if (va !== vb) return va > vb ? 1 : -1
   }
-  return pluginDef && typeof pluginDef === 'object' ? pluginDef : pluginModule
+  return 0
 }
 
 /**
- * 扫描单个插件目录，返回归一插件信息（取最高版本 V{n} 子目录）。
- * 目录不存在 / 无版本子目录 / 无 index.js / 解析失败均不抛出（解析失败返回含 error 字段的对象）。
+ * 读取并解析目录下的 package.json，返回归一插件信息；目录不存在/无 package.json 返回 null，
+ * JSON 解析失败或缺少 name 返回含 error 的对象。
  */
-export async function scanPluginDir(dirPath) {
-  if (!fs.existsSync(dirPath)) return null
-  const latest = getLatestVersionDir(dirPath)
-  if (!latest) return null
-  const indexPath = path.join(latest.dir, 'index.js')
-  if (!fs.existsSync(indexPath)) return null
-
+export function readPluginPackage(dir) {
+  const pkgPath = path.join(dir, 'package.json')
+  if (!fs.existsSync(pkgPath)) return null
+  let pkg
   try {
-    const pluginDef = unwrapDefault(await import(pathToFileURL(indexPath).href))
-    const executePath = path.join(latest.dir, 'execute.js')
-    const hasExecute = fs.existsSync(executePath)
-    const pkgJsonPath = path.join(latest.dir, 'package.json')
-    const hasDeps = fs.existsSync(pkgJsonPath)
-
-    return {
-      id: path.basename(dirPath),
-      dir: dirPath,
-      name: pluginDef.name || path.basename(dirPath),
-      version: latest.versionDir, // 目录版本（'V{n}'，与内置节点版本语义一致；index.js 内 version 字段不再作为版本来源）
-      versions: listVersionDirs(dirPath).map((v) => v.versionDir), // 全部版本目录（升序）
-      description: pluginDef.description || '',
-      icon: pluginDef.icon || null,
-      config: pluginDef.config || {},
-      inputs: pluginDef.inputs || [],
-      outputs: pluginDef.outputs || [],
-      hasExecute,
-      hasDeps,
-      packageJson: hasDeps ? JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8')) : null
-    }
+    pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
   } catch (e) {
-    return { id: path.basename(dirPath), dir: dirPath, error: e.message }
+    return { pluginId: path.basename(dir), dir, error: `package.json 解析失败: ${e.message}` }
+  }
+  const pluginId = String(pkg.name || '').trim()
+  if (!pluginId) {
+    return { pluginId: path.basename(dir), dir, error: 'package.json 缺少 name（插件 ID）' }
+  }
+  const freerpa = pkg.freerpa && typeof pkg.freerpa === 'object' ? pkg.freerpa : {}
+  const main = String(pkg.main || './src/index.js')
+  const executePath = path.resolve(dir, main)
+  return {
+    pluginId,
+    name: String(pkg.name || pluginId),
+    version: String(pkg.version || ''),
+    description: String(pkg.description || ''),
+    main,
+    executePath,
+    hasExecute: fs.existsSync(executePath),
+    config: Array.isArray(freerpa.config) ? freerpa.config : [],
+    inputs: Array.isArray(freerpa.inputs) ? freerpa.inputs : [],
+    outputs: Array.isArray(freerpa.outputs) ? freerpa.outputs : [],
+    clientVersion: String(freerpa.clientVersion || ''),
+    packageJson: pkg
   }
 }
 
 /**
- * 扫描所有已配置目录下的插件，跳过不存在的/不可读的目录；
- * 目录名 = 插件 ID 须全局唯一，重复 ID 的插件被标记 duplicate（渲染端提示）
+ * 列出全部已安装条目（正式版每版本一条 + 开发版每条）：
+ *   { pluginId, identifier, version('dev'|semver), dir, isDev, ...readPluginPackage 字段 }
+ * 解析失败的条目保留 error（渲染端提示）。
+ */
+export async function listPluginEntries() {
+  const entries = []
+  // 正式版：扫描 {pluginRoot} 下 {pluginId}@{version} 目录
+  const root = getPluginRoot()
+  if (fs.existsSync(root)) {
+    for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      const parsed = parsePluginDirName(entry.name)
+      if (!parsed) continue
+      const info = readPluginPackage(path.join(root, entry.name))
+      if (!info) continue
+      entries.push({
+        ...info,
+        pluginId: parsed.pluginId,
+        version: parsed.version,
+        identifier: entry.name,
+        dir: path.join(root, entry.name),
+        isDev: false
+      })
+    }
+  }
+  // 开发版：读挂载记录
+  for (const rec of getDevPlugins()) {
+    if (!rec?.pluginId || !rec?.path) continue
+    const info = readPluginPackage(rec.path)
+    if (!info) continue
+    entries.push({
+      ...info,
+      pluginId: rec.pluginId,
+      version: 'dev',
+      identifier: `${rec.pluginId}@dev`,
+      dir: rec.path,
+      isDev: true
+    })
+  }
+  return entries
+}
+
+/**
+ * 列出全部已安装插件条目（不合并）：正式版每版本一条 + 开发版每条（identifier=pluginId@dev）。
+ * 开发版与正式版、以及不同正式版版本全部共存，互不覆盖。
  */
 export async function listPlugins() {
-  const plugins = []
-  const seen = new Map() // id → 首个插件信息
-  for (const dir of getPluginDirs()) {
-    if (!fs.existsSync(dir)) continue
-    let entries
-    try {
-      entries = fs.readdirSync(dir, { withFileTypes: true })
-    } catch (e) {
-      console.warn(`⚠ 插件目录不可读，已跳过: ${dir}（${e.message}）`)
-      continue
-    }
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue
-      const info = await scanPluginDir(path.join(dir, entry.name))
-      if (!info) continue
-      if (seen.has(info.id)) {
-        info.duplicate = true
-        info.duplicateOf = seen.get(info.id).dir
-        console.warn(`⚠ 插件 ID 重复（目录名须全局唯一）: "${info.id}" 同时存在于 ${seen.get(info.id).dir} 与 ${info.dir}`)
-      } else {
-        seen.set(info.id, info)
-      }
-      plugins.push(info)
-    }
-  }
-  return plugins
+  return listPluginEntries()
 }
 
-/** 按 pluginId 查找插件（取第一个匹配目录），返回 {dir, info} 或 null */
+/** 按 identifier（pluginId@version / pluginId@dev）精确定位插件，返回条目或 null */
+export async function findPluginByIdentifier(identifier) {
+  if (!identifier) return null
+  const entries = await listPluginEntries()
+  return entries.find((e) => e.identifier === identifier) || null
+}
+
+/** 按 pluginId 查找（兼容旧调用）：返回该 id 的 dev（若有）或最高版本单条目 */
 export async function findPlugin(pluginId) {
-  for (const dir of getPluginDirs()) {
-    const pluginDir = path.join(dir, pluginId)
-    if (fs.existsSync(pluginDir)) {
-      const info = await scanPluginDir(pluginDir)
-      if (info) return { dir: pluginDir, info }
-    }
-  }
-  return null
+  const entries = await listPluginEntries()
+  const same = entries.filter((e) => e.pluginId === pluginId)
+  if (same.length === 0) return null
+  const dev = same.find((e) => e.isDev)
+  if (dev) return dev
+  return same.reduce((a, b) => (compareSemver(b.version, a.version) > 0 ? b : a), same[0])
 }

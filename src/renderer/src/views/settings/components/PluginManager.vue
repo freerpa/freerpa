@@ -1,201 +1,243 @@
 <template>
   <div class="plugin-manager">
-    <a-card title="本地插件管理" :bordered="false">
+    <a-card title="插件管理" :bordered="false">
       <template #extra>
         <a-space>
-          <a-popover content="通过添加插件目录来安装本地插件。目录结构：{插件根目录}/{插件名}/V{版本}/index.js（描述文件）+ execute.js（执行文件），多个版本目录并存时自动使用最高版本。">
-            <icon-info-circle class="info-icon" />
-          </a-popover>
-        </a-space>
-      </template>
-
-      <!-- 插件目录管理 -->
-      <div class="dir-section">
-        <div class="section-title">
-          <span>插件搜索目录</span>
-          <a-button type="primary" size="small" @click="handleAddDir">
+          <a-button type="primary" @click="handleInstall">
             <template #icon><icon-plus /></template>
-            添加目录
+            安装插件
           </a-button>
-        </div>
-        <div v-if="dirs.length === 0" class="empty-hint">暂无插件目录，请点击"添加目录"</div>
-        <div v-for="dir in dirs" :key="dir" class="dir-item">
-          <span class="dir-path">{{ dir }}</span>
-          <a-button type="text" size="mini" status="danger" @click="handleRemoveDir(dir)">
-            <template #icon><icon-delete /></template>
-            移除
+          <a-button @click="handleImportDev">
+            <template #icon><icon-folder-add /></template>
+            导入开发插件
           </a-button>
-        </div>
-      </div>
-
-      <a-divider />
-
-      <!-- 已安装插件 -->
-      <div class="plugin-section">
-        <div class="section-title">
-          <span>已发现插件 ({{ plugins.length }})</span>
-          <a-button size="small" @click="refresh" :loading="loading">
+          <a-button @click="refresh" :loading="loading">
             <template #icon><icon-refresh /></template>
             刷新
           </a-button>
-        </div>
+        </a-space>
+      </template>
 
-        <a-spin :loading="loading">
-          <div v-if="plugins.length === 0" class="empty-hint">未发现任何插件</div>
-          <div v-for="plg in plugins" :key="plg.id" class="plugin-card">
-            <a-card size="small" :bordered="true">
-              <template #title>
-                <div class="plugin-header">
-                  <span class="plugin-name">{{ plg.name }}</span>
-                  <a-tag size="small" color="arcoblue">{{ plg.version }}</a-tag>
-                </div>
-              </template>
-              <div class="plugin-body">
-                <p class="plugin-desc">{{ plg.description || '无描述' }}</p>
-                <div class="plugin-meta">
-                  <span>ID: {{ plg.id }}</span>
-                  <span>目录: {{ plg.dir }}</span>
-                  <a-tag v-if="plg.hasExecute" size="small" color="green">✓ execute.js</a-tag>
-                  <a-tag v-else size="small" color="red">✗ execute.js</a-tag>
-                  <a-tag v-if="plg.hasDeps" size="small" color="orange">含依赖</a-tag>
-                  <a-tag v-if="plg.duplicate" size="small" color="red">ID 重复</a-tag>
-                  <a-tag v-if="plg.error" size="small" color="red">{{ plg.error }}</a-tag>
-                </div>
-                <div v-if="plg.config && Object.keys(plg.config).length" class="plugin-config-preview">
-                  <span class="label">配置项:</span>
-                  <span v-for="(group, gk) in plg.config" :key="gk">
-                    {{ group.name }} ({{ Object.keys(group.fields || {}).length }}个)
-                  </span>
-                </div>
-                <div v-if="plg.inputs && plg.inputs.length" class="plugin-io-preview">
-                  <span class="label">输入:</span>
-                  <a-tag v-for="inp in plg.inputs" :key="inp.id" size="small">{{ inp.name }}</a-tag>
-                </div>
-                <div v-if="plg.outputs && plg.outputs.length" class="plugin-io-preview">
-                  <span class="label">输出:</span>
-                  <a-tag v-for="out in plg.outputs" :key="out.id" size="small">{{ out.name }}</a-tag>
-                </div>
+      <!-- 进度条 -->
+      <a-progress
+        v-if="progress.visible"
+        class="install-progress"
+        :percent="progress.percent"
+        :status="progress.status"
+        :style="{ width: '100%' }"
+      >
+        <span v-if="progress.label" class="progress-label">{{ progress.label }}</span>
+      </a-progress>
+
+      <!-- 已安装插件列表 -->
+      <a-spin :loading="loading" style="width: 100%">
+        <div v-if="plugins.length === 0" class="empty-hint">暂无已安装插件，请点击「安装插件」或「导入开发插件」</div>
+        <div v-for="plg in plugins" :key="plg.identifier || plg.pluginId" class="plugin-card">
+          <a-card size="small" :bordered="true">
+            <template #title>
+              <div class="plugin-header">
+                <span class="plugin-name">{{ plg.name }}@{{ plg.version }}</span>
+                <a-tag v-if="plg.isDev" size="small" color="purple">开发版</a-tag>
               </div>
-            </a-card>
-          </div>
-        </a-spin>
-      </div>
+            </template>
+            <template #extra>
+              <div class="plugin-ops">
+                <a-button v-if="plg.isDev" size="mini" @click="handlePack(plg)">打包为 .frp</a-button>
+                <a-button size="mini" status="danger" @click="handleUninstall(plg)">卸载</a-button>
+              </div>
+            </template>
+            <div class="plugin-body">
+              <p class="plugin-desc">{{ plg.description || '无描述' }}</p>
+              <div v-if="plg.config && plg.config.length" class="plugin-config-preview">
+                <span class="label">配置项:</span>
+                <a-tag v-for="item in plg.config" :key="item.id" size="small">{{ item.name || item.id }}</a-tag>
+              </div>
+              <div v-if="plg.inputs && plg.inputs.length" class="plugin-io-preview">
+                <span class="label">输入:</span>
+                <a-tag v-for="inp in plg.inputs" :key="inp.id" size="small">{{ inp.name }}</a-tag>
+              </div>
+              <div v-if="plg.outputs && plg.outputs.length" class="plugin-io-preview">
+                <span class="label">输出:</span>
+                <a-tag v-for="out in plg.outputs" :key="out.id" size="small">{{ out.name }}</a-tag>
+              </div>
+            </div>
+          </a-card>
+        </div>
+      </a-spin>
     </a-card>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { Message } from '@arco-design/web-vue'
-import { IconPlus, IconDelete, IconRefresh, IconInfoCircle } from '@arco-design/web-vue/es/icon'
-import { loadPluginNodes } from '@/workflow/nodes'
+  import { ref, onMounted, onUnmounted } from 'vue';
+  import { Message, Modal } from '@arco-design/web-vue';
+  import { IconPlus, IconRefresh, IconInfoCircle, IconFolderAdd } from '@arco-design/web-vue/es/icon';
+  import { loadPluginNodes } from '@/workflow/nodes';
 
-const dirs = ref([])
-const plugins = ref([])
-const loading = ref(false)
+  const plugins = ref([]);
+  const loading = ref(false);
+  const progress = ref({ visible: false, percent: 0, label: '', status: 'normal' });
 
-const refresh = async () => {
-  loading.value = true
-  try {
-    dirs.value = await window.electronAPI.plugin.getDirs()
-    // 复用 loadPluginNodes 单次扫描：同步 plu_ 节点注册并返回插件列表
-    plugins.value = await loadPluginNodes()
-  } catch {
-    Message.error('加载失败')
-  } finally {
-    loading.value = false
-  }
-}
+  let unsubProgress = null;
 
-const handleAddDir = async () => {
-  const result = await window.electronAPI.plugin.addDir()
-  if (result.canceled) return
-  Message.success('插件目录已添加')
-  await refresh()
-}
+  const refresh = async () => {
+    loading.value = true;
+    try {
+      plugins.value = (await loadPluginNodes()) || [];
+    } catch {
+      Message.error('加载失败');
+    } finally {
+      loading.value = false;
+    }
+  };
 
-const handleRemoveDir = async (dir) => {
-  await window.electronAPI.plugin.removeDir(dir)
-  Message.success('已移除')
-  await refresh()
-}
+  /** 安装 .frp：主进程弹文件选择器，进度经 plugin:progress 推送 */
+  const handleInstall = async () => {
+    const result = await window.electronAPI.plugin.installFrp();
+    if (result?.canceled) return;
+    if (result?.success) {
+      Message.success(`插件 ${result.pluginId}@${result.version} 安装成功`);
+      await refresh();
+    } else if (result?.error) {
+      Message.error(`安装失败: ${result.error}`);
+    }
+  };
 
-onMounted(refresh)
+  /** 导入开发版插件：主进程弹文件夹选择器，仅记录挂载路径 */
+  const handleImportDev = async () => {
+    const result = await window.electronAPI.plugin.importDev();
+    if (result?.canceled) return;
+    if (result?.success) {
+      Message.success(`开发版插件 ${result.pluginId}@dev 已导入`);
+      await refresh();
+    } else if (result?.error) {
+      Message.error(`导入失败: ${result.error}`);
+    }
+  };
+
+  /** 打包为 .frp：主进程弹保存对话框，esbuild 编译 + zip 压缩 */
+  const handlePack = async (plg) => {
+    const result = await window.electronAPI.plugin.packFrp(plg.dir);
+    if (result?.canceled) return;
+    if (result?.success) {
+      Message.success(`已打包: ${result.file}`);
+    } else if (result?.error) {
+      Message.error(`打包失败: ${result.error}`);
+    }
+  };
+
+  /** 卸载：按 identifier（pluginId@version / pluginId@dev）删除该版本（dev 删挂载记录） */
+  const handleUninstall = (plg) => {
+    const identifier = plg.identifier || (plg.isDev ? `${plg.pluginId}@dev` : `${plg.pluginId}@${plg.version}`);
+    Modal.confirm({
+      title: '卸载插件',
+      content: `确定卸载「${plg.name}」（${identifier}）吗？${plg.isDev ? '将移除开发版挂载记录，不影响正式版。' : '将删除该版本目录，不影响其他版本。'}`,
+      okText: '卸载',
+      okButtonProps: { status: 'danger' },
+      cancelText: '取消',
+      onOk: async () => {
+        const result = await window.electronAPI.plugin.uninstall(identifier);
+        if (result?.success) {
+          Message.success(`已卸载 ${identifier}`);
+          await refresh();
+        } else if (result?.error) {
+          Message.error(`卸载失败: ${result.error}`);
+        }
+      },
+    });
+  };
+
+  onMounted(() => {
+    unsubProgress = window.electronAPI.plugin.onProgress(({ percent, label }) => {
+      // Arco a-progress 的 percent 约定为 0-1（见 browserDownloadListener 的 receivedBytes/totalBytes 用法）
+      progress.value = {
+        visible: true,
+        percent: percent / 100,
+        label: label || '',
+        status: percent >= 100 ? 'success' : 'normal',
+      };
+      if (percent >= 100) {
+        setTimeout(() => {
+          progress.value.visible = false;
+        }, 1200);
+      }
+    });
+    refresh();
+  });
+
+  onUnmounted(() => {
+    if (unsubProgress) unsubProgress();
+  });
 </script>
 
 <style lang="less" scoped>
-.plugin-manager {
-  .section-title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    font-weight: 500;
-  }
-  .empty-hint {
-    color: var(--color-text-3);
-    font-size: 13px;
-    padding: 12px 0;
-  }
-  .dir-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 4px 0;
-    .dir-path {
-      font-size: 12px;
+  .plugin-manager {
+    .info-icon {
+      cursor: pointer;
       color: var(--color-text-3);
-      word-break: break-all;
-      flex: 1;
+      font-size: 16px;
+      margin-right: 8px;
     }
-  }
-  .plugin-card {
-    margin-bottom: 12px;
-    .plugin-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      .plugin-name { font-weight: 600; }
-    }
-    .plugin-body {
-      .plugin-desc { color: var(--color-text-3); font-size: 13px; margin: 4px 0 8px; }
-      .plugin-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
+    .install-progress {
+      margin-bottom: 16px;
+      .progress-label {
         font-size: 12px;
         color: var(--color-text-3);
+        margin-left: 8px;
       }
-      .plugin-config-preview, .plugin-io-preview {
-        margin-top: 6px;
+    }
+    .empty-hint {
+      color: var(--color-text-3);
+      font-size: 13px;
+      padding: 16px 0;
+      text-align: center;
+    }
+    .plugin-card {
+      margin-bottom: 12px;
+      .plugin-header {
         display: flex;
         align-items: center;
-        gap: 6px;
-        flex-wrap: wrap;
-        font-size: 12px;
-        .label { font-weight: 500; }
+        gap: 8px;
+        .plugin-name {
+          font-weight: 600;
+        }
+      }
+      // 标题栏右侧操作按钮（删除/打包）
+      :deep(.arco-card-header-extra) {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .plugin-ops {
+        display: flex;
+        gap: 8px;
+      }
+      .plugin-body {
+        .plugin-desc {
+          color: var(--color-text-3);
+          font-size: 13px;
+          margin: 4px 0 8px;
+        }
+        .plugin-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          font-size: 12px;
+          color: var(--color-text-3);
+        }
+        .plugin-config-preview,
+        .plugin-io-preview {
+          margin-top: 6px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+          font-size: 12px;
+          .label {
+            font-weight: 500;
+          }
+        }
       }
     }
   }
-.info-icon {
-  cursor: pointer;
-  color: var(--color-text-3);
-  font-size: 16px;
-}
-  .tutorial-content {
-    h3 { margin-top: 20px; margin-bottom: 8px; font-size: 15px; }
-    h3:first-child { margin-top: 0; }
-    pre {
-      background: var(--color-fill-2);
-      padding: 12px;
-      border-radius: 4px;
-      font-size: 12px;
-      overflow-x: auto;
-      code { font-family: 'Menlo', 'Fira Code', monospace; }
-    }
-    ul, ol { padding-left: 20px; li { margin: 4px 0; font-size: 13px; } }
-    p { font-size: 13px; margin: 6px 0; }
-    code { background: var(--color-fill-2); padding: 1px 4px; border-radius: 2px; font-size: 12px; }
-  }
-}
 </style>

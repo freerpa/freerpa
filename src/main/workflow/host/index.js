@@ -42,7 +42,7 @@ class EngineHost extends EventEmitter {
       '--unstable-worker-options', // Worker 级权限描述符（deno.permissions）
       '--import-map',
       path.join(workerRoot, 'import-map.json'),
-      '--node-modules-dir',
+      '--node-modules-dir=manual', // manual：直接复用现有本地 node_modules 解析裸 npm 包（插件依赖如 js-md5），不写 .deno 管理目录
       path.join(workerRoot, 'host.js')
     ]
     console.log('[engine] 启动 deno 宿主:', denoBin, args.join(' '))

@@ -111,7 +111,7 @@
             <div class="group-content">
               <div
                 v-for="plg in filteredPlugins"
-                :key="plg.id"
+                :key="plg.identifier || plg.pluginId"
                 class="node-item"
                 :class="{
                   disabled: disabled || !pluginNodeValid(plg),
@@ -123,10 +123,10 @@
                 @dragend="dragStartNode = false"
                 @click="trigger === 'click' ? handlePluginClick(plg) : null"
               >
-                <a-tooltip :content="plg.description || plg.name">
+                <a-tooltip :content="`${plg.name}（${plg.identifier}）\n${plg.description || ''}`">
                   <RiPlugLine class="node-icon" size="16" />
                 </a-tooltip>
-                <span class="node-name">{{ plg.name }}</span>
+                <span class="node-name">{{ plg.isDev ? plg.name + '（开发版）' : plg.name }}<span class="node-ver"> {{ plg.version }}</span></span>
               </div>
             </div>
           </div>
@@ -252,7 +252,8 @@
    * 插件对应的 plu_<插件id> 节点是否有效（已注册且满足增/插位置规则）
    */
   const pluginNodeValid = (plugin) => {
-    const node = allNodes[`plu_${plugin.id}`];
+    const identifier = plugin.identifier || (plugin.isDev ? `${plugin.pluginId}@dev` : `${plugin.pluginId}@${plugin.version}`)
+    const node = allNodes[`plu_${identifier}`];
     return !!node && isValid(node);
   };
 
@@ -262,7 +263,9 @@
    * 版本号沿用节点规则（_version: 'V1'）
    */
   const createPluginNodeData = (plugin) => {
-    return getInitNodeData(`plu_${plugin.id}`, null, false);
+    // 每版本独立节点：type = plu_pluginId@version
+    const identifier = plugin.identifier || (plugin.isDev ? `${plugin.pluginId}@dev` : `${plugin.pluginId}@${plugin.version}`)
+    return getInitNodeData(`plu_${identifier}`, null, false);
   };
 
   const handlePluginClick = (plugin) => {
@@ -460,6 +463,10 @@
       .node-name {
         font-size: 12px;
         color: var(--color-text-2);
+        .node-ver {
+          color: var(--color-text-3);
+          font-size: 11px;
+        }
       }
     }
   }

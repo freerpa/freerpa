@@ -144,75 +144,102 @@ export default nodes
 export const PLUGIN_NODE_PREFIX = 'plu_'
 const registeredPluginTypes = new Set()
 
-/** 根据插件 manifest 生成 plu_<插件id> 节点定义 */
+/** 插件声明类型 → 渲染端字段类型映射 */
+const PLUGIN_FIELD_TYPE_MAP = {
+  string: 'text',
+  number: 'number',
+  boolean: 'switch',
+  select: 'select',
+  text: 'text'
+}
+
+/** 根据插件条目生成 plu_<identifier> 节点定义（每版本独立节点；config 数组 → 渲染端基础分组字段） */
 const buildPluginNodeDef = (plugin) => {
-  // 插件配置分组原样保留（结构与内置节点 config 一致）
-  const config = {}
-  const pluginGroups = plugin.config && typeof plugin.config === 'object' ? plugin.config : {}
-  Object.entries(pluginGroups).forEach(([key, group]) => {
-    config[key] = {
-      name: group?.name || key,
-      fields: { ...(group?.fields || {}) }
+  const identifier = plugin.identifier || (plugin.isDev ? `${plugin.pluginId}@dev` : `${plugin.pluginId}@${plugin.version}`)
+  // 插件 config 数组（[{id,name,type,description,show,required}]）→ 渲染端字段对象
+  const fields = {}
+  const rawConfig = Array.isArray(plugin.config) ? plugin.config : []
+  rawConfig.forEach((item) => {
+    if (!item || !item.id) return
+    fields[item.id] = {
+      id: item.id,
+      name: item.name || item.id,
+      type: PLUGIN_FIELD_TYPE_MAP[item.type] || item.type || 'text',
+      description: item.description || '',
+      ...(item.show !== undefined ? { show: String(item.show) } : {}),
+      ...(item.required ? { required: true } : {}),
+      ...(Array.isArray(item.options) ? { options: item.options } : {}),
+      ...(item.default !== undefined ? { default: item.default } : {})
     }
   })
-  // 保证至少一个分组，用于承载隐藏的 pluginId 字段
-  const firstKey = Object.keys(config)[0] || 'basic'
-  if (!config[firstKey]) {
-    config[firstKey] = { name: '基础配置', fields: {} }
+  // 隐藏字段：pluginId（插件 id）+ _pluginIdentifier（pluginId@version，执行器精确到该版本目录）
+  fields.pluginId = {
+    id: 'pluginId',
+    name: '插件标识',
+    type: 'text',
+    default: plugin.pluginId,
+    show: 'false',
+    paramRef: false,
+    description: '本地插件唯一标识（自动绑定，不可修改）'
   }
-  // pluginId 隐藏字段：getInitNodeData 自动生成 config.pluginId = 插件 id，
-  // worker 端经 nodeLoader 的 plu_ 前缀映射后由 pluginCall 执行器据此定位插件目录。
-  // _pluginName/_pluginVersion 随节点保存，仅用于插件缺失时占位节点展示名称与版本；
-  // 执行时始终取插件目录最高版本（升级即时生效），不按 _pluginVersion 锁定
-  config[firstKey].fields = {
-    pluginId: {
-      id: 'pluginId',
-      name: '插件标识',
-      type: 'text',
-      default: plugin.id,
-      show: 'false',
-      paramRef: false,
-      description: '本地插件唯一标识（自动绑定，不可修改）'
-    },
-    _pluginName: {
-      id: '_pluginName',
-      name: '插件名称',
-      type: 'text',
-      default: plugin.name || '',
-      show: 'false',
-      paramRef: false
-    },
-    _pluginVersion: {
-      id: '_pluginVersion',
-      name: '插件版本',
-      type: 'text',
-      default: plugin.version || '',
-      show: 'false',
-      paramRef: false
-    },
-    ...config[firstKey].fields
+  fields._pluginIdentifier = {
+    id: '_pluginIdentifier',
+    name: '插件版本标识',
+    type: 'text',
+    default: identifier,
+    show: 'false',
+    paramRef: false,
+    description: '插件版本唯一标识（pluginId@version，自动绑定）'
+  }
+  fields._pluginName = {
+    id: '_pluginName',
+    name: '插件名称',
+    type: 'text',
+    default: plugin.name || '',
+    show: 'false',
+    paramRef: false
+  }
+  fields._pluginVersion = {
+    id: '_pluginVersion',
+    name: '插件版本',
+    type: 'text',
+    default: plugin.version || '',
+    show: 'false',
+    paramRef: false
+  }
+
+  const config = {
+    basic: { name: '基础配置', fields }
   }
 
   return markRaw({
-    type: `${PLUGIN_NODE_PREFIX}${plugin.id}`,
-    name: plugin.name || plugin.id,
+    type: `${PLUGIN_NODE_PREFIX}${identifier}`,
+    name: plugin.isDev ? `${plugin.name || plugin.pluginId}（开发版）` : plugin.name || plugin.pluginId,
     icon: RiPlugLine,
     description: plugin.description || '本地插件节点，执行本地安装的插件',
     view: false,
     config,
     inputs: plugin.inputs || [],
     outputs: plugin.outputs || [],
-    _version: 'V1', // 执行器目录版本（对应 pluginCall/V1/execute.js，与插件自身版本 _pluginVersion 无关）
-    _pluginId: plugin.id
+    _version: 'V1', // 执行器目录版本（对应 pluginCall/V1/execute.js，与插件自身版本无关）
+    _pluginId: plugin.pluginId,
+    _identifier: identifier
   })
 }
 
-/** 注册/更新单个本地插件节点（同一插件幂等；加载失败的插件不注册） */
+/** 注册/更新单个本地插件节点（每版本独立节点；加载失败的插件不注册） */
 export const registerPluginNode = (plugin) => {
-  if (!plugin?.id || plugin.error) return
-  const type = `${PLUGIN_NODE_PREFIX}${plugin.id}`
+  if (!plugin?.pluginId || plugin.error) return
+  const identifier = plugin.identifier || (plugin.isDev ? `${plugin.pluginId}@dev` : `${plugin.pluginId}@${plugin.version}`)
+  const type = `${PLUGIN_NODE_PREFIX}${identifier}`
   nodes[type] = buildPluginNodeDef(plugin)
   registeredPluginTypes.add(type)
+  // 旧节点（plu_插件ID）移除：避免与独立版本节点并存造成歧义
+  const legacy = `${PLUGIN_NODE_PREFIX}${plugin.pluginId}`
+  if (legacy !== type && nodes[legacy]) {
+    delete nodes[legacy]
+    registeredPluginTypes.delete(legacy)
+  }
 }
 
 /**
@@ -222,9 +249,12 @@ export const registerPluginNode = (plugin) => {
 export const loadPluginNodes = async () => {
   try {
     const plugins = (await window.electronAPI.plugin.list()) || []
-    const pluginIds = new Set(plugins.map((p) => p.id))
+    // 已注册的版本节点按 identifier（pluginId@version）清理；pluginId 用于清理残留的旧 plu_<id> 节点
+    const identifiers = new Set(plugins.map((p) => p.identifier || (p.isDev ? `${p.pluginId}@dev` : `${p.pluginId}@${p.version}`)))
+    const pluginIds = new Set(plugins.map((p) => p.pluginId))
     for (const type of [...registeredPluginTypes]) {
-      if (!pluginIds.has(type.slice(PLUGIN_NODE_PREFIX.length))) {
+      const suffix = type.slice(PLUGIN_NODE_PREFIX.length)
+      if (!identifiers.has(suffix) && !pluginIds.has(suffix)) {
         delete nodes[type]
         registeredPluginTypes.delete(type)
       }

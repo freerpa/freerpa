@@ -53,6 +53,7 @@ class WorkflowManager {
       nodes: workflow.nodes,
       edges: workflow.edges,
       pluginRoots: workflow.pluginRoots || [],
+      devPluginDirs: workflow.devPluginDirs || [],
       networkServerPort: workflow.networkServerPort || 0,
     });
     this.engines.set(id, engine);

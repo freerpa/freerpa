@@ -4,7 +4,7 @@
  */
 import EngineHost from './host/index.js'
 import { buildDenoPermissions, getPermissions } from './permissions.js'
-import { getPluginDirs } from '../plugin/store.js'
+import { getPluginRoot, getDevPlugins } from '../plugin/store.js'
 import { get } from '../store/index.js'
 import { clearFlowBrowsers } from './host/rpc-handlers.js'
 
@@ -13,12 +13,13 @@ import { clearFlowBrowsers } from './host/rpc-handlers.js'
  */
 const MAX_RUNNING = 999
 
-/** 基础设施读路径（引擎/节点/依赖/插件目录，自动授予 worker） */
-const infraReadPaths = (host, pluginRoots = []) => [
+/** 基础设施读路径（引擎/节点/npm 依赖/插件目录，自动授予 worker） */
+const infraReadPaths = (host, pluginRoots = [], devPluginDirs = []) => [
   host.paths.workerRoot,
   host.paths.nodesRoot,
   host.paths.nodeModulesRoot,
-  ...pluginRoots // 插件目录：插件 execute.js 及其依赖需可读
+  ...pluginRoots, // 正式版插件目录：插件 execute.js 及其依赖需可读
+  ...devPluginDirs // 开发版插件目录：源码与其本地 node_modules 需可读
 ]
 
 /**
@@ -39,20 +40,22 @@ export const manager = {
     const flowId = workflow.id
     const effective = getPermissions()
     // 插件目录随 init 注入 worker（同 nodesRoot 机制），并自动并入读权限白名单
-    const pluginRoots = getPluginDirs()
+    const pluginRoots = [getPluginRoot()]
+    const devPluginDirs = getDevPlugins().map((r) => r.path).filter(Boolean)
     // 本地网络服务默认端口（user-preferences.networkServer.port；未配置默认 9264）
     const networkServer = get('networkServer') || {}
     const networkServerPort =
       Number.isInteger(networkServer.port) && networkServer.port > 0 ? networkServer.port : 9264
 
     // 1. 创建 Worker（deno.permissions 描述符按生效权限生成）
-    await EngineHost.createWorker(flowId, buildDenoPermissions(effective, infraReadPaths(EngineHost, pluginRoots)))
-    // 2. 初始化 Worker（节点目录 / io roots / 插件目录 / 网络服务端口）
+    await EngineHost.createWorker(flowId, buildDenoPermissions(effective, infraReadPaths(EngineHost, pluginRoots, devPluginDirs)))
+    // 2. 初始化 Worker（节点目录 / io roots / 插件目录 / 开发版目录 / 网络服务端口）
     await EngineHost.invoke('init', {
       flowId,
       nodesRoot: EngineHost.paths.nodesRoot,
       ioRoots: effective.io.roots,
       pluginRoots,
+      devPluginDirs,
       networkServerPort
     }, flowId)
     // 3. 创建工作流引擎

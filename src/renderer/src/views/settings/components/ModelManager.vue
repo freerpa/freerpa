@@ -7,41 +7,47 @@
           添加供应商
         </a-button>
       </template>
-      <div v-if="providers.length" class="provider-grid">
+      <div v-if="providers.length" class="provider-list">
         <div v-for="provider in providers" :key="provider.id" class="provider-card">
-          <div class="provider-card__head">
-            <span class="provider-card__name" :title="provider.name">{{ provider.name }}</span>
-            <a-tag color="arcoblue">{{ protocolLabel[provider.protocol] || provider.protocol }}</a-tag>
-          </div>
-          <div class="provider-card__row">
-            <span class="provider-card__label">API地址</span>
-            <span class="mono provider-card__value" :title="provider.baseURL">{{ provider.baseURL || '—' }}</span>
-          </div>
-          <div class="provider-card__row">
-            <span class="provider-card__label">APIKEY</span>
-            <span v-if="provider.hasKey" class="mono provider-card__value">{{ provider.apiKey }}</span>
-            <a-tag v-else color="red">未配置</a-tag>
-          </div>
-          <div class="provider-card__row">
-            <span class="provider-card__label">模型</span>
-            <div class="provider-card__models">
-              <template v-if="provider.models.length">
-                <a-tag v-for="m in visibleModels(provider)" :key="m.id" class="model-chip" :title="m.id">
-                  {{ m.name || m.id }}
-                </a-tag>
-                <a-tag v-if="provider.models.length > VISIBLE_MODELS" color="gray">
-                  +{{ provider.models.length - VISIBLE_MODELS }}
-                </a-tag>
-              </template>
-              <span v-else class="provider-card__empty">无模型</span>
+          <a-card size="small" :bordered="true">
+            <template #title>
+              <div class="provider-card__name" :title="provider.name">
+                {{ provider.name }}&nbsp;
+                <a-tag color="arcoblue" size="small">{{ protocolLabel[provider.protocol] || provider.protocol }}</a-tag>
+              </div>
+            </template>
+            <template #extra>
+              <a-button size="mini" @click="openEdit(provider)">编辑</a-button>
+              <a-popconfirm content="删除后该供应商及其模型将不可用，确认删除？" @ok="handleDelete(provider)">
+                <a-button size="mini" status="danger">删除</a-button>
+              </a-popconfirm>
+            </template>
+            <div class="provider-card__body">
+              <div class="provider-card__row">
+                <span class="provider-card__label">API地址</span>
+                <span class="mono provider-card__value" :title="provider.baseURL">{{ provider.baseURL || '—' }}</span>
+              </div>
+              <div class="provider-card__row">
+                <span class="provider-card__label">APIKEY</span>
+                <span v-if="provider.hasKey" class="mono provider-card__value">{{ provider.apiKey }}</span>
+                <a-tag v-else color="red">未配置</a-tag>
+              </div>
+              <div class="provider-card__row">
+                <span class="provider-card__label">模型</span>
+                <div class="provider-card__models">
+                  <template v-if="provider.models.length">
+                    <a-tag v-for="m in visibleModels(provider)" :key="m.id" class="model-chip" :title="m.id">
+                      {{ m.name || m.id }}
+                    </a-tag>
+                    <a-tag v-if="provider.models.length > VISIBLE_MODELS" color="gray">
+                      +{{ provider.models.length - VISIBLE_MODELS }}
+                    </a-tag>
+                  </template>
+                  <span v-else class="provider-card__empty">无模型</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="provider-card__actions">
-            <a-button type="text" size="mini" @click="openEdit(provider)">编辑</a-button>
-            <a-popconfirm content="删除后该供应商及其模型将不可用，确认删除？" @ok="handleDelete(provider)">
-              <a-button type="text" size="mini" status="danger">删除</a-button>
-            </a-popconfirm>
-          </div>
+          </a-card>
         </div>
       </div>
       <a-empty v-else description="暂无供应商。点击右上角「添加供应商」配置模型后，工作流 AI 助手即可使用。">
@@ -67,12 +73,18 @@
             @change="applyPreset"
           />
         </a-form-item>
-        <a-form-item label="名称" required>
-          <a-input v-model="form.name" placeholder="如 DeepSeek / 自定义供应商" />
-        </a-form-item>
-        <a-form-item label="协议" required>
-          <a-select v-model="form.protocol" :options="protocolOptions" />
-        </a-form-item>
+        <a-row :gutter="8">
+          <a-col :span="12">
+            <a-form-item label="名称" required>
+              <a-input v-model="form.name" placeholder="如 DeepSeek / 自定义供应商" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="协议" required>
+              <a-select v-model="form.protocol" :options="protocolOptions" />
+            </a-form-item>
+          </a-col>
+        </a-row>
         <a-form-item label="API地址">
           <a-input v-model="form.baseURL" :placeholder="protocolPlaceholder" />
           <template #extra>
@@ -86,7 +98,7 @@
             allow-clear
           />
         </a-form-item>
-        <a-form-item label="模型列表（可多次添加）">
+        <a-form-item label="模型列表">
           <div class="model-rows">
             <div v-for="(model, index) in form.models" :key="index" class="model-row">
               <a-input v-model="model.id" placeholder="模型ID，如 deepseek-chat" />
@@ -248,37 +260,31 @@
     font-family: monospace;
     font-size: 12px;
   }
-  // 供应商卡片网格（替代表格：完整展示 API 地址与模型列表）
-  .provider-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 16px;
-  }
-  .provider-card {
-    border: 1px solid var(--color-border-2);
-    border-radius: 8px;
-    padding: 14px 16px;
+  // 供应商卡片列表（对齐插件管理：每排一个，操作在标题栏右侧）
+  .provider-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    background: var(--color-bg-2);
-    transition: box-shadow 0.2s ease;
-    &:hover {
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    }
-    &__head {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    &__name {
-      flex: 1;
-      min-width: 0;
-      font-size: 15px;
+    gap: 12px;
+  }
+  .provider-card {
+    .provider-card__name {
+      font-size: 14px;
       font-weight: 600;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      max-width: 320px;
+    }
+    // 标题栏右侧：协议 + 操作
+    :deep(.arco-card-header-extra) {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .provider-card__body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
     &__row {
       display: flex;
@@ -313,14 +319,6 @@
     }
     &__empty {
       color: var(--color-text-4);
-    }
-    &__actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 4px;
-      border-top: 1px dashed var(--color-border-2);
-      padding-top: 10px;
-      margin-top: auto;
     }
   }
   .model-rows {

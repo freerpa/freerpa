@@ -9,13 +9,15 @@ import { setNodesRoot } from './core/nodeLoader.js'
 let flowId = null
 let ioRoots = []
 let pluginRoots = []
+let devPluginDirs = []
 let networkServerPort = 0
 
 // 初始化：宿主创建 Worker 后第一个命令（注入工作流配置）
-bridge.onInvoke('init', ({ flowId: fid, nodesRoot, ioRoots: roots, pluginRoots: proots, networkServerPort: nsp = 0 }) => {
+bridge.onInvoke('init', ({ flowId: fid, nodesRoot, ioRoots: roots, pluginRoots: proots, devPluginDirs: devDirs = [], networkServerPort: nsp = 0 }) => {
   flowId = fid
   ioRoots = roots || []
   pluginRoots = proots || []
+  devPluginDirs = devDirs || []
   networkServerPort = nsp || 0
   setNodesRoot(nodesRoot)
   return true
@@ -24,7 +26,7 @@ bridge.onInvoke('init', ({ flowId: fid, nodesRoot, ioRoots: roots, pluginRoots: 
 // 创建工作流引擎
 bridge.onInvoke('createEngine', async ({ workflow }) => {
   flowId = workflow.id
-  const engine = await WorkflowManager.createEngine({ ...workflow, ioRoots, pluginRoots, networkServerPort })
+  const engine = await WorkflowManager.createEngine({ ...workflow, ioRoots, pluginRoots, devPluginDirs, networkServerPort })
   engine.on('stateChange', (state, error) => {
     bridge.sendEvent(`flowEventBus:stateChange:${flowId}`, { state, error })
     if (['completed', 'stopped', 'error'].includes(state)) {
