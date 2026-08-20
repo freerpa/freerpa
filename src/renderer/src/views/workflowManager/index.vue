@@ -5,6 +5,7 @@
     search-placeholder="搜索工作流"
     empty-text="暂无工作流"
     v-model:search-keyword="searchKeyword"
+    v-model:selected-ids="selectedIds"
     :items="workflows"
     :loading="loading"
     :has-more="hasMore"
@@ -14,6 +15,7 @@
     @edit="handleEdit"
     @category-change="onCategoryChange"
     @scroll="loadMore"
+    @batch-delete="handleBatchDelete"
   >
     <template #extra-actions>
       <a-button @click="showTrash = true"><template #icon><icon-delete /></template>回收站</a-button>
@@ -53,6 +55,8 @@
 
   <WorkflowInfoEditor v-model:visible="showWorkflowInfoEditor" :model-id="selectedWorkflow?.id" @success="handleEditorSuccess" />
 
+  <CopyCountModal v-model:visible="showCopyModal" name="工作流" @confirm="handleCopyConfirm" />
+
   <RecycleBin v-model:visible="showTrash" :api="workflowAPI" :on-restored="() => fetchWorkflows(true)" />
 </template>
 
@@ -64,6 +68,7 @@ import { RiFlowChart } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
 import WorkflowInfoEditor from './components/WorkflowInfoEditor.vue'
 import RecycleBin from '@/components/RecycleBin.vue'
+import CopyCountModal from '@/components/CopyCountModal.vue'
 import { useFlowStore } from '@/workflow/store'
 import { useStore } from '@/store'
 import { storeToRefs } from 'pinia'
@@ -79,6 +84,9 @@ const workflows = ref([])
 const searchKeyword = ref('')
 const showWorkflowInfoEditor = ref(false)
 const selectedWorkflow = ref(null)
+const selectedIds = ref([])
+const showCopyModal = ref(false)
+const copyTarget = ref(null)
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = 24
@@ -116,12 +124,31 @@ const handleDelete = (workflow, index) => {
   })
 }
 
-const handleCopy = async (workflow) => {
+const handleCopy = (workflow) => { copyTarget.value = workflow; showCopyModal.value = true }
+
+const handleCopyConfirm = async (count) => {
+  const workflow = copyTarget.value
   try {
     const full = await workflowAPI.getWorkflow(workflow.id)
-    await workflowAPI.createWorkflow({ name: `${full.name} - 副本`, description: full.description, category_id: full.category_id, graph: JSON.parse(full.graph) })
-    Message.success('复制成功'); fetchWorkflows(true)
+    for (let i = 1; i <= count; i++) {
+      const suffix = count > 1 ? ` - 副本${i}` : ' - 副本'
+      await workflowAPI.createWorkflow({ name: `${full.name}${suffix}`, description: full.description, category_id: full.category_id, graph: JSON.parse(full.graph) })
+    }
+    Message.success(`已复制 ${count} 份`); fetchWorkflows(true)
   } catch (e) { Message.error('复制失败') }
+}
+
+// 批量移入回收站（跳过执行中的工作流）
+const handleBatchDelete = async (ids) => {
+  const runningIds = ids.filter((id) => getStatus(id) === 'running')
+  const deleteIds = ids.filter((id) => getStatus(id) !== 'running')
+  if (runningIds.length) Message.warning(`跳过 ${runningIds.length} 个执行中的工作流`)
+  try {
+    await Promise.all(deleteIds.map((id) => workflowAPI.deleteWorkflow(id)))
+    if (deleteIds.length) Message.success(`已移入回收站 ${deleteIds.length} 项`)
+  } catch (e) { Message.error('批量删除失败') }
+  selectedIds.value = []
+  fetchWorkflows(true)
 }
 
 const handleExport = async (workflow) => {

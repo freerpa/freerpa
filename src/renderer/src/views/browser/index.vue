@@ -5,6 +5,7 @@
     search-placeholder="搜索浏览器"
     empty-text="暂无浏览器"
     v-model:search-keyword="searchKeyword"
+    v-model:selected-ids="selectedIds"
     :items="browsers"
     :loading="loading"
     :has-more="hasMore"
@@ -14,6 +15,7 @@
     @edit="handleEdit"
     @category-change="onCategoryChange"
     @scroll="loadMore"
+    @batch-delete="handleBatchDelete"
   >
     <template #extra-actions>
       <a-button @click="showTrash = true"><template #icon><icon-delete /></template>回收站</a-button>
@@ -31,6 +33,7 @@
             <a-button style="padding: 0 0px" type="text"><icon-more-vertical /></a-button>
             <template #content>
               <a-doption @click="handleEdit(env)"><icon-edit /> 编辑</a-doption>
+              <a-doption @click="handleCopy(env)"><icon-copy /> 复制</a-doption>
               <a-doption @click="handleDelete(env, index)"><icon-delete /> 删除</a-doption>
               <a-doption @click="handleExport(env)"><icon-export /> 导出</a-doption>
             </template>
@@ -56,17 +59,20 @@
     <BrowserEditor v-if="showCreateModal" :env-id="selectedEnv?.id" @success="handleEditorSuccess" @cancel="showCreateModal=false" />
   </a-modal>
   <RecycleBin v-model:visible="showTrash" :api="browserAPI" :on-restored="() => fetchBrowsers(true)" />
+
+  <CopyCountModal v-model:visible="showCopyModal" name="浏览器" @confirm="handleCopyConfirm" />
 </template>
 
 <script setup>
 import { ref, watch, onActivated, onMounted, onUnmounted, reactive } from 'vue'
 import { Message, Modal } from '@arco-design/web-vue'
-import { IconEdit, IconDelete, IconMoreVertical, IconStop, IconExport } from '@arco-design/web-vue/es/icon'
+import { IconEdit, IconDelete, IconMoreVertical, IconStop, IconExport, IconCopy } from '@arco-design/web-vue/es/icon'
 import { RiChromeLine } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
 import BrowserEditor from './components/BrowserEditor.vue'
 import RecycleBin from '@/components/RecycleBin.vue'
 import BrowserOpenModal from './components/BrowserOpenModal.vue'
+import CopyCountModal from '@/components/CopyCountModal.vue'
 import { debounce } from 'lodash-es'
 import { exportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
 
@@ -77,6 +83,9 @@ const browsers = ref([])
 const searchKeyword = ref('')
 const showCreateModal = ref(false)
 const selectedEnv = ref(null)
+const selectedIds = ref([])
+const showCopyModal = ref(false)
+const copyTarget = ref(null)
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = 24
@@ -110,6 +119,37 @@ const handleDelete = (env, index) => {
     cancelButtonProps: { style: { width: '160px' } },
     onOk: async () => { await browserAPI.deleteBrowser(env.id); browsers.value.splice(index, 1) }
   })
+}
+
+const handleCopy = (env) => { copyTarget.value = env; showCopyModal.value = true }
+
+const handleCopyConfirm = async (count) => {
+  const env = copyTarget.value
+  try {
+    const full = await browserAPI.getBrowser(env.id)
+    for (let i = 1; i <= count; i++) {
+      const suffix = count > 1 ? ` - 副本${i}` : ' - 副本'
+      await browserAPI.createBrowser({
+        name: `${full.name}${suffix}`,
+        description: full.description,
+        category_id: full.category_id,
+        kernel_id: full.kernel_id,
+        proxy_url: full.proxy_url,
+        config: full.config || {}
+      })
+    }
+    Message.success(`已复制 ${count} 份`); fetchBrowsers(true)
+  } catch (e) { Message.error('复制失败') }
+}
+
+// 批量移入回收站
+const handleBatchDelete = async (ids) => {
+  try {
+    await Promise.all(ids.map((id) => browserAPI.deleteBrowser(id)))
+    Message.success(`已移入回收站 ${ids.length} 项`)
+  } catch (e) { Message.error('批量删除失败') }
+  selectedIds.value = []
+  fetchBrowsers(true)
 }
 
 const handleOpenBrowser = async (env) => {

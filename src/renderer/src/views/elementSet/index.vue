@@ -5,6 +5,7 @@
     search-placeholder="搜索元素集"
     empty-text="暂无元素集"
     v-model:search-keyword="searchKeyword"
+    v-model:selected-ids="selectedIds"
     :items="elementSets"
     :loading="loading"
     :has-more="hasMore"
@@ -14,6 +15,7 @@
     @edit="handleEdit"
     @category-change="onCategoryChange"
     @scroll="loadMore"
+    @batch-delete="handleBatchDelete"
   >
     <template #extra-actions>
       <a-button @click="showTrash = true"><template #icon><icon-delete /></template>回收站</a-button>
@@ -32,6 +34,7 @@
               <a-button style="padding: 0 0px" type="text"><icon-more-vertical /></a-button>
               <template #content>
                 <a-doption @click="handleEdit(es)"><icon-edit /> 编辑</a-doption>
+                <a-doption @click="handleCopy(es)"><icon-copy /> 复制</a-doption>
                 <a-doption @click="handleDelete(es, index)"><icon-delete /> 删除</a-doption>
                 <a-doption @click="handleExport(es)"><icon-export /> 导出</a-doption>
               </template>
@@ -57,16 +60,19 @@
   />
 
   <RecycleBin v-model:visible="showTrash" :api="elementSetAPI" :on-restored="() => fetchElementSets(true)" />
+
+  <CopyCountModal v-model:visible="showCopyModal" name="元素集" @confirm="handleCopyConfirm" />
 </template>
 
 <script setup>
 import { ref, watch, onActivated } from 'vue'
 import { Message, Modal } from '@arco-design/web-vue'
-import { IconEdit, IconDelete, IconMoreVertical, IconExport } from '@arco-design/web-vue/es/icon'
+import { IconEdit, IconDelete, IconMoreVertical, IconExport, IconCopy } from '@arco-design/web-vue/es/icon'
 import { RiStackLine } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
 import RecycleBin from '@/components/RecycleBin.vue'
 import ElementSetEditor from './components/ElementSetEditor.vue'
+import CopyCountModal from '@/components/CopyCountModal.vue'
 import { debounce } from 'lodash-es'
 import { exportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
 
@@ -77,6 +83,9 @@ const elementSets = ref([])
 const searchKeyword = ref('')
 const showEditor = ref(false)
 const selectedId = ref(null)
+const selectedIds = ref([])
+const showCopyModal = ref(false)
+const copyTarget = ref(null)
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = 24
@@ -127,6 +136,35 @@ const handleDelete = (es, index) => {
       elementSets.value.splice(index, 1)
     }
   })
+}
+
+const handleCopy = (es) => { copyTarget.value = es; showCopyModal.value = true }
+
+const handleCopyConfirm = async (count) => {
+  const es = copyTarget.value
+  try {
+    const full = await elementSetAPI.getElementSet(es.id)
+    for (let i = 1; i <= count; i++) {
+      const suffix = count > 1 ? ` - 副本${i}` : ' - 副本'
+      await elementSetAPI.createElementSet({
+        title: `${full.title}${suffix}`,
+        description: full.description,
+        category_id: full.category_id,
+        elements: full.elements || []
+      })
+    }
+    Message.success(`已复制 ${count} 份`); fetchElementSets(true)
+  } catch (e) { Message.error('复制失败') }
+}
+
+// 批量移入回收站
+const handleBatchDelete = async (ids) => {
+  try {
+    await Promise.all(ids.map((id) => elementSetAPI.deleteElementSet(id)))
+    Message.success(`已移入回收站 ${ids.length} 项`)
+  } catch (e) { Message.error('批量删除失败') }
+  selectedIds.value = []
+  fetchElementSets(true)
 }
 
 const handleExport = async (es) => {

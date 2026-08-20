@@ -167,20 +167,20 @@ export const permanentDeleteModel = (id) =>
   })
 
 // 复制模型
-export const copyModel = (id) =>
+export const copyModel = (id, newName) =>
   withDb('models', ensureModelsTable, async (db) => {
     const model = await db.get('SELECT * FROM models WHERE id = ?', id)
     if (!model) throw new Error('模型不存在')
 
     const newId = uuidv4().replace(/-/g, '_')
-    const newName = `${model.name} - 副本`
+    const name = newName || `${model.name} - 副本`
 
     await db.run('BEGIN TRANSACTION')
     try {
       const fields = JSON.parse(model.fields)
       await db.run(
         `INSERT INTO models (id, name, description, fields) VALUES (?, ?, ?, ?)`,
-        [newId, newName, model.description, JSON.stringify(fields)]
+        [newId, name, model.description, JSON.stringify(fields)]
       )
       const columns = fields
         .map((field) =>

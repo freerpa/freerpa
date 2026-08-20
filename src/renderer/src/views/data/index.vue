@@ -5,6 +5,7 @@
     search-placeholder="搜索数据表"
     empty-text="暂无数据表"
     v-model:search-keyword="searchKeyword"
+    v-model:selected-ids="selectedIds"
     :items="models"
     :loading="loading"
     :has-more="hasMore"
@@ -14,6 +15,7 @@
     @edit="handleEdit"
     @category-change="onCategoryChange"
     @scroll="loadMore"
+    @batch-delete="handleBatchDelete"
   >
     <template #extra-actions>
       <a-button @click="showTrash = true"><template #icon><icon-delete /></template>回收站</a-button>
@@ -62,6 +64,8 @@
     @success="handleEditorSuccess"
   />
   <RecycleBin v-model:visible="showTrash" :api="dataAPI" :on-restored="() => fetchModels(true)" />
+
+  <CopyCountModal v-model:visible="showCopyModal" name="数据表" @confirm="handleCopyConfirm" />
 </template>
 
 <script setup>
@@ -72,6 +76,7 @@ import { RiDatabase2Line } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
 import ModelEditor from './components/ModelEditor.vue'
 import RecycleBin from '@/components/RecycleBin.vue'
+import CopyCountModal from '@/components/CopyCountModal.vue'
 import { useStore } from '@/store'
 import { storeToRefs } from 'pinia'
 import { exportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
@@ -88,6 +93,9 @@ const models = ref([])
 const searchKeyword = ref('')
 const showCreateModal = ref(false)
 const editingModel = ref(null)
+const selectedIds = ref([])
+const showCopyModal = ref(false)
+const copyTarget = ref(null)
 const currentPage = ref(1)
 const pageSize = 24
 const loading = ref(false)
@@ -132,8 +140,27 @@ const handleViewData = (model) => {
   switchTab(model.id)
 }
 
-const handleCopy = async (model) => {
-  try { await dataAPI.copyModel(model.id); Message.success('复制成功'); fetchModels(true) } catch (e) { Message.error('复制失败: ' + e.message) }
+const handleCopy = (model) => { copyTarget.value = model; showCopyModal.value = true }
+
+const handleCopyConfirm = async (count) => {
+  const model = copyTarget.value
+  try {
+    for (let i = 1; i <= count; i++) {
+      const suffix = count > 1 ? ` - 副本${i}` : ' - 副本'
+      await dataAPI.copyModel(model.id, `${model.name}${suffix}`)
+    }
+    Message.success(`已复制 ${count} 份`); fetchModels(true)
+  } catch (e) { Message.error('复制失败: ' + e.message) }
+}
+
+// 批量移入回收站
+const handleBatchDelete = async (ids) => {
+  try {
+    await Promise.all(ids.map((id) => dataAPI.deleteModel(id)))
+    Message.success(`已移入回收站 ${ids.length} 项`)
+  } catch (e) { Message.error('批量删除失败') }
+  selectedIds.value = []
+  fetchModels(true)
 }
 
 const handleExport = async (model) => {
