@@ -79,6 +79,15 @@
 
         <!-- Config panel trigger -->
         <slot name="config-trigger" />
+
+        <!-- Dev-mode plugin IO refresh (canvas node card title far right) -->
+        <a-tooltip v-if="refreshable" content="刷新插件 IO 描述（重新读取 freerpa.io.js）">
+          <icon-refresh
+            class="node-refresh"
+            :class="{ spin: refreshing }"
+            @click.stop="$emit('refresh')"
+          />
+        </a-tooltip>
       </a-space>
     </div>
   </div>
@@ -88,12 +97,13 @@
 import { ref, watch, nextTick } from 'vue'
 import {
   IconExclamationPolygonFill,
-  IconBug
+  IconBug,
+  IconRefresh
 } from '@arco-design/web-vue/es/icon'
 import ModalPopover from '../../ModalPopover.vue'
 import DebugInfo from './debugInfo.vue'
 
-defineEmits(['action', 'saveName', 'update:nodeName', 'clearDebug'])
+defineEmits(['action', 'saveName', 'update:nodeName', 'clearDebug', 'refresh'])
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -107,7 +117,9 @@ const props = defineProps({
   errMsg: { type: String, default: '' },
   debugInfos: { type: Array, default: () => [] },
   showDebug: { type: Boolean, default: false },
-  iconStyle: { type: [Object, String], default: () => ({}) }
+  iconStyle: { type: [Object, String], default: () => ({}) },
+  refreshable: { type: Boolean, default: false },
+  refreshing: { type: Boolean, default: false }
 })
 
 // Auto-select input text when entering rename mode
@@ -166,6 +178,29 @@ watch(() => props.renameMode, (val) => {
     .exclamation {
       color: #ff4d4f;
     }
+
+    .node-refresh {
+      cursor: pointer;
+      color: var(--color-text-3);
+      transition: color 0.2s;
+      &:hover {
+        color: rgb(var(--primary-6));
+      }
+      &.spin {
+        animation: header-refresh-spin 0.8s linear infinite;
+        pointer-events: none;
+        color: rgb(var(--primary-6));
+      }
+    }
+  }
+}
+
+@keyframes header-refresh-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

@@ -28,7 +28,7 @@ export default {
           quickConfig: true,
           onChange: (value, formData) => {
             if (value === 'read') {
-              formData.value.outputs = [
+              formData.outputs = [
                 {
                   id: 'content',
                   name: '剪贴板内容',
@@ -37,7 +37,7 @@ export default {
                 }
               ]
             } else {
-              formData.value.outputs = []
+              formData.outputs = []
             }
           }
         },

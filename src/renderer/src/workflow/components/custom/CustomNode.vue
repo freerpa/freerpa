@@ -53,6 +53,9 @@
       :debug-infos="debugInfos"
       :show-debug="debug"
       :icon-style="data.type === 'workflowIf' ? 'transform: rotate(90deg)' : ''"
+      :refreshable="refreshable"
+      :refreshing="refreshing"
+      @refresh="handleRefreshPlugin"
       @action="actionSelect"
       @save-name="saveNodeName"
       @update:node-name="nodeName = $event"
@@ -148,6 +151,7 @@ import { useFlowStore } from '../../store'
 import { storeToRefs } from 'pinia'
 import { ConnectionRules } from '../../utils'
 import { useStore } from '@/store'
+import { loadPluginNodes } from '@nodes-path'
 
 // Sub-components
 import FlowHandles from './components/FlowHandles.vue'
@@ -195,6 +199,7 @@ provide('nodeId', props.id)
 // ── Composables ─────────────────────────────────
 const {
   nodeDefinition,
+  refreshNodeDefinition,
   nodeConfig,
   allConfigFieldsWithGroup,
   quickConfigFields,
@@ -219,7 +224,7 @@ const { nodeStatus, errMsg, debugInfos, setupEngineLifecycle } = useNodeEvents(
   props, workflowId, flowStore, nodeViewRef, debug
 )
 
-const { isAllowExpand, toggleSubFlow } = useSubFlow(props, flowStore, nodeDefinition, isExecuting)
+const { isAllowExpand, toggleSubFlow } = useSubFlow(props, flowStore, nodeDefinition.value, isExecuting)
 
 // ── Setup watchers & lifecycle ──────────────────
 setupConfigWatchers()
@@ -228,13 +233,31 @@ setupEngineLifecycle()
 
 // ── Node view async component ──────────────────
 const nodeView = computed(() => {
-  if (nodeDefinition.view) {
+  if (nodeDefinition.value.view) {
     // 使用节点自身保存的版本号加载 view.vue，而非注册表中的最新版本
     const version = props.data.version || 'V1'
-    return defineAsyncComponent(() => import(`@nodes-path/${nodeDefinition.type}/${version}/view.vue`))
+    return defineAsyncComponent(() => import(`@nodes-path/${nodeDefinition.value.type}/${version}/view.vue`))
   }
   return null
 })
+
+// ── 开发版插件刷新（画布节点卡片右上角）──────────────────
+const isDev = typeof import.meta !== 'undefined' && import.meta.env ? Boolean(import.meta.env.DEV) : false
+const refreshing = ref(false)
+// 仅插件节点展示刷新按钮：开发版改完 freerpa.io.js 后手动刷新，重读 IO 描述并重建本节点定义
+const refreshable = computed(() => isDev && (nodeDefinition.value?.type || '').startsWith('plu_'))
+const handleRefreshPlugin = async () => {
+  if (refreshing.value) return
+  refreshing.value = true
+  try {
+    // 重扫本地插件并同步响应式注册表 nodes[type]
+    await loadPluginNodes()
+    // 重建本节点定义（quickConfig/io 随之更新）
+    refreshNodeDefinition()
+  } finally {
+    refreshing.value = false
+  }
+}
 
 // ── Resize handler ──────────────────────────────
 const handleResize = (event) => {

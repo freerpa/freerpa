@@ -52,16 +52,16 @@ export default {
             }
             const model = await window.electronAPI.data.getModel(value)
             const fields = JSON.parse(model?.fields)
-            if (formData.value.rules.length === 0 && fields?.length > 0) {
+            if (formData.rules.length === 0 && fields?.length > 0) {
               fields.forEach((field) => {
-                formData.value.rules.push({
+                formData.rules.push({
                   field: field.name,
                   selector: '',
                   format: {}
                 })
               })
             }
-            formData.value.modelId = ''
+            formData.modelId = ''
           }
         },
         {

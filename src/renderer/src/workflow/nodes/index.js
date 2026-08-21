@@ -159,26 +159,19 @@ const PLUGIN_FIELD_TYPE_MAP = {
 
 /**
  * 归一单个插件配置项 → 渲染端字段对象。
- * 纯数据项（show/options/default）来自 freerpa.io.js；
- * 函数钩子（onChange/remoteMethod）原样保留，仅当来源为 freerpa.io.js 时存在
- * （渲染端 useFieldValue / useRemoteOptions 通用调用，与内置节点同机制）。
+ * 采用透传：保留插件声明的全部字段属性（remote/quickConfig/min/max/required 等不再被白名单丢弃），
+ * 仅做必要归一——类型映射、名称兜底、显隐表达式字符串化、嵌套子字段递归。
+ * onChange/remoteMethod 等函数钩子经透传原样保留（仅来自 freerpa.io.js，运行时表单与内置节点同机制）。
  */
 const mapPluginField = (item) => {
-  const field = {
-    id: item.id,
-    name: item.name || item.id,
-    type: PLUGIN_FIELD_TYPE_MAP[item.type] || item.type || 'text',
-    description: item.description || ''
-  }
+  const field = { ...item }
+  // 类型映射 + 兜底
+  field.type = PLUGIN_FIELD_TYPE_MAP[item.type] || item.type || 'text'
+  // 名称兜底
+  if (!field.name) field.name = item.id
+  field.description = field.description || ''
   // 显隐表达式：字符串透传，布尔/缺省等价原值（渲染端已有求值引擎）
   if (item.show !== undefined) field.show = String(item.show)
-  if (item.required) field.required = true
-  if (Array.isArray(item.options)) field.options = item.options
-  if (item.default !== undefined) field.default = item.default
-  if (item.paramRef !== undefined) field.paramRef = item.paramRef
-  // 函数钩子（仅 config.js 来源；函数不过 IPC/工作流 JSON，仅供运行时表单）
-  if (typeof item.onChange === 'function') field.onChange = item.onChange
-  if (typeof item.remoteMethod === 'function') field.remoteMethod = item.remoteMethod
   // 嵌套字段（array/object 子字段），统一为数组形态
   if (Array.isArray(item.fields)) {
     field.fields = item.fields.map(mapPluginField)

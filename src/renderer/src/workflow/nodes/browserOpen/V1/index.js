@@ -44,8 +44,8 @@ export default {
           onChange: async (val, formData) => {
             if (!val) return
             const env = await window.electronAPI.browserLocal.getBrowser(val)
-            if (env?.proxy_url && !formData.value.proxyUrl) {
-              formData.value.proxyUrl = env.proxy_url
+            if (env?.proxy_url && !formData.proxyUrl) {
+              formData.proxyUrl = env.proxy_url
             }
           }
         },

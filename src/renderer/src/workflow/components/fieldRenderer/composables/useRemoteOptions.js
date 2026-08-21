@@ -5,7 +5,7 @@ import { ref, watch } from 'vue'
  * 统一 loading 状态、异常处理与静态 options 同步
  * @param {Object} field 字段定义（field.remote / field.remoteMethod / field.options）
  * @param {Function} [getCallArg] remoteMethod 调用参数构造（(keyword)=>arg；Select 传 keyword，Radio/Checkbox 传当前值）
- * @param {*} [extra] remoteMethod 第二参数（Select 透传 formData）
+ * @param {*} [extra] remoteMethod 第二参数（Select 透传 formData.value，处理器直接以普通对象使用）
  */
 export function useRemoteOptions(field, getCallArg, extra) {
   const loading = ref(false)

@@ -11,6 +11,19 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { randomUUID } from 'node:crypto'
 
+/** UTF-8 安全 base64：btoa 直接吃中文（非 Latin-1）会抛异常，需先转字节 */
+const toBase64 = (str) => {
+  const bytes = new TextEncoder().encode(str)
+  let bin = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  return btoa(bin)
+}
+
+import { __bindInstance, __unbindInstance } from 'freerpa'
+
 /**
  * 实例级运行时（data URL，闭包绑定，无需 AsyncLocalStorage）：
  * 每个执行实例独立生成一个 runtime 模块，其 complete/next/wait/inputs/config
@@ -27,7 +40,7 @@ const buildInstanceRuntime = (id) => {
     `export const inputs = __i.inputs;`,
     `export const config = __i.config;`
   ].join('\n')
-  return 'data:text/javascript;base64,' + btoa(runSource)
+  return 'data:text/javascript;base64,' + toBase64(runSource)
 }
 
 /** 解析正式版目录名：{pluginId}@{version} */
@@ -158,6 +171,8 @@ const execute = async (node, context) => {
     inputs,
     config
   }
+  // 绑定当前实例：插件子模块里未被重写的裸 `from 'freerpa'` 导入，经共享运行时也能读到本实例 config
+  __bindInstance(uid)
 
   // 实例级 runtime：data URL，顶层同步读取注册表并闭包捕获（不同 uid ⇒ 独立模块实例）
   const instanceRuntimeUrl = buildInstanceRuntime(uid)
@@ -198,7 +213,7 @@ const execute = async (node, context) => {
       // 无相对导入的插件：直接用 data URL 执行 —— 零临时文件、零写权限依赖，
       // 每实例独立 data URL 天然绕过模块缓存，任意并发互不覆盖。
       try {
-        await runMod(await import('data:text/javascript;base64,' + btoa(rewritten)))
+        await runMod(await import('data:text/javascript;base64,' + toBase64(rewritten)))
       } catch {
         // 保底回退：直接加载原始模块（避免 data URL 解析差异等边缘情况导致回归）
         const mod = await import(pathToFileURL(plugin.executePath).href + '?v=' + Date.now() + '_' + uid)
@@ -215,6 +230,7 @@ const execute = async (node, context) => {
     if (proxyPath) {
       try { fs.unlinkSync(proxyPath) } catch { /* 忽略清理失败 */ }
     }
+    __unbindInstance()
     delete globalThis.__freerpaInstances[uid]
   }
 }

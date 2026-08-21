@@ -129,9 +129,9 @@ export default {
             }
             const model = await window.electronAPI.data.getModel(value)
             const fields = JSON.parse(model?.fields)
-            if (formData.value.parseRules.length === 0 && fields?.length > 0) {
+            if (formData.parseRules.length === 0 && fields?.length > 0) {
               fields.forEach((field) => {
-                formData.value.parseRules.push({
+                formData.parseRules.push({
                   field: field.name,
                   selector: '',
                   getType: 'text',
@@ -140,7 +140,7 @@ export default {
                 })
               })
             }
-            formData.value.modelId = ''
+            formData.modelId = ''
           }
         },
         //解析规则

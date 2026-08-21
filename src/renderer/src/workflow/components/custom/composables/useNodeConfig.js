@@ -1,4 +1,4 @@
-import { computed, watch, ref } from 'vue'
+import { computed, watch, ref, shallowRef } from 'vue'
 import nodes from '@nodes-path'
 import { IconExclamationCircle } from '@arco-design/web-vue/es/icon'
 import { buildErrorHandleGroup, getConfigFieldGroups } from '../../../nodes/common.js'
@@ -28,41 +28,49 @@ const PLACEHOLDER_DEF = {
 export function useNodeConfig(props, flowStore, isPreview) {
   // 占位定义：输入输出与配置字段定义取自节点保存的数据（_pluginConfig），
   // 使插件缺失时仍能渲染连线口与配置表单
-  const nodeDefinition = nodes[props.data.type] || {
-    ...PLACEHOLDER_DEF,
-    type: props.data.type,
-    inputs: props.data.inputs || [],
-    outputs: props.data.outputs || [],
-    config: props.data._pluginConfig || [],
-    description: `本地插件「${props.data.config?._pluginName || props.data.name}」未安装或已被移除，请安装对应插件后重新加载工作流`
+  const buildNodeDefinition = () => {
+    const def = nodes[props.data.type] || {
+      ...PLACEHOLDER_DEF,
+      type: props.data.type,
+      inputs: props.data.inputs || [],
+      outputs: props.data.outputs || [],
+      config: props.data._pluginConfig || [],
+      description: `本地插件「${props.data.config?._pluginName || props.data.name}」未安装或已被移除，请安装对应插件后重新加载工作流`
+    }
+
+    // 注入通用错误处理分组（幂等）；刷新后重新读取定义时再次注入
+    if (def && def.type !== 'workflowStart' && def.type !== 'workflowEnd') {
+      def.config = def.config || []
+      if (!def.config.some((g) => g?.id === 'errorHandle')) {
+        def.config.push(
+          buildErrorHandleGroup(
+            async (keyword = '') => {
+              const node = flowStore.vueFlowRef.findNode(props.id)
+              let nodesList = flowStore.vueFlowRef.getNodes.filter(
+                (n) => n.parentNode === node.parentNode && n.id !== node.id
+              )
+              if (keyword) {
+                nodesList = nodesList.filter((n) => n.data.name.includes(keyword))
+              }
+              return nodesList.map((el) => ({
+                label: el.data.name,
+                value: el.id
+              }))
+            }
+          )
+        )
+      }
+    }
+    return def
   }
 
-  // Inject error handling config for non-start/end nodes
-  if (
-    nodeDefinition &&
-    nodeDefinition.type !== 'workflowStart' &&
-    nodeDefinition.type !== 'workflowEnd'
-  ) {
-    nodeDefinition.config = nodeDefinition.config || []
-    if (!nodeDefinition.config.some((g) => g?.id === 'errorHandle')) {
-      nodeDefinition.config.push(
-        buildErrorHandleGroup(
-          async (keyword = '') => {
-            const node = flowStore.vueFlowRef.findNode(props.id)
-            let nodesList = flowStore.vueFlowRef.getNodes.filter(
-              (n) => n.parentNode === node.parentNode && n.id !== node.id
-            )
-            if (keyword) {
-              nodesList = nodesList.filter((n) => n.data.name.includes(keyword))
-            }
-            return nodesList.map((el) => ({
-              label: el.data.name,
-              value: el.id
-            }))
-          }
-        )
-      )
-    }
+  // 用 shallowRef 持有节点定义：注册表 nodes[type] 更新（如开发版手动刷新插件 IO）后可重建重写，
+  // 使画布节点卡片/快速配置联动更新
+  const nodeDefinition = shallowRef(buildNodeDefinition())
+
+  // 开发版插件刷新：重新读取注册表最新定义（调用方需先 await loadPluginNodes() 同步 nodes[type]）
+  const refreshNodeDefinition = () => {
+    nodeDefinition.value = buildNodeDefinition()
   }
 
   // Node config data with getter/setter
@@ -76,12 +84,12 @@ export function useNodeConfig(props, flowStore, isPreview) {
   })
 
   // All config fields grouped by config group name
-  const allConfigFieldsWithGroup = computed(() => getConfigFieldGroups(nodeDefinition))
+  const allConfigFieldsWithGroup = computed(() => getConfigFieldGroups(nodeDefinition.value))
 
   // Quick config fields (marked as quickConfig or required)
   const quickConfigFields = computed(() => {
     const fields = []
-    for (const group of nodeDefinition?.config || []) {
+    for (const group of nodeDefinition.value?.config || []) {
       for (const field of group?.fields || []) {
         if (field.quickConfig || field.required) {
           fields.push(field)
@@ -132,6 +140,7 @@ export function useNodeConfig(props, flowStore, isPreview) {
 
   return {
     nodeDefinition,
+    refreshNodeDefinition,
     nodeConfig,
     allConfigFieldsWithGroup,
     quickConfigFields,

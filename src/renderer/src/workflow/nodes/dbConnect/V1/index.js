@@ -30,8 +30,8 @@ export default {
           onChange: (value, formData) => {
             // 切换类型时按默认端口回填（仅当端口未手动填写）
             const defaults = { mysql: 3306, postgres: 5432, mssql: 1433, sqlite: null }
-            if (!formData.value.port && defaults[value]) {
-              formData.value.port = defaults[value]
+            if (!formData.port && defaults[value]) {
+              formData.port = defaults[value]
             }
           },
           quickConfig: true

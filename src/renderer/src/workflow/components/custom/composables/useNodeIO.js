@@ -10,15 +10,16 @@ import { resolveDynamicIO } from '../../../resolve-io.js'
 export function useNodeIO(props, flowStore, nodeDefinition, allConfigFieldsWithGroup) {
   // Get node inputs (static + dynamic + subFlow start node outputs)
   const nodeInputs = computed(() => {
-    const inputs = nodeDefinition?.inputs?.filter((input) => input.type !== 'dynamic') || []
+    const def = nodeDefinition?.value
+    const inputs = def?.inputs?.filter((input) => input.type !== 'dynamic') || []
     const dynamicInputs = resolveDynamicIO(
-      nodeDefinition?.inputs?.filter((input) => input.type === 'dynamic'),
+      def?.inputs?.filter((input) => input.type === 'dynamic'),
       props.data.config,
       'inputs'
     )
 
     let startNodeOutputs = []
-    if (nodeDefinition?.subFlow) {
+    if (def?.subFlow) {
       const startNode = flowStore.vueFlowRef.getNodes.find(
         (node) => node.data.type === 'workflowStart' && node.parentNode === props.id + '-subFlow'
       )
@@ -44,7 +45,8 @@ export function useNodeIO(props, flowStore, nodeDefinition, allConfigFieldsWithG
   // Get node outputs (static + dynamic + subFlow end node inputs)
   const nodeOutputs = computed(() => {
     try {
-      const outputs = nodeDefinition?.outputs?.filter((output) => output.type !== 'dynamic') || []
+      const def = nodeDefinition?.value
+      const outputs = def?.outputs?.filter((output) => output.type !== 'dynamic') || []
 
       // Sub-flow start node: add parent's subFlow.startOutputs
       if (props.data.type === 'workflowStart') {
@@ -68,13 +70,13 @@ export function useNodeIO(props, flowStore, nodeDefinition, allConfigFieldsWithG
       }
 
       const dynamicOutputs = resolveDynamicIO(
-        nodeDefinition?.outputs?.filter((output) => output.type === 'dynamic'),
+        def?.outputs?.filter((output) => output.type === 'dynamic'),
         props.data.config,
         'outputs'
       )
 
       let endNodeInputs = []
-      if (nodeDefinition?.subFlow && nodeDefinition.subFlow.endOutputs !== false) {
+      if (def?.subFlow && def.subFlow.endOutputs !== false) {
         const endNode = flowStore.vueFlowRef.getNodes.find(
           (node) => node.data.type === 'workflowEnd' && node.parentNode === props.id + '-subFlow'
         )

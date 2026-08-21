@@ -12,7 +12,7 @@ export function useFieldWatch(props, value) {
   const formData = inject('formData')
   if (typeof props.field?.onChange === 'function') {
     watch(value, (newVal) => {
-      props.field.onChange(newVal, formData)
+      props.field.onChange(newVal, formData.value)
     })
   }
 }

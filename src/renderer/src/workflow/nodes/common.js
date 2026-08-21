@@ -366,11 +366,11 @@ export const configFields = [
           'model'
         ].includes(value)
       ) {
-        formData.value.dataType = 'string'
+        formData.dataType = 'string'
       } else if (value === 'switch') {
-        formData.value.dataType = 'boolean'
+        formData.dataType = 'boolean'
       } else {
-        formData.value.dataType = value
+        formData.dataType = value
       }
     },
     default: 'string'
@@ -397,9 +397,9 @@ export const configFields = [
     default: false,
     onChange: (value, formData) => {
       if (value) {
-        formData.value.format = 'YYYY-MM-DD HH:mm:ss'
+        formData.format = 'YYYY-MM-DD HH:mm:ss'
       } else {
-        formData.value.format = 'YYYY-MM-DD'
+        formData.format = 'YYYY-MM-DD'
       }
     }
   },
@@ -453,11 +453,11 @@ export const configFields = [
     default: false,
     onChange: (value, formData) => {
       if (value) {
-        formData.value.dataType = 'array'
-        formData.value[formData.value.type + 'Value'] = []
+        formData.dataType = 'array'
+        formData[formData.type + 'Value'] = []
       } else {
-        formData.value.dataType = 'string'
-        formData.value[formData.value.type + 'Value'] = ''
+        formData.dataType = 'string'
+        formData[formData.type + 'Value'] = ''
       }
     }
   },
@@ -709,7 +709,7 @@ export const buildConfigFields = (config) => {
         try {
           const getOptionsFunc = new Function('keyWord', 'formData', `return (async function(keyWord = '',formData) {
             ${config.remoteMethod}
-          })('${keyWord.toString() || ''}',${JSON.stringify(formData.value)})`)
+          })('${keyWord.toString() || ''}',${JSON.stringify(formData)})`)
           const result = getOptionsFunc()
           return result
         } catch {
