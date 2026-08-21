@@ -2,9 +2,9 @@
  * @file: 判断节点执行器
  */
 import dayjs from 'dayjs'
-import isBetween from 'dayjs/plugin/isBetween'
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
+import isBetween from 'dayjs/plugin/isBetween.js'
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js'
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter.js'
 
 // 加载dayjs插件
 dayjs.extend(isBetween)

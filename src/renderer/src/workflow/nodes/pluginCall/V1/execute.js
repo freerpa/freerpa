@@ -9,7 +9,26 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { __setRuntimeContext } from 'freerpa'
+import { randomUUID } from 'node:crypto'
+
+/**
+ * 实例级运行时（data URL，闭包绑定，无需 AsyncLocalStorage）：
+ * 每个执行实例独立生成一个 runtime 模块，其 complete/next/wait/inputs/config
+ * 在模块顶层同步读取 globalThis 注册表中「本实例」的回调并闭包捕获。
+ * 插件经重写后的 import 解析到它，从而彻底摆脱动态 import + 顶层 await 场景下
+ * AsyncLocalStorage 上下文传播不可靠导致的并发限制。
+ */
+const buildInstanceRuntime = (id) => {
+  const runSource = [
+    `const __i = globalThis.__freerpaInstances[${JSON.stringify(id)}];`,
+    `export const complete = (o) => __i.complete(o);`,
+    `export const next = (o) => __i.next(o);`,
+    `export const wait = (ms) => __i.wait(ms);`,
+    `export const inputs = __i.inputs;`,
+    `export const config = __i.config;`
+  ].join('\n')
+  return 'data:text/javascript;base64,' + btoa(runSource)
+}
 
 /** 解析正式版目录名：{pluginId}@{version} */
 const parsePluginDirName = (name) => {
@@ -120,25 +139,33 @@ const execute = async (node, context) => {
   }
   if (!plugin) throw new Error('插件未找到: ' + (identifier || pluginId))
 
-  // 注入 freerpa 运行上下文（插件 import 'freerpa' 后顶层即可读取）
+  // ‖ 每个执行实例独立隔离：不再用 AsyncLocalStorage（Deno 中动态 import + 顶层 await
+  // ‖ 场景下其上下文传播不可靠，导致最多只能并发 2 个插件）。改为「每实例闭包绑定」：
+  // ‖  1) globalThis.__freerpaInstances[id] 持有本实例的 complete/next/wait/inputs/config 回调；
+  // ‖  2) 生成一个 data URL 形式的实例级 runtime 模块，闭包捕获 uid 并读取该实例回调；
+  // ‖  3) 复制插件源码到临时 proxy 文件，把 `from "freerpa"` 重写为指向实例级 runtime，
+  // ‖     再 import 该 proxy —— 插件拿到的 API 天然绑定本实例，任意并发互不覆盖。
   const nodeIO = node.config?.__nodeIO || {}
   const inputs = node.inputs || nodeIO.inputs || {}
   const config = node.config || {}
-  __setRuntimeContext({
-    inputs,
-    config,
+  const uid = randomUUID()
+
+  globalThis.__freerpaInstances = globalThis.__freerpaInstances || {}
+  globalThis.__freerpaInstances[uid] = {
     complete: (outputs) => context.complete(outputs),
     next: (outputs) => context.next(outputs),
-    wait: (ms) => context.wait(ms)
-  })
+    wait: (ms) => context.wait(ms),
+    inputs,
+    config
+  }
 
-  // 每次执行强制新模块实例（顶层逻辑重新执行；带 query 绕过模块缓存）
-  const url = pathToFileURL(plugin.executePath).href + '?v=' + Date.now()
-  const mod = await import(url)
+  // 实例级 runtime：data URL，顶层同步读取注册表并闭包捕获（不同 uid ⇒ 独立模块实例）
+  const instanceRuntimeUrl = buildInstanceRuntime(uid)
 
   // 兼容 default 导出函数：调用并按其返回值自动完成
-  const executeFn = mod.default
-  if (typeof executeFn === 'function') {
+  const runMod = async (mod) => {
+    const executeFn = mod.default
+    if (typeof executeFn !== 'function') return // 插件为顶层执行型，import resolve 即完成
     const result = await executeFn({ inputs, config })
     if (result && typeof result === 'object') {
       const currentOutputs = context.getOutputs()
@@ -147,7 +174,49 @@ const execute = async (node, context) => {
       }
     }
   }
-  // 顶层执行逻辑：import resolve 即完成（含顶层 await）；插件经 complete()/next() 与工作流交互
+
+  // 读取插件源码，把裸导入 "freerpa"/'freerpa' 重写为实例级 runtime URL（兼容打包产物无空格的 from"freerpa"）
+  let raw
+  try {
+    raw = fs.readFileSync(plugin.executePath, 'utf-8')
+  } catch (err) {
+    throw new Error(`无法读取插件源码: ${err.message}`)
+  }
+
+  // 若写入了临时 proxy 文件，用于 finally 清理
+  let proxyPath = null
+  try {
+    if (!/(["'])freerpa\1/.test(raw)) {
+      // 不依赖 freerpa API 的插件：直接以原始路径加载（普通模块）
+      await import(pathToFileURL(plugin.executePath).href + '?v=' + Date.now() + '_' + uid)
+      return
+    }
+
+    const rewritten = raw.replace(/["']freerpa["']/g, JSON.stringify(instanceRuntimeUrl))
+
+    if (!/from\s*["']\.\//.test(raw)) {
+      // 无相对导入的插件：直接用 data URL 执行 —— 零临时文件、零写权限依赖，
+      // 每实例独立 data URL 天然绕过模块缓存，任意并发互不覆盖。
+      try {
+        await runMod(await import('data:text/javascript;base64,' + btoa(rewritten)))
+      } catch {
+        // 保底回退：直接加载原始模块（避免 data URL 解析差异等边缘情况导致回归）
+        const mod = await import(pathToFileURL(plugin.executePath).href + '?v=' + Date.now() + '_' + uid)
+        await runMod(mod)
+      }
+      return
+    }
+
+    // 带相对导入的插件：proxy 文件放插件同目录保证相对依赖（如 './util.js'）仍按原目录解析
+    proxyPath = path.join(path.dirname(plugin.executePath), `.${path.basename(plugin.executePath)}.fr-${uid}.mjs`)
+    fs.writeFileSync(proxyPath, rewritten)
+    await runMod(await import(pathToFileURL(proxyPath).href))
+  } finally {
+    if (proxyPath) {
+      try { fs.unlinkSync(proxyPath) } catch { /* 忽略清理失败 */ }
+    }
+    delete globalThis.__freerpaInstances[uid]
+  }
 }
 
 export default execute

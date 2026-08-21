@@ -23,6 +23,7 @@
     "tls": "node:tls",
     "child_process": "node:child_process",
     "buffer": "node:buffer",
-    "zlib": "node:zlib"
+    "zlib": "node:zlib",
+    "node:async_hooks": "node:async_hooks"
   }
 }
