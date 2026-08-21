@@ -51,17 +51,17 @@
                 <span class="label">描述</span>
                 {{ plg.description || '无描述' }}
               </p>
-              <div v-if="plg.config && plg.config.length" class="plugin-config-preview">
+              <div v-if="pluginFields(plg).length" class="plugin-config-preview">
                 <span class="label">配置</span>
-                <a-tag v-for="item in plg.config" :key="item.id" size="small">{{ item.name || item.id }}</a-tag>
+                <a-tag v-for="item in pluginFields(plg)" :key="item.id" size="small">{{ item.name || item.id }}</a-tag>
               </div>
-              <div v-if="plg.inputs && plg.inputs.length" class="plugin-io-preview">
+              <div v-if="pluginInputs(plg).length" class="plugin-io-preview">
                 <span class="label">输入</span>
-                <a-tag v-for="inp in plg.inputs" :key="inp.id" size="small">{{ inp.name }}</a-tag>
+                <a-tag v-for="inp in pluginInputs(plg)" :key="inp.id" size="small">{{ inp.name || inp.id }}</a-tag>
               </div>
-              <div v-if="plg.outputs && plg.outputs.length" class="plugin-io-preview">
+              <div v-if="pluginOutputs(plg).length" class="plugin-io-preview">
                 <span class="label">输出</span>
-                <a-tag v-for="out in plg.outputs" :key="out.id" size="small">{{ out.name }}</a-tag>
+                <a-tag v-for="out in pluginOutputs(plg)" :key="out.id" size="small">{{ out.name || out.id }}</a-tag>
               </div>
             </div>
           </a-card>
@@ -75,9 +75,39 @@
   import { ref, onMounted, onUnmounted } from 'vue';
   import { Message, Modal } from '@arco-design/web-vue';
   import { IconPlus, IconRefresh, IconInfoCircle, IconFolderAdd } from '@arco-design/web-vue/es/icon';
-  import { loadPluginNodes } from '@/workflow/nodes';
+  import nodes, { loadPluginNodes, PLUGIN_NODE_PREFIX } from '@/workflow/nodes';
 
   const plugins = ref([]);
+
+  /**
+   * 定位插件对应的已注册节点定义（index.js 的 registerPluginNode 已把 freerpa.io.js 的
+   * config/inputs/outputs 解析到 nodes[type]，原始插件列表里的 config/inputs/outputs 恒为空数组）。
+   */
+  const nodeDefOf = (plg) => {
+    if (!plg?.pluginId) return null;
+    const identifier =
+      plg.identifier || (plg.isDev ? `${plg.pluginId}@dev` : `${plg.pluginId}@${plg.version}`);
+    return nodes[PLUGIN_NODE_PREFIX + identifier] || null;
+  };
+
+  /** 是否隐藏字段（pluginId/_pluginIdentifier 等自动注入字段标 show:'false'） */
+  const isHidden = (f) => /^(false|hidden|0)$/i.test(String(f?.show ?? '').trim());
+
+  /** 展平节点定义配置分组 → 可见字段列表（首页卡片展示用） */
+  const pluginFields = (plg) => {
+    const def = nodeDefOf(plg);
+    if (!def) return [];
+    const list = [];
+    (def.config || []).forEach((g) => {
+      (g.fields || []).forEach((f) => {
+        if (f?.id && !isHidden(f)) list.push(f);
+      });
+    });
+    return list;
+  };
+
+  const pluginInputs = (plg) => nodeDefOf(plg)?.inputs || [];
+  const pluginOutputs = (plg) => nodeDefOf(plg)?.outputs || [];
   const loading = ref(false);
   const progress = ref({ visible: false, percent: 0, label: '', status: 'normal' });
 
@@ -227,6 +257,7 @@
         .plugin-io-preview {
           display: flex;
           align-items: center;
+          gap: 8px;
           flex-wrap: wrap;
           font-size: 12px;
         }

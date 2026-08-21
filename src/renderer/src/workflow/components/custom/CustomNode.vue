@@ -244,11 +244,18 @@ const nodeView = computed(() => {
 // ── 开发版插件刷新（画布节点卡片右上角）──────────────────
 const isDev = typeof import.meta !== 'undefined' && import.meta.env ? Boolean(import.meta.env.DEV) : false
 const refreshing = ref(false)
-// 仅插件节点展示刷新按钮：开发版改完 freerpa.io.js 后手动刷新，重读 IO 描述并重建本节点定义
-const refreshable = computed(() => isDev && (nodeDefinition.value?.type || '').startsWith('plu_'))
+// 仅「开发版」插件节点展示刷新按钮（type 形如 plu_<id>@dev）：改完 freerpa.io.js 后手动刷新，重读 IO 描述并重建本节点定义；
+// 正式版插件（type 形如 plu_<id>@<version>）不提供刷新，安装即固定。
+const refreshable = computed(
+  () =>
+    isDev &&
+    (nodeDefinition.value?.type || '').startsWith('plu_') &&
+    (nodeDefinition.value?.type || '').endsWith('@dev')
+)
 const handleRefreshPlugin = async () => {
   if (refreshing.value) return
   refreshing.value = true
+  await new Promise(resolve => setTimeout(resolve, 300))
   try {
     // 重扫本地插件并同步响应式注册表 nodes[type]
     await loadPluginNodes()

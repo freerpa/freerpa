@@ -81,7 +81,7 @@
         <slot name="config-trigger" />
 
         <!-- Dev-mode plugin IO refresh (canvas node card title far right) -->
-        <a-tooltip v-if="refreshable" content="刷新插件 IO 描述（重新读取 freerpa.io.js）">
+        <a-tooltip v-if="refreshable" content="刷新开发版插件">
           <icon-refresh
             class="node-refresh"
             :class="{ spin: refreshing }"
@@ -181,13 +181,10 @@ watch(() => props.renameMode, (val) => {
 
     .node-refresh {
       cursor: pointer;
-      color: var(--color-text-3);
-      transition: color 0.2s;
-      &:hover {
         color: rgb(var(--primary-6));
-      }
+      transition: color 0.2s;
       &.spin {
-        animation: header-refresh-spin 0.8s linear infinite;
+        animation: header-refresh-spin 0.3s linear infinite;
         pointer-events: none;
         color: rgb(var(--primary-6));
       }
