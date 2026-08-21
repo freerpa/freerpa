@@ -8,8 +8,25 @@ import fs from 'fs'
 import os from 'os'
 import path from 'path'
 import AdmZip from 'adm-zip'
+import clientPkg from '../../../package.json'
 import { getPluginRoot, pluginDirName, addDevPlugin, removeDevPlugin } from './store.js'
 import { readPluginPackage } from './manifest.js'
+import { compareSemver } from '../utils.js'
+
+/**
+ * 校验当前客户端版本是否满足插件要求的最低客户端版本（package.json 的 freerpa 字段）。
+ * 不满足时抛错拒绝（安装 / 导入开发版）。
+ */
+function assertClientVersion(clientVersion) {
+  if (!clientVersion) return
+  if (!/^\d+(\.\d+)*$/.test(clientVersion)) return // 非法的不做硬拦截，交由运行时
+  const cur = clientPkg?.version || ''
+  if (cur && compareSemver(cur, clientVersion) < 0) {
+    throw new Error(
+      `当前客户端版本过低，无法安装：需要 ≥ v${clientVersion}，当前为 v${cur}`
+    )
+  }
+}
 
 /** 包内 package.json 是否位于包根（而非单层包裹目录） */
 function locatePackageRoot(zip) {
@@ -65,6 +82,8 @@ export async function inspectFrp(filePath) {
 export async function installFrp(filePath, onProgress = () => {}) {
   const { tmpDir, packageRoot, pkg } = await inspectFrp(filePath)
   try {
+    // 客户端最低版本校验：插件要求更高版本时拒绝安装
+    assertClientVersion(pkg.clientVersion)
     const root = getPluginRoot()
     fs.mkdirSync(root, { recursive: true })
     const target = path.join(root, pluginDirName(pkg.pluginId, pkg.version))
@@ -132,6 +151,8 @@ export async function importDevPlugin(dir) {
   if (!/^\d+(\.\d+)*$/.test(pkg.version)) {
     throw new Error(`插件版本号不合法: ${pkg.version}`)
   }
+  // 客户端最低版本校验：开发版同样要求客户端满足其 freerpa 声明
+  assertClientVersion(pkg.clientVersion)
   addDevPlugin({ pluginId: pkg.pluginId, path: path.resolve(dir), importedAt: Date.now() })
   return { pluginId: pkg.pluginId, version: 'dev', dir: path.resolve(dir) }
 }
