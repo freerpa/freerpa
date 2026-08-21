@@ -9,11 +9,12 @@ export default {
   icon: RiTimeLine,
   description: '获取当前时间',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        timeType: {
+      fields: [
+        {
           id: 'timeType',
           name: '时间类型',
           description: '要获取的时间类型',
@@ -32,7 +33,7 @@ export default {
             }
           ]
         },
-        format: {
+        {
           id: 'format',
           name: '格式',
           description: '时间格式化字符串，例如：YYYY-MM-DD HH:mm:ss',
@@ -42,9 +43,9 @@ export default {
           required: true,
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: [
     {

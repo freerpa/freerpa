@@ -6,11 +6,12 @@ export default {
   icon: RiChromeLine,
   description: '打开一个浏览器',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        browser: {
+      fields: [
+        {
           id: 'browser',
           name: '打开方式',
           type: 'radio',
@@ -22,7 +23,7 @@ export default {
           ],
           quickConfig: true
         },
-        cdpUrl: {
+        {
           id: 'cdpUrl',
           name: 'CDP地址',
           type: 'input',
@@ -32,7 +33,7 @@ export default {
           quickConfig: true,
           required: true
         },
-        envId: {
+        {
           id: 'envId',
           name: '浏览器',
           type: 'browser',
@@ -48,7 +49,7 @@ export default {
             }
           }
         },
-        proxyUrl: {
+        {
           id: 'proxyUrl',
           name: '代理地址',
           type: 'text',
@@ -56,14 +57,14 @@ export default {
           description: '协议://用户名:密码@地址:端口',
           quickConfig: true
         },
-        script: {
+        {
           id: 'script',
           name: '前置脚本',
           type: 'code',
           description: '每个新页面加载完成后立即执行的脚本',
           quickConfig: true
         },
-        launchOptions: {
+        {
           id: 'launchOptions',
           name: '启动设置',
           type: 'checkbox',
@@ -78,7 +79,7 @@ export default {
           show: "${browser} === 'builtin'",
           quickConfig: true
         },
-        extraArgs: {
+        {
           id: 'extraArgs',
           name: '启动参数',
           show: '${launchOptions}.includes("--custom-arg") && ${browser} === "builtin"',
@@ -96,9 +97,9 @@ export default {
           description: '浏览器启动参数，如 "--headless=new" 等',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: [
     { id: 'page', name: '浏览器', type: 'page', description: '浏览器页面对象（供其他网页控制节点使用）' }

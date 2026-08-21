@@ -9,11 +9,12 @@ export default {
   icon: IconNotification,
   description: "创建一条系统通知消息并显示在通知中心",
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: "基础配置",
-      fields: {
-        content: {
+      fields: [
+        {
           id: "content",
           name: "内容",
           type: "textarea",
@@ -21,7 +22,7 @@ export default {
           description: "要显示在通知中心的内容",
           quickConfig: true,
         },
-        type: {
+        {
           id: "type",
           name: "类型",
           type: "radio",
@@ -48,9 +49,9 @@ export default {
             }
           ]
         }
-      },
+      ],
     },
-  },
+  ],
   inputs: [],
   outputs: [],
 }

@@ -8,11 +8,12 @@ export default {
   name: 'JS注入',
   icon: RiJavascriptLine,
   description: '向页面注入JavaScript代码，默认async执行',
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        code: {
+      fields: [
+        {
           id: 'code',
           name: 'js代码',
           type: 'code',
@@ -21,9 +22,9 @@ export default {
           description: '要注入的JavaScript代码，无需函数包裹',
           default: '// 在这里编写JavaScript代码\n\n\n\n'
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'page',

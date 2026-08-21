@@ -13,7 +13,7 @@ export default {
     width: 300,
     height: 250
   },
-  config: {},
+  config: [],
   inputs: [
     {
       id: 'video',

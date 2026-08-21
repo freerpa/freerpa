@@ -9,11 +9,12 @@ export default {
   icon: RiArticleLine,
   description: '获取页面上的文本、属性等内容',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        selector: {
+      fields: [
+        {
           id: 'selector',
           name: '目标元素',
           type: 'selector',
@@ -22,7 +23,7 @@ export default {
           default: '',
           quickConfig: true
         },
-        getAll: {
+        {
           id: 'getAll',
           name: '获取全部',
           type: 'switch',
@@ -30,7 +31,7 @@ export default {
           description: '是否获取全部符合条件的元素,否则仅获取第一个符合条件的元素',
           quickConfig: true
         },
-        deduplicate: {
+        {
           id: 'deduplicate',
           name: '是否去重',
           type: 'switch',
@@ -38,7 +39,7 @@ export default {
           description: '是否对已获取过内容的元素进行过滤,适用动态分页的列表获取（页面刷新或跳转后去重失效）',
           quickConfig: true
         },
-        elementState: {
+        {
           id: 'elementState',
           name: '元素状态',
           type: 'checkbox',
@@ -50,7 +51,7 @@ export default {
           description: '要获取内容的目标元素状态',
           quickConfig: true
         },
-        getType: {
+        {
           id: 'getType',
           name: '获取类型',
           type: 'select',
@@ -70,7 +71,7 @@ export default {
           description: '要获取的内容类型',
           quickConfig: true
         },
-        attributeName: {
+        {
           id: 'attributeName',
           name: '属性名称',
           type: 'input',
@@ -80,7 +81,7 @@ export default {
           required: '${getType} === "attribute"',
           quickConfig: true
         },
-        styleName: {
+        {
           id: 'styleName',
           name: '样式名称',
           type: 'input',
@@ -90,7 +91,7 @@ export default {
           required: '${getType} === "style"'
         },
         //解析规则
-        parseRulesTip: {
+        {
           id: 'parseRulesTip',
           nolabel: true,
           type: 'alert',
@@ -99,7 +100,7 @@ export default {
           quickConfig: true,
           onlyQuick: true
         },
-        modelId: {
+        {
           id: 'modelId',
           name: '获取字段',
           type: 'select',
@@ -143,7 +144,7 @@ export default {
           }
         },
         //解析规则
-        parseRules: {
+        {
           id: 'parseRules',
           name: '解析规则',
           type: 'array',
@@ -151,20 +152,20 @@ export default {
           description: '解析规则',
           default: [],
           quickConfig: false,
-          fields: {
-            field: {
+          fields: [
+            {
               id: 'field',
               name: '字段名',
               description: '输出的内容字段名',
               type: 'input'
             },
-            selector: {
+            {
               id: 'selector',
               name: '子元素',
               description: '子元素,为空时取当前父元素',
               type: 'selector'
             },
-            getType: {
+            {
               id: 'getType',
               name: '获取类型',
               type: 'select',
@@ -184,7 +185,7 @@ export default {
               description: '要获取的内容类型',
               quickConfig: true
             },
-            attributeName: {
+            {
               id: 'attributeName',
               name: '属性名称',
               type: 'input',
@@ -193,7 +194,7 @@ export default {
               required: '${getType} === "attribute"',
               quickConfig: true
             },
-            styleName: {
+            {
               id: 'styleName',
               name: '样式名称',
               type: 'input',
@@ -201,11 +202,11 @@ export default {
               show: '${getType} === "style"',
               required: '${getType} === "style"'
             }
-          }
+          ]
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'page',

@@ -16,7 +16,7 @@ export default {
     // 节点描述
     description: '获取路径的状态信息',
     // 节点配置
-    config: {},
+    config: [],
     // 输入定义
     inputs: [
         {

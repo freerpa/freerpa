@@ -9,11 +9,12 @@ export default {
   icon: Ri24HoursLine,
   description: '对时间进行转换和加减操作',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        handleType: {
+      fields: [
+        {
           id: 'handleType',
           name: '处理类型',
           description: '要处理的时间类型',
@@ -36,7 +37,7 @@ export default {
             }
           ]
         },
-        format: {
+        {
           id: 'format',
           name: '格式',
           description: '时间格式化字符串，例如：YYYY-MM-DD HH:mm:ss',
@@ -47,7 +48,7 @@ export default {
           quickConfig: true
         }
         , 
-        amount: {
+        {
           id: 'amount',
           name: '数值',
           description: '时间加减数值，负数表示减去',
@@ -58,7 +59,7 @@ export default {
           quickConfig: true
         }
         , 
-        unit: {
+        {
           id: 'unit',
           name: '单位',
           description: '时间加减单位',
@@ -98,9 +99,9 @@ export default {
             }
           ]
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'time',

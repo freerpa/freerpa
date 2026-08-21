@@ -18,8 +18,8 @@ const rules = {
   name: '规则',
   type: 'array',
   default: [],
-  fields: {
-    name: {
+  fields: [
+    {
       id: 'name',
       name: '参数名称',
       description: '要匹配的参数名称；响应匹配支持点号路径，如：data.0.title',
@@ -27,7 +27,7 @@ const rules = {
       required: true,
       default: ''
     },
-    type: {
+    {
       id: 'type',
       name: '匹配方式',
       type: 'radio',
@@ -40,7 +40,7 @@ const rules = {
       ],
       default: 'eq'
     },
-    value: {
+    {
       id: 'value',
       name: '匹配值',
       type: 'string',
@@ -48,7 +48,7 @@ const rules = {
       show: "!['exists','empty'].includes(${type})",
       default: ''
     }
-  }
+  ]
 }
 export default {
   type: 'browserNetworkListener',
@@ -56,24 +56,25 @@ export default {
   icon: IconWifi,
   description: '监听浏览器网络请求',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        url: {
+      fields: [
+        {
           id: 'url',
           name: 'URL匹配',
           type: 'object',
           default: {},
-          fields: {
+          fields: [
             mode,
-            rules: {
+            {
               id: 'rules',
               name: '规则',
               type: 'array',
               default: [],
-              fields: {
-                type: {
+              fields: [
+                {
                   id: 'type',
                   name: '匹配方式',
                   type: 'radio',
@@ -84,18 +85,18 @@ export default {
                   ],
                   default: 'contains'
                 },
-                value: {
+                {
                   id: 'value',
                   name: '匹配值',
                   type: 'string',
                   required: true,
                   default: ''
                 }
-              }
+              ]
             }
-          }
+          ]
         },
-        method: {
+        {
           id: 'method',
           name: '请求方法',
           type: 'checkbox',
@@ -110,27 +111,27 @@ export default {
           ],
           default: ['GET', 'POST']
         },
-        headers: {
+        {
           id: 'headers',
           name: '请求头匹配',
           type: 'object',
           default: {},
-          fields: {
+          fields: [
             mode,
             rules
-          }
+          ]
         },
-        body: {
+        {
           id: 'body',
           name: '请求体匹配',
           type: 'object',
           default: {},
-          fields: {
+          fields: [
             mode,
             rules
-          }
+          ]
         },
-        isContinuous: {
+        {
           id: 'isContinuous',
           name: '持续监听',
           type: 'switch',
@@ -139,7 +140,7 @@ export default {
             '选中则持续监听网络请求，否则只监听一次就卸载监听事件，等待下一次节点运行时重新监听。',
           quickConfig: true
         },
-        configTip: {
+        {
           id: 'configTip',
           name: '配置提示',
           nolabel: true,
@@ -149,13 +150,14 @@ export default {
           onlyQuick: true,
           content: '点击右上角齿轮配置网络监听参数'
         }
-      }
+      ]
     },
-    content: {
+    {
+      id: 'content',
       name: '响应匹配',
-      fields: {
+      fields: [
         // 资源类型过滤
-        resourceTypes: {
+        {
           id: 'resourceTypes',
           name: '资源类型',
           type: 'checkbox',
@@ -184,7 +186,7 @@ export default {
           description: '要监听的资源类型'
         },
         // 状态码过滤
-        statusCodes: {
+        {
           id: 'statusCodes',
           name: '状态码',
           type: 'checkbox',
@@ -197,20 +199,20 @@ export default {
           default: ['2xx', '3xx', '4xx', '5xx'],
           description: '要监听的响应状态码'
         },
-        responseMatch: {
+        {
           id: 'responseMatch',
           name: '响应匹配',
           type: 'object',
           default: {},
-          fields: {
+          fields: [
             mode,
             rules
-          },
+          ],
           description: '响应内容规则'
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'page',

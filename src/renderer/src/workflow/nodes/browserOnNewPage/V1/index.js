@@ -9,11 +9,12 @@ export default {
   icon: RiWindowLine,
   description: '监听新页面打开事件',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        closePage: {
+      fields: [
+        {
           id: 'closePage',
           name: '关闭页面',
           type: 'switch',
@@ -21,7 +22,7 @@ export default {
           description: '是否关闭新打开的页面',
           quickConfig: true
         },
-        isContinuous: {
+        {
           id: 'isContinuous',
           name: '持续监听',
           type: 'switch',
@@ -29,9 +30,9 @@ export default {
           description: '是否持续监听新页面打开事件',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'page',

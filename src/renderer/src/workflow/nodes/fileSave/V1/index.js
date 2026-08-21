@@ -9,11 +9,12 @@ export default {
   icon: IconSave,
   description: '保存文件到本地（支持链接、Base64、文本）',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        filePath: {
+      fields: [
+        {
           id: 'filePath',
           name: '保存路径',
           type: 'path',
@@ -22,7 +23,7 @@ export default {
           required: true,
           quickConfig: true
         },
-        fileName: {
+        {
           id: 'fileName',
           name: '文件名称',
           type: 'text',
@@ -30,7 +31,7 @@ export default {
           description: '（含扩展名）如 text.txt',
           quickConfig: true
         },
-        overwrite: {
+        {
           id: 'overwrite',
           name: '覆盖文件',
           type: 'radio',
@@ -42,9 +43,9 @@ export default {
           description: '是否允许覆盖文件',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'content',

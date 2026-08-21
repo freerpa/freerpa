@@ -15,19 +15,20 @@ export default {
   // 节点分类
   view: true,
   // 节点配置
-  config: {
+  config: [
     // 基础配置
-    basic: {
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        savePath: {
+      fields: [
+        {
           id: 'savePath',
           name: '保存路径',
           type: 'path',
           description: '为空则不保存',
           quickConfig: true
         },
-        isContinuous: {
+        {
           id: 'isContinuous',
           name: '持续监听',
           type: 'switch',
@@ -35,9 +36,9 @@ export default {
           description: '是否持续监听下载事件',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   // 输入
   inputs: [
     {

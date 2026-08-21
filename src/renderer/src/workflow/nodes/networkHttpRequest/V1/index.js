@@ -9,11 +9,12 @@ export default {
   icon: IconWifi,
   description: '发送 HTTP 请求，支持 GET/POST/PUT/PATCH/DELETE/HEAD/OPTIONS、自定义请求头、代理、form-data/urlencoded/json/xml/plain/html 请求体',
   view: true,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        method: {
+      fields: [
+        {
           id: 'method',
           name: '请求方法',
           type: 'select',
@@ -31,7 +32,7 @@ export default {
           required: true,
           quickConfig: true
         },
-        url: {
+        {
           id: 'url',
           name: '请求地址',
           type: 'text',
@@ -39,14 +40,14 @@ export default {
           description: 'HTTP请求的URL地址',
           quickConfig: true
         },
-        timeout: {
+        {
           id: 'timeout',
           name: '超时时间',
           type: 'number',
           default: 30000,
           description: '请求超时时间(毫秒)'
         },
-        proxyUrl: {
+        {
           id: 'proxyUrl',
           name: '代理配置',
           type: 'text',
@@ -54,7 +55,7 @@ export default {
           quickConfig: true,
           description: '协议://用户名:密码@地址:端口'
         },
-        headers: {
+        {
           id: 'headers',
           name: '请求头',
           type: 'array',
@@ -64,21 +65,21 @@ export default {
             value: 'value'
           },
           defaultValue: [],
-          fields: {
-            key: {
+          fields: [
+            {
               id: 'key',
               name: '参数名',
               type: 'text'
             },
-            value: {
+            {
               id: 'value',
               name: '参数值',
               type: 'text'
             }
-          },
+          ],
           description: 'HTTP请求头'
         },
-        bodyType: {
+        {
           id: 'bodyType',
           name: '类型',
           type: 'select',
@@ -116,7 +117,7 @@ export default {
             }
           ]
         },
-        bodyFormData: {
+        {
           id: 'bodyFormData',
           name: '请求体',
           type: 'array',
@@ -127,44 +128,44 @@ export default {
             key: 'key',
             value: 'value'
           },
-          fields: {
-            key: {
+          fields: [
+            {
               id: 'key',
               name: '参数名',
               type: 'text',
               default: ''
             },
-            value: {
+            {
               id: 'value',
               name: '参数值',
               type: 'text',
               default: ''
             }
-          }
+          ]
         },
-        bodyFormFiles: {
+        {
           id: 'bodyFormFiles',
           name: '文件',
           type: 'array',
           description: '文件参数',
           show: "${bodyType} === 'form-data'",
-          fields: {
-            key: {
+          fields: [
+            {
               id: 'key',
               name: '参数名',
               type: 'text',
               default: ''
             },
-            file: {
+            {
               id: 'file',
               name: '文件',
               type: 'path',
               pathType: 'file',
               default: ''
             }
-          }
+          ]
         },
-        bodyText: {
+        {
           id: 'bodyText',
           name: '请求体',
           description: '请求体内容',
@@ -173,9 +174,9 @@ export default {
           language: '${bodyType}',
           default: ''
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: [
     {

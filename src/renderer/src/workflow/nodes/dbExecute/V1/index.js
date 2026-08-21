@@ -9,11 +9,12 @@ export default {
   icon: RiTerminalLine,
   description: '在已连接的数据库上执行 SQL 语句',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        sql: {
+      fields: [
+        {
           id: 'sql',
           name: 'SQL',
           type: 'code',
@@ -24,9 +25,9 @@ SELECT * FROM table_name`,
           description: '要执行的 SQL 语句',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'connection',

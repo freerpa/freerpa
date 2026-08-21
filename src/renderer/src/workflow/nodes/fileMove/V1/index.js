@@ -8,11 +8,12 @@ export default {
   name: '移动文件',
   icon: RiFileTransferLine,
   description: '移动文件或目录',
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        moveType: {
+      fields: [
+        {
           id: 'moveType',
           name: '移动类型',
           type: 'radio',
@@ -24,7 +25,7 @@ export default {
           quickConfig: true,
           description: '移动文件或目录'
         },
-        sourcePath: {
+        {
           id: 'sourcePath',
           name: '源路径',
           type: 'path',
@@ -34,7 +35,7 @@ export default {
           quickConfig: true,
           required: true
         },
-        sourceDirPath: {
+        {
           id: 'sourceDirPath',
           name: '源路径',
           type: 'path',
@@ -44,7 +45,7 @@ export default {
           quickConfig: true,
           required: true
         },
-        targetPath: {
+        {
           id: 'targetPath',
           name: '目标路径',
           type: 'path',
@@ -53,7 +54,7 @@ export default {
           quickConfig: true,
           required: true
         },
-        overwrite: {
+        {
           id: 'overwrite',
           name: '强制覆盖',
           type: 'switch',
@@ -61,9 +62,9 @@ export default {
           quickConfig: true,
           description: '如果目标已存在是否覆盖'
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: [
     {

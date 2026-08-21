@@ -9,11 +9,12 @@ export default {
   icon: RiTimerLine,
   description: '创建一个计时器，用于计时和获取当前时间的秒数',
   view: true,
-  config: {
-    base: {
+  config: [
+    {
+      id: 'base',
       name: '基础配置',
-      fields: {
-        timerSecond: {
+      fields: [
+        {
           id: 'timerSecond',
           name: '计时秒数',
           default: 30,
@@ -21,9 +22,9 @@ export default {
           description: '计时器达到秒数后，继续执行后续节点',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: [
     {

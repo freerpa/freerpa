@@ -9,11 +9,12 @@ export default {
   icon: IconUpload,
   description: '在网页中上传文件',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        selector: {
+      fields: [
+        {
           id: 'selector',
           name: '目标元素',
           type: 'selector',
@@ -21,7 +22,7 @@ export default {
           description: '上传按钮或拖放区域的选择器',
           quickConfig: true
         },
-        forceDrop: {
+        {
           id: 'forceDrop',
           name: '强制拖放',
           type: 'switch',
@@ -29,9 +30,9 @@ export default {
           description: '是否强制使用拖放模式上传文件,默认自动识别',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'page',

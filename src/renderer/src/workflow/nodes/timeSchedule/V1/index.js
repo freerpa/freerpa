@@ -11,11 +11,12 @@ export default {
   icon: IconPlayArrow,
   description: '定时触发后续节点',
   view: true,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        enableSchedule: {
+      fields: [
+        {
           id: 'enableSchedule',
           name: '定时',
           type: 'switch',
@@ -23,7 +24,7 @@ export default {
           description: '启用定时触发，配置定时规则',
           quickConfig: true
         },
-        schedule: {
+        {
           id: 'schedule',
           name: '周期',
           type: 'select',
@@ -59,7 +60,7 @@ export default {
           description: '设置触发周期，默认天',
           quickConfig: true
         },
-        interval: {
+        {
           id: 'interval',
           name: 'N值',
           type: 'number',
@@ -70,7 +71,7 @@ export default {
           description: '设置N值，默认1',
           quickConfig: true
         },
-        week: {
+        {
           id: 'week',
           name: '周',
           type: 'select',
@@ -113,7 +114,7 @@ export default {
             allowClear: true
           }
         },
-        day: {
+        {
           id: 'day',
           name: '日',
           type: 'select',
@@ -138,7 +139,7 @@ export default {
             allowClear: true
           }
         },
-        hour: {
+        {
           id: 'hour',
           name: '时',
           type: 'select',
@@ -163,7 +164,7 @@ export default {
             allowClear: true
           }
         },
-        minute: {
+        {
           id: 'minute',
           name: '分',
           type: 'select',
@@ -188,7 +189,7 @@ export default {
             allowClear: true
           }
         },
-        second: {
+        {
           id: 'second',
           name: '秒',
           type: 'select',
@@ -213,7 +214,7 @@ export default {
             allowClear: true
           }
         },
-        maxTimes: {
+        {
           id: 'maxTimes',
           name: '次数',
           type: 'number',
@@ -223,16 +224,16 @@ export default {
           quickConfig: true,
           show: "${enableSchedule}"
         },
-        params: {
+        {
           id: 'params',
           name: '触发参数',
           type: 'array',
           description: '设置触发时的参数',
           fields: configFields
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: [
     {

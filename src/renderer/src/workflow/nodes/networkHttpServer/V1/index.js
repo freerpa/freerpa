@@ -23,11 +23,12 @@ export default {
     ],
     endOutputs: false
   },
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        route: {
+      fields: [
+        {
           id: 'route',
           name: '地址',
           type: 'string',
@@ -35,9 +36,9 @@ export default {
           required: true,
           description: 'HTTP服务的路由地址（/xxx/xxx）,仅GET请求'
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: [
     {

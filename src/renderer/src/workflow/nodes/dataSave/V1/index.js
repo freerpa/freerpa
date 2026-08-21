@@ -9,11 +9,12 @@ export default {
   icon: IconSave,
   description: '保存数据到数据表',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        modelId: {
+      fields: [
+        {
           id: 'modelId',
           name: '数据表',
           type: 'select',
@@ -39,9 +40,9 @@ export default {
             }))
           }
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'data',

@@ -16,19 +16,17 @@ export const getDefaultFieldValue = (field) => {
   return ''
 }
 
-export const getNodeDefaultConfig = (fields) => {
+export const getNodeDefaultConfig = (fields = []) => {
   const config = {}
-  Object.keys(fields).forEach((field) => {
-    if (fields[field].fields) {
-      if (fields[field].type === 'array') {
-        config[field] = fields[field].default || []
-      } else {
-        config[field] = getNodeDefaultConfig(fields[field].fields)
-      }
+  for (const field of fields) {
+    if (!field) continue
+    const { id, type, fields: subFields, default: def } = field
+    if (subFields) {
+      config[id] = type === 'array' ? (def || []) : getNodeDefaultConfig(subFields)
     } else {
-      config[field] = getDefaultFieldValue(fields[field])
+      config[id] = getDefaultFieldValue(field)
     }
-  })
+  }
   return config
 }
 
@@ -41,10 +39,8 @@ export const buildNodeData = (type, workflowId, isStore) => {
   const node = nodes[type]
   // 循环初始化配置
   let config = {}
-  if (node?.config) {
-    Object.keys(node.config).forEach((group) => {
-      config = Object.assign(config, getNodeDefaultConfig(node.config[group].fields))
-    })
+  for (const group of node?.config || []) {
+    if (group?.fields) Object.assign(config, getNodeDefaultConfig(group.fields))
   }
 
   const nodeData = {

@@ -8,20 +8,21 @@ export default {
   name: 'WebSocket监听',
   icon: IconThunderbolt,
   description: '监听WebSocket通信',
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        url: {
+      fields: [
+        {
           id: 'url',
           name: '监听地址',
           type: 'input',
           description: '要监听的WebSocket地址',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'page',

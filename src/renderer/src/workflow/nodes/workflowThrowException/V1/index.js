@@ -8,11 +8,12 @@ export default {
   prev: true,
   next: false,
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        err: {
+      fields: [
+        {
           id: 'err',
           name: '报错信息',
           type: 'text',
@@ -21,9 +22,9 @@ export default {
           description: '抛出的报错信息',
           quickConfig: true
         },
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: []
 }

@@ -5,11 +5,12 @@ export default {
   icon: RiMergeCellsVertical,
   description: '合并工作表中的单元格',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        startCell: {
+      fields: [
+        {
           id: 'startCell',
           name: '起始单元格',
           paramRef: false,
@@ -41,7 +42,7 @@ export default {
           quickConfig: true,
           required: false
         },
-        endCell: {
+        {
           id: 'endCell',
           name: '结束单元格',
           paramRef: false,
@@ -73,9 +74,9 @@ export default {
           quickConfig: true,
           required: false
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [{
     id: 'worksheet',
     name: '工作表',

@@ -10,11 +10,12 @@ export default {
   icon: IconMindMapping,
   description: '提取数据中的指定字段',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '提取规则',
-      fields: {
-        modelId: {
+      fields: [
+        {
           id: 'modelId',
           name: '获取字段',
           type: 'select',
@@ -55,21 +56,21 @@ export default {
             formData.value.modelId = ''
           }
         },
-        rules: {
+        {
           id: 'rules',
           name: '提取规则',
           type: 'array',
           description: '提取目标数据中的字段',
           default: [],
-          fields: {
-            field: {
+          fields: [
+            {
               id: 'field',
               name: '字段名称',
               type: 'string',
               description: '输出字段名'
             },
             // 数据路径
-            dataPath: {
+            {
               id: 'dataPath',
               name: '数据路径',
               type: 'string',
@@ -77,11 +78,11 @@ export default {
               description: '支持点号如：data.list.0.name'
             },
             format
-          }
+          ]
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'data',

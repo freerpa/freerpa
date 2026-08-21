@@ -9,7 +9,7 @@ export default {
   icon: IconEmpty,
   description: '清空暂存',
   view: false,
-  config: {},
+  config: [],
   inputs: [
     {
       id: 'tempStore',

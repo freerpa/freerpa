@@ -10,11 +10,12 @@ export default {
   icon: RiNewsLine,
   description: '获取指定元素的状态信息',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        selector: {
+      fields: [
+        {
           id: 'selector',
           name: '目标元素',
           type: 'selector',
@@ -22,9 +23,9 @@ export default {
           description: '要获取状态的目标元素',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'page',

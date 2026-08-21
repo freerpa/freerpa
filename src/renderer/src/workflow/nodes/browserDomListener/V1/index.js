@@ -9,11 +9,12 @@ export default {
   icon: IconEye,
   description: '监听DOM元素的变化',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        selector: {
+      fields: [
+        {
           id: 'selector',
           name: '目标元素',
           type: 'selector',
@@ -21,7 +22,7 @@ export default {
           description: '要监听的目标元素',
           quickConfig: true
         },
-        types: {
+        {
           id: 'types',
           name: '监听类型',
           type: 'select',
@@ -46,7 +47,7 @@ export default {
           required: true,
           quickConfig: true
         },
-        interval: {
+        {
           id: 'interval',
           name: '检查间隔',
           type: 'number',
@@ -56,7 +57,7 @@ export default {
           description: '检查状态的时间间隔(毫秒)',
           quickConfig: true
         },
-        isContinuous: {
+        {
           id: 'isContinuous',
           name: '持续监听',
           type: 'switch',
@@ -64,9 +65,9 @@ export default {
           description: '是否持续监听元素变化',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'page',

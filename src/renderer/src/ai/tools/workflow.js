@@ -18,14 +18,13 @@ import { limitText, maskSensitive } from './guard.js'
 import { quickValidateWorkflow } from '@/workflow/engine/validate'
 
 /** 扁平化节点 config 字段定义：{ [fieldId]: { type, default, options } }（供容错合并） */
-const flattenConfigFields = (configGroups = {}) => {
+const flattenConfigFields = (configGroups = []) => {
   const fields = {}
-  Object.keys(configGroups).forEach((groupKey) => {
-    const group = configGroups[groupKey]
-    Object.keys(group?.fields || {}).forEach((fieldId) => {
-      fields[fieldId] = group.fields[fieldId]
-    })
-  })
+  for (const group of configGroups) {
+    for (const field of group?.fields || []) {
+      if (field?.id) fields[field.id] = field
+    }
+  }
   return fields
 }
 
@@ -349,8 +348,8 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     // 动态枚举注入：remote 字段执行节点定义的 remoteMethod 拉取真实选项（如表 ID、字段选择），
     // 防止模型臆造不存在的值；注入发生在返回副本上，不污染 buildNodeMeta 缓存
     const injectDynamicOptions = async (fields, metaFields) => {
-      for (const [fieldId, field] of Object.entries(fields || {})) {
-        const mf = metaFields?.[fieldId]
+      for (const field of fields || []) {
+        const mf = field?.id ? metaFields?.[field.id] : undefined
         if (!mf) continue
         if (field.remote === true && typeof field.remoteMethod === 'function') {
           try {
@@ -367,8 +366,8 @@ export const createWorkflowExecutors = ({ workflowId }) => {
       }
     }
     const nodeDef = nodes[type]
-    for (const [groupKey, group] of Object.entries(nodeDef?.config || {})) {
-      await injectDynamicOptions(group.fields, meta.config?.[groupKey]?.fields)
+    for (const group of nodeDef?.config || []) {
+      await injectDynamicOptions(group?.fields, meta.config?.[group?.id]?.fields)
     }
     return { ok: true, data: meta }
   }

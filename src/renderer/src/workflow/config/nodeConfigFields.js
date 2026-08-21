@@ -11,11 +11,17 @@ export const getNodeConfigFields = (type) => {
   const def = nodes[type]
   if (!def) return {}
 
-  const config = { ...def.config }
+  const config = Array.isArray(def.config) ? [...def.config] : { ...def.config }
 
   // 为非 start/end 节点注入错误处理配置（remoteMethod 由调用方注入）
   if (type !== 'workflowStart' && type !== 'workflowEnd') {
-    config.errorHandle = buildErrorHandleGroup()
+    if (Array.isArray(config)) {
+      if (!config.some((group) => group?.id === 'errorHandle')) {
+        config.push(buildErrorHandleGroup())
+      }
+    } else {
+      config.errorHandle = buildErrorHandleGroup()
+    }
   }
 
   return getConfigFieldGroups({ config })

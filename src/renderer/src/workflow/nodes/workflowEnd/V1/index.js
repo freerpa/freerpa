@@ -20,11 +20,12 @@ export default {
   // 允许后续节点连接点
   next: false,
   // 配置项
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '输出项',
-      fields: {
-        params: {
+      fields: [
+        {
           id: 'params',
           name: '输出项',
           nolabel: true,
@@ -32,9 +33,9 @@ export default {
           description: '设置结束时的输出',
           fields: createDynamicFields()
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       type: 'dynamic',

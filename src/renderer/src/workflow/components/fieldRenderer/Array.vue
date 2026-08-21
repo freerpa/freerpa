@@ -155,9 +155,7 @@ if (!arrayData.value) {
   arrayData.value = []
 }
 
-const itemFields = computed(() => {
-  return Object.keys(props.field.fields || {}).map((key) => props.field.fields[key])
-})
+const itemFields = computed(() => props.field.fields || [])
 const isQuickConfig = inject('isQuickConfig')
 useFieldWatch(props, arrayData)
 

@@ -9,20 +9,21 @@ export default {
   icon: IconSend,
   description: '发送WebSocket消息',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        message: {
+      fields: [
+        {
           id: 'message',
           name: '消息内容',
           type: 'text',
           description: '要发送的消息内容',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'socket',

@@ -9,12 +9,13 @@ export default {
   icon: RiKeyboardLine,
   description: '模拟键盘操作',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
+      fields: [
         // 操作类型
-        keyboardMode: {
+        {
           id: 'keyboardMode',
           name: '操作类型',
           type: 'radio',
@@ -27,7 +28,7 @@ export default {
           quickConfig: true
         },
         // 按键目标
-        keySelector: {
+        {
           id: 'keySelector',
           name: '按键区域',
           type: 'selector',
@@ -36,7 +37,7 @@ export default {
           show: '${keyboardMode} === "key"'
         },
         // 输入目标
-        inputSelector: {
+        {
           id: 'inputSelector',
           name: '目标元素',
           type: 'selector',
@@ -45,7 +46,7 @@ export default {
           quickConfig: true,
           show: '${keyboardMode} === "input"'
         },
-        mode: {
+        {
           id: 'mode',
           name: '输入模式',
           type: 'radio',
@@ -58,7 +59,7 @@ export default {
           quickConfig: true,
           show: '${keyboardMode} === "input"'
         },
-        delay: {
+        {
           id: 'delay',
           name: '输入间隔',
           type: 'number',
@@ -68,7 +69,7 @@ export default {
           quickConfig: true,
           show: '${mode} === "char"'
         },
-        text: {
+        {
           id: 'text',
           name: '输入内容',
           type: 'text',
@@ -77,7 +78,7 @@ export default {
           show: '${keyboardMode} === "input"'
         },
         // 输入设置
-        inputConfig: {
+        {
           id: 'inputConfig',
           name: '输入设置',
           type: 'checkbox',
@@ -90,7 +91,7 @@ export default {
           show: '${keyboardMode} === "input"',
           quickConfig: true
         },
-        modifiers: {
+        {
           id: 'modifiers',
           name: '修饰键',
           type: 'select',
@@ -112,7 +113,7 @@ export default {
           show: '${keyboardMode} === "key"',
           quickConfig: true
         },
-        keys: {
+        {
           id: 'keys',
           name: '按键',
           type: 'select',
@@ -216,9 +217,9 @@ export default {
           show: '${keyboardMode} === "key"',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'page',

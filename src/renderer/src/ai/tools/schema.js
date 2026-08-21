@@ -35,8 +35,8 @@ const fieldToCatalog = (field, brief) => {
   if (field.type === 'selector') {
     out.format = '网页元素对象 { name, match_condition, selectors: [{ type, text_subtype, expression }] }，非字符串'
   }
-  if (field.fields && Object.keys(field.fields).length > 0) {
-    out.fields = Object.values(field.fields).reduce(
+  if (field.fields && field.fields.length > 0) {
+    out.fields = field.fields.reduce(
       (all, item) => ({ ...all, [item.id]: fieldToCatalog(item, brief) }),
       {}
     )
@@ -51,8 +51,8 @@ const isEmptyDefault = (v) => {
   return false
 }
 
-const catalogOfFields = (fields, brief) =>
-  Object.values(fields || {}).reduce((all, field) => {
+const catalogOfFields = (fields = [], brief) =>
+  fields.reduce((all, field) => {
     if (!field?.id) return all
     // UI 隐藏字段（如插件节点的 pluginId/_pluginName 内部字段，由 getInitNodeData 自动生成）
     // 不进入目录，避免误导模型填写
@@ -61,10 +61,13 @@ const catalogOfFields = (fields, brief) =>
     return all
   }, {})
 
-/** 节点 config（{ groupKey: { name, fields } }）→ 目录描述（保留分组，AI 按组理解字段归属） */
-export const configToCatalog = (config, brief = false) =>
-  Object.entries(config || {}).reduce((all, [key, group]) => {
-    all[key] = { name: group?.name || key, fields: catalogOfFields(group?.fields, brief) }
+/** 节点 config（数组分组）→ 目录描述（保留分组，AI 按组理解字段归属） */
+export const configToCatalog = (config = [], brief = false) =>
+  config.reduce((all, group) => {
+    all[group?.id || group?.name] = {
+      name: group?.name || group?.id || '',
+      fields: catalogOfFields(group?.fields, brief)
+    }
     return all
   }, {})
 

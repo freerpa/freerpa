@@ -157,27 +157,85 @@ const PLUGIN_FIELD_TYPE_MAP = {
   text: 'text'
 }
 
+/**
+ * 归一单个插件配置项 → 渲染端字段对象。
+ * 纯数据项（show/options/default）来自 freerpa.io.js；
+ * 函数钩子（onChange/remoteMethod）原样保留，仅当来源为 freerpa.io.js 时存在
+ * （渲染端 useFieldValue / useRemoteOptions 通用调用，与内置节点同机制）。
+ */
+const mapPluginField = (item) => {
+  const field = {
+    id: item.id,
+    name: item.name || item.id,
+    type: PLUGIN_FIELD_TYPE_MAP[item.type] || item.type || 'text',
+    description: item.description || ''
+  }
+  // 显隐表达式：字符串透传，布尔/缺省等价原值（渲染端已有求值引擎）
+  if (item.show !== undefined) field.show = String(item.show)
+  if (item.required) field.required = true
+  if (Array.isArray(item.options)) field.options = item.options
+  if (item.default !== undefined) field.default = item.default
+  if (item.paramRef !== undefined) field.paramRef = item.paramRef
+  // 函数钩子（仅 config.js 来源；函数不过 IPC/工作流 JSON，仅供运行时表单）
+  if (typeof item.onChange === 'function') field.onChange = item.onChange
+  if (typeof item.remoteMethod === 'function') field.remoteMethod = item.remoteMethod
+  // 嵌套字段（array/object 子字段），统一为数组形态
+  if (Array.isArray(item.fields)) {
+    field.fields = item.fields.map(mapPluginField)
+  }
+  return field
+}
+
+/** package/object 形式的 inputs/outputs → 渲染端动态通道（config.js 可返回函数/对象） */
+const normalizePluginIO = (list) => {
+  if (!Array.isArray(list)) return []
+  return list.map((io) => (typeof io === 'string' ? { id: io, name: io } : io))
+}
+
+/**
+ * 在渲染进程执行 freerpa.io.js 源码，解出含函数钩子的 config/inputs/outputs。
+ * 沿用 worker 的 data-URL import 手法：函数过不了 IPC / JSON，须在渲染进程运行时求值。
+ * 信任边界：config.js 获得渲染进程权限（用户显式安装，UI 描述即 UI 代码）。
+ */
+/** UTF-8 安全 base64：btoa 直接吃中文（非 Latin-1）会抛异常，需先转字节 */
+const toBase64 = (str) => {
+  const bytes = new TextEncoder().encode(str)
+  let bin = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  return btoa(bin)
+}
+
+const importPluginConfigSource = async (source) => {
+  try {
+    const mod = await import('data:text/javascript;base64,' + toBase64(source))
+    const def = mod.default || mod
+    const hasConfigHook = (list) => Array.isArray(list) || typeof list === 'function'
+    return {
+      config: hasConfigHook(def.config) ? def.config : [],
+      inputs: hasConfigHook(def.inputs) ? def.inputs : [],
+      outputs: hasConfigHook(def.outputs) ? def.outputs : []
+    }
+  } catch (e) {
+    console.error('[plugin] freerpa.io.js 执行失败:', e)
+    return null
+  }
+}
+
 /** 根据插件条目生成 plu_<identifier> 节点定义（每版本独立节点；config 数组 → 渲染端基础分组字段） */
-const buildPluginNodeDef = (plugin) => {
+const buildPluginNodeDef = (plugin, declared = {}) => {
   const identifier = resolvePluginIdentifier(plugin)
-  // 插件 config 数组（[{id,name,type,description,show,required}]）→ 渲染端字段对象
-  const fields = {}
-  const rawConfig = Array.isArray(plugin.config) ? plugin.config : []
+  // 字段归一统一入口：优先 config 数组（含 variables 的 configSource 执行结果），其次 package JSON
+  const rawConfig = Array.isArray(declared.config) ? declared.config : (Array.isArray(plugin.config) ? plugin.config : [])
+  const fields = []
   rawConfig.forEach((item) => {
     if (!item || !item.id) return
-    fields[item.id] = {
-      id: item.id,
-      name: item.name || item.id,
-      type: PLUGIN_FIELD_TYPE_MAP[item.type] || item.type || 'text',
-      description: item.description || '',
-      ...(item.show !== undefined ? { show: String(item.show) } : {}),
-      ...(item.required ? { required: true } : {}),
-      ...(Array.isArray(item.options) ? { options: item.options } : {}),
-      ...(item.default !== undefined ? { default: item.default } : {})
-    }
+    fields.push(mapPluginField(item))
   })
   // 隐藏字段：pluginId（插件 id）+ _pluginIdentifier（pluginId@version，执行器精确到该版本目录）
-  fields.pluginId = {
+  fields.push({
     id: 'pluginId',
     name: '插件标识',
     type: 'text',
@@ -185,8 +243,8 @@ const buildPluginNodeDef = (plugin) => {
     show: 'false',
     paramRef: false,
     description: '本地插件唯一标识（自动绑定，不可修改）'
-  }
-  fields._pluginIdentifier = {
+  })
+  fields.push({
     id: '_pluginIdentifier',
     name: '插件版本标识',
     type: 'text',
@@ -194,27 +252,30 @@ const buildPluginNodeDef = (plugin) => {
     show: 'false',
     paramRef: false,
     description: '插件版本唯一标识（pluginId@version，自动绑定）'
-  }
-  fields._pluginName = {
+  })
+  fields.push({
     id: '_pluginName',
     name: '插件名称',
     type: 'text',
     default: plugin.name || '',
     show: 'false',
     paramRef: false
-  }
-  fields._pluginVersion = {
+  })
+  fields.push({
     id: '_pluginVersion',
     name: '插件版本',
     type: 'text',
     default: plugin.version || '',
     show: 'false',
     paramRef: false
-  }
+  })
 
-  const config = {
-    basic: { name: '基础配置', fields }
-  }
+  const config = [{ id: 'basic', name: '基础配置', fields }]
+
+  const declaredInputs =
+    declared.inputs !== undefined ? declared.inputs : plugin.inputs || []
+  const declaredOutputs =
+    declared.outputs !== undefined ? declared.outputs : plugin.outputs || []
 
   return markRaw({
     type: `${PLUGIN_NODE_PREFIX}${identifier}`,
@@ -223,20 +284,38 @@ const buildPluginNodeDef = (plugin) => {
     description: plugin.description || '本地插件节点，执行本地安装的插件',
     view: false,
     config,
-    inputs: plugin.inputs || [],
-    outputs: plugin.outputs || [],
+    inputs: normalizePluginIO(declaredInputs),
+    outputs: normalizePluginIO(declaredOutputs),
     _version: 'V1', // 执行器目录版本（对应 pluginCall/V1/execute.js，与插件自身版本无关）
     _pluginId: plugin.pluginId,
     _identifier: identifier
   })
 }
 
+/** 存在 freerpa.io.js 时在渲染进程执行解出含函数钩子的声明 */
+const resolveDeclared = async (plugin) => {
+  if (!plugin.configSource) return { config: plugin.config, inputs: plugin.inputs, outputs: plugin.outputs }
+  const declared = await importPluginConfigSource(plugin.configSource)
+  // 执行失败回退空声明（package 已不再承载 IO），保证节点仍可注册
+  if (!declared) return { config: plugin.config, inputs: plugin.inputs, outputs: plugin.outputs }
+  return {
+    config: declared.config,
+    inputs: (
+      declared.inputs === undefined ? plugin.inputs : declared.inputs
+    ),
+    outputs: (
+      declared.outputs === undefined ? plugin.outputs : declared.outputs
+    )
+  }
+}
+
 /** 注册/更新单个本地插件节点（每版本独立节点；加载失败的插件不注册） */
-export const registerPluginNode = (plugin) => {
+export const registerPluginNode = async (plugin) => {
   if (!plugin?.pluginId || plugin.error) return
   const identifier = resolvePluginIdentifier(plugin)
   const type = `${PLUGIN_NODE_PREFIX}${identifier}`
-  nodes[type] = buildPluginNodeDef(plugin)
+  const declared = await resolveDeclared(plugin)
+  nodes[type] = buildPluginNodeDef(plugin, declared)
   registeredPluginTypes.add(type)
   // 旧节点（plu_插件ID）移除：避免与独立版本节点并存造成歧义
   const legacy = `${PLUGIN_NODE_PREFIX}${plugin.pluginId}`
@@ -263,7 +342,9 @@ export const loadPluginNodes = async () => {
         registeredPluginTypes.delete(type)
       }
     }
-    plugins.forEach(registerPluginNode)
+    for (const plugin of plugins) {
+      await registerPluginNode(plugin)
+    }
     return plugins
   } catch {
     // 插件 API 不可用时静默失败，仅保留已注册节点

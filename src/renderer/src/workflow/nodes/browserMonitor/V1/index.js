@@ -6,11 +6,12 @@ export default {
   icon: RiComputerLine,
   description: '实时查看浏览器画面并支持交互,常用于无头模式下的状态监控和操作干预',
   view: true,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        frameRate: {
+      fields: [
+        {
           id: 'frameRate',
           name: '帧率',
           type: 'number',
@@ -18,7 +19,7 @@ export default {
           description: '监控页面的帧率',
           quickConfig: true
         },
-        quality: {
+        {
           id: 'quality',
           name: '质量',
           type: 'number',
@@ -26,9 +27,9 @@ export default {
           description: '监控画面的质量',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'page',

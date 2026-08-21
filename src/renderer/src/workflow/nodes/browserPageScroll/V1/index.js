@@ -9,11 +9,12 @@ export default {
   icon: RiScrollToBottomLine,
   description: '控制页面或指定元素的滚动',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        scrollType: {
+      fields: [
+        {
           id: 'scrollType',
           name: '滚动类型',
           type: 'select',
@@ -28,7 +29,7 @@ export default {
           quickConfig: true,
           required: true
         },
-        scrollArea: {
+        {
           id: 'scrollArea',
           name: '滚动区域',
           type: 'selector',
@@ -36,7 +37,7 @@ export default {
           quickConfig: true,
           required: false
         },
-        behavior: {
+        {
           id: 'behavior',
           name: '滚动行为',
           type: 'select',
@@ -48,7 +49,7 @@ export default {
           description: '滚动的动画效果',
           quickConfig: true
         },
-        selector: {
+        {
           id: 'selector',
           name: '目标元素',
           type: 'selector',
@@ -57,7 +58,7 @@ export default {
           quickConfig: true,
           show: "${scrollType} == 'element'"
         },
-        x: {
+        {
           id: 'x',
           name: '水平位置',
           type: 'number',
@@ -67,7 +68,7 @@ export default {
           quickConfig: true,
           description: '水平滚动位置(正数向右/负数向左)'
         },
-        y: {
+        {
           id: 'y',
           name: '垂直位置',
           type: 'number',
@@ -77,7 +78,7 @@ export default {
           show: "${scrollType} == 'position'",
           description: '垂直滚动位置(正数向下/负数向上)'
         },
-        relative: {
+        {
           id: 'relative',
           name: '相对位置',
           type: 'switch',
@@ -87,7 +88,7 @@ export default {
           show: "${scrollType} == 'position'",
           description: '是否相对于当前位置滚动'
         },
-        direction: {
+        {
           id: 'direction',
           name: '滚动方向',
           type: 'radio',
@@ -102,7 +103,7 @@ export default {
           quickConfig: true,
           show: "['continuous', 'edge'].includes(${scrollType})"
         },
-        step: {
+        {
           id: 'step',
           name: '步进距离',
           type: 'number',
@@ -112,7 +113,7 @@ export default {
           quickConfig: true,
           show: "${scrollType} == 'continuous'"
         },
-        interval: {
+        {
           id: 'interval',
           name: '滚动间隔',
           type: 'number',
@@ -122,7 +123,7 @@ export default {
           quickConfig: true,
           show: "${scrollType} == 'continuous'"
         },
-        bounce: {
+        {
           id: 'bounce',
           name: '往复滚动',
           type: 'switch',
@@ -131,7 +132,7 @@ export default {
           quickConfig: true,
           show: "${scrollType} == 'continuous'"
         },
-        stopStrategy: {
+        {
           id: 'stopStrategy',
           name: '停止策略',
           type: 'select',
@@ -145,7 +146,7 @@ export default {
           quickConfig: true,
           show: "${scrollType} == 'continuous'"
         },
-        edgeCount: {
+        {
           id: 'edgeCount',
           name: '触边次数',
           type: 'number',
@@ -155,7 +156,7 @@ export default {
           quickConfig: true,
           show: "${scrollType} == 'continuous' && ${stopStrategy} == 'edgeCount'"
         },
-        duration: {
+        {
           id: 'duration',
           name: '持续时间',
           type: 'number',
@@ -166,9 +167,9 @@ export default {
           quickConfig: true,
           show: "${scrollType} == 'continuous' && ${stopStrategy} == 'duration'"
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'page',

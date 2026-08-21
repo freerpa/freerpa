@@ -9,11 +9,12 @@ export default {
   icon: RiFolderAddLine,
   description: '创建目录（支持递归创建）',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        dirPath: {
+      fields: [
+        {
           id: 'dirPath',
           name: '目录路径',
           type: 'path',
@@ -22,9 +23,9 @@ export default {
           required: true,
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: [
     {

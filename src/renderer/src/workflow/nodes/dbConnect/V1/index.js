@@ -9,11 +9,12 @@ export default {
   icon: RiDatabase2Line,
   description: '连接外部数据库，支持 MySQL、PostgreSQL、SQL Server、SQLite',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        dbType: {
+      fields: [
+        {
           id: 'dbType',
           name: '数据库类型',
           type: 'select',
@@ -35,7 +36,7 @@ export default {
           },
           quickConfig: true
         },
-        host: {
+        {
           id: 'host',
           name: '主机地址',
           type: 'text',
@@ -45,7 +46,7 @@ export default {
           description: '数据库主机地址，如 localhost',
           quickConfig: true
         },
-        port: {
+        {
           id: 'port',
           name: '端口',
           type: 'number',
@@ -53,7 +54,7 @@ export default {
           description: '数据库端口（MySQL 默认 3306，PostgreSQL 5432，SQL Server 1433），留空使用默认端口',
           quickConfig: true
         },
-        database: {
+        {
           id: 'database',
           name: '数据库名',
           type: 'text',
@@ -62,7 +63,7 @@ export default {
           description: '要连接的数据库名称',
           quickConfig: true
         },
-        username: {
+        {
           id: 'username',
           name: '用户名',
           type: 'text',
@@ -71,7 +72,7 @@ export default {
           description: '数据库用户名',
           quickConfig: true
         },
-        password: {
+        {
           id: 'password',
           name: '密码',
           type: 'text',
@@ -79,7 +80,7 @@ export default {
           description: '数据库密码',
           quickConfig: true
         },
-        filePath: {
+        {
           id: 'filePath',
           name: '数据库文件',
           type: 'path',
@@ -89,9 +90,9 @@ export default {
           description: 'SQLite 数据库文件路径',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: [
     {

@@ -8,11 +8,12 @@ export default {
   name: '打开目录',
   icon: RiFolderOpenLine,
   description: '打开目录',
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        dirPath: {
+      fields: [
+        {
           id: 'dirPath',
           name: '目录路径',
           type: 'path',
@@ -21,9 +22,9 @@ export default {
           quickConfig: true,
           required: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: []
 }

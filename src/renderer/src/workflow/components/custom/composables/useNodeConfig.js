@@ -33,7 +33,7 @@ export function useNodeConfig(props, flowStore, isPreview) {
     type: props.data.type,
     inputs: props.data.inputs || [],
     outputs: props.data.outputs || [],
-    config: { ...(props.data._pluginConfig || {}) },
+    config: props.data._pluginConfig || [],
     description: `本地插件「${props.data.config?._pluginName || props.data.name}」未安装或已被移除，请安装对应插件后重新加载工作流`
   }
 
@@ -43,22 +43,26 @@ export function useNodeConfig(props, flowStore, isPreview) {
     nodeDefinition.type !== 'workflowStart' &&
     nodeDefinition.type !== 'workflowEnd'
   ) {
-    nodeDefinition.config = nodeDefinition.config || {}
-    nodeDefinition.config.errorHandle = buildErrorHandleGroup(
-      async (keyword = '') => {
-        const node = flowStore.vueFlowRef.findNode(props.id)
-        let nodesList = flowStore.vueFlowRef.getNodes.filter(
-          (n) => n.parentNode === node.parentNode && n.id !== node.id
+    nodeDefinition.config = nodeDefinition.config || []
+    if (!nodeDefinition.config.some((g) => g?.id === 'errorHandle')) {
+      nodeDefinition.config.push(
+        buildErrorHandleGroup(
+          async (keyword = '') => {
+            const node = flowStore.vueFlowRef.findNode(props.id)
+            let nodesList = flowStore.vueFlowRef.getNodes.filter(
+              (n) => n.parentNode === node.parentNode && n.id !== node.id
+            )
+            if (keyword) {
+              nodesList = nodesList.filter((n) => n.data.name.includes(keyword))
+            }
+            return nodesList.map((el) => ({
+              label: el.data.name,
+              value: el.id
+            }))
+          }
         )
-        if (keyword) {
-          nodesList = nodesList.filter((n) => n.data.name.includes(keyword))
-        }
-        return nodesList.map((el) => ({
-          label: el.data.name,
-          value: el.id
-        }))
-      }
-    )
+      )
+    }
   }
 
   // Node config data with getter/setter
@@ -77,15 +81,13 @@ export function useNodeConfig(props, flowStore, isPreview) {
   // Quick config fields (marked as quickConfig or required)
   const quickConfigFields = computed(() => {
     const fields = []
-    const config = nodeDefinition?.config
-    if (!config) return fields
-    Object.values(config).forEach((group) => {
-      Object.values(group.fields || {}).forEach((field) => {
+    for (const group of nodeDefinition?.config || []) {
+      for (const field of group?.fields || []) {
         if (field.quickConfig || field.required) {
           fields.push(field)
         }
-      })
-    })
+      }
+    }
     return fields
   })
 

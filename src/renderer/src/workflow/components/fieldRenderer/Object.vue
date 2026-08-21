@@ -56,9 +56,7 @@ const props = defineProps({
   }
 })
 
-const fields = computed(() => {
-  return Object.keys(props.field.fields || {}).map((key) => props.field.fields[key])
-})
+const fields = computed(() => props.field.fields || [])
 
 const objectData = defineModel({
   set(value) {
@@ -91,7 +89,7 @@ const newField = ref({
 const handleAddField = () => {
   if (!newField.value.name) return
 
-  // 添加到fields配置
+  // 添加到fields配置（统一数组形态）
   props.field.fields = props.field.fields || []
   props.field.fields.push({
     id: newField.value.name,

@@ -9,7 +9,7 @@ export default {
   icon: IconStorage,
   description: '将数据暂存到暂存器中，以数组形式输出，如果需要清空暂存器，请使用清空暂存节点',
   view: false,
-  config: {},
+  config: [],
   inputs: [
     {
       id: 'data',

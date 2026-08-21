@@ -10,11 +10,12 @@ export default {
   icon: RiLoginBoxLine,
   description: '设置全局变量',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        variables: {
+      fields: [
+        {
           id: 'variables',
           name: '变量',
           nolabel: true,
@@ -33,9 +34,9 @@ export default {
           description: '要设置的全局变量',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       type: 'dynamic',

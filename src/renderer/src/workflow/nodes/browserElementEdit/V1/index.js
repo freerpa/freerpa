@@ -9,11 +9,12 @@ export default {
   icon: RiEditBoxLine,
   description: '编辑页面上的元素',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        selector: {
+      fields: [
+        {
           id: 'selector',
           name: '目标元素',
           type: 'selector',
@@ -22,7 +23,7 @@ export default {
           default: '',
           quickConfig: true
         },
-        type: {
+        {
           id: 'type',
           name: '修改类型',
           type: 'select',
@@ -39,7 +40,7 @@ export default {
           description: '要执行的编辑操作类型',
           quickConfig: true
         },
-        attrName: {
+        {
           id: 'attrName',
           name: '属性名',
           type: 'text',
@@ -49,7 +50,7 @@ export default {
           default: '',
           quickConfig: true
         },
-        attrValue: {
+        {
           id: 'attrValue',
           name: '属性值',
           type: 'text',
@@ -59,7 +60,7 @@ export default {
           default: '',
           quickConfig: true
         },
-        content: {
+        {
           id: 'content',
           name: '内容',
           type: 'text',
@@ -69,9 +70,9 @@ export default {
           default: '',
           quickConfig: true
         },
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'page',

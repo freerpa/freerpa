@@ -9,11 +9,12 @@ export default {
   icon: IconCamera,
   description: '支持全屏截图、元素选择截图、指定区域截图',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        screenshotType: {
+      fields: [
+        {
           id: 'screenshotType',
           name: '截图类型',
           type: 'select',
@@ -26,7 +27,7 @@ export default {
           required: true,
           quickConfig: true
         },
-        selector: {
+        {
           id: 'selector',
           name: '目标元素',
           type: 'selector',
@@ -36,45 +37,45 @@ export default {
           required: true,
           quickConfig: true
         },
-        area: {
+        {
           id: 'area',
           name: '截图区域',
           type: 'object',
           show: '${screenshotType} === "area"',
           required: true,
           quickConfig: true,
-          fields: {
-            x: {
+          fields: [
+            {
               id: 'x',
               name: 'X坐标',
               type: 'number',
               default: 0,
               required: true
             },
-            y: {
+            {
               id: 'y',
               name: 'Y坐标',
               type: 'number',
               default: 0,
               required: true
             },
-            width: {
+            {
               id: 'width',
               name: '宽度',
               type: 'number',
               default: 800,
               required: true
             },
-            height: {
+            {
               id: 'height',
               name: '高度',
               type: 'number',
               default: 600,
               required: true
             }
-          }
+          ]
         },
-        imageType: {
+        {
           id: 'imageType',
           name: '图片格式',
           type: 'radio',
@@ -86,7 +87,7 @@ export default {
           default: 'png',
           quickConfig: true
         },
-        quality: {
+        {
           id: 'quality',
           name: '图片质量',
           type: 'number',
@@ -98,7 +99,7 @@ export default {
           required: true,
           quickConfig: true
         },
-        otherConfig: {
+        {
           id: 'otherConfig',
           name: '其他配置',
           type: 'checkbox',
@@ -110,9 +111,9 @@ export default {
           description: '',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'page',

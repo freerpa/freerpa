@@ -9,7 +9,7 @@ export default {
   icon: IconDelete,
   description: '删除数据表中的数据',
   view: false,
-  config: {},
+  config: [],
   inputs: [
     {
       id: 'query',

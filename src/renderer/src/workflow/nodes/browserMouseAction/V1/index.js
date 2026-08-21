@@ -9,11 +9,12 @@ export default {
   icon: RiCursorLine,
   description: '模拟鼠标操作',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        selector: {
+      fields: [
+        {
           id: 'selector',
           name: '目标元素',
           type: 'selector',
@@ -21,7 +22,7 @@ export default {
           required: true,
           quickConfig: true
         },
-        action: {
+        {
           id: 'action',
           name: '操作类型',
           type: 'select',
@@ -37,7 +38,7 @@ export default {
           description: '鼠标操作类型',
           quickConfig: true
         },
-        wheelDeltaX: {
+        {
           id: 'wheelDeltaX',
           name: '水平滚动',
           type: 'number',
@@ -46,7 +47,7 @@ export default {
           show: "${action} === 'wheel'",
           quickConfig: true
         },
-        wheelDeltaY: {
+        {
           id: 'wheelDeltaY',
           name: '垂直滚动',
           type: 'number',
@@ -55,7 +56,7 @@ export default {
           show: "${action} === 'wheel'",
           quickConfig: true
         },
-        clickAll: {
+        {
           id: 'clickAll',
           name: '点击全部',
           type: 'switch',
@@ -64,7 +65,7 @@ export default {
           description: '是否点击全部匹配的元素，否则仅点击第一个匹配的元素',
           show: "${action} === 'click' || ${action} === 'dblclick' || ${action} === 'rightClick'"
         },
-        delay: {
+        {
           id: 'delay',
           name: '延迟时间',
           type: 'number',
@@ -72,7 +73,7 @@ export default {
           default: 500,
           description: '操作前的延迟时间(毫秒)'
         },
-        interval: {
+        {
           id: 'interval',
           name: '点击间隔',
           type: 'number',
@@ -82,7 +83,7 @@ export default {
           show: '${clickAll}',
           quickConfig: true
         },
-        dragConfigTips: {
+        {
           id: 'dragConfigTips',
           name: '拖拽配置提示',
           show: "${action} === 'drag'",
@@ -92,20 +93,20 @@ export default {
           onlyQuick: true,
           description: '点击右上角查看完整拖拽配置'
         },
-        dragConfig: {
+        {
           id: 'dragConfig',
           name: '拖拽配置',
           description: '拖拽操作的配置',
           type: 'object',
           show: "${action} === 'drag'",
-          fields: {
-            target: {
+          fields: [
+            {
               id: 'target',
               name: '目标元素',
               type: 'selector',
               description: '拖拽的目标位置'
             },
-            pathMode: {
+            {
               id: 'pathMode',
               name: '路径模式',
               type: 'radio',
@@ -116,25 +117,25 @@ export default {
               default: 'direct',
               description: '拖拽路径的模式'
             },
-            pathPoints: {
+            {
               id: 'pathPoints',
               name: '路径点',
               type: 'array',
               show: "${pathMode} === 'custom'",
-              fields: {
-                x: {
+              fields: [
+                {
                   id: 'x',
                   name: 'X坐标',
                   type: 'number',
                   description: '相对起点的X轴偏移(像素)'
                 },
-                y: {
+                {
                   id: 'y',
                   name: 'Y坐标',
                   type: 'number',
                   description: '相对起点的Y轴偏移(像素)'
                 },
-                delay: {
+                {
                   id: 'delay',
                   name: '停留时间',
                   type: 'number',
@@ -142,10 +143,10 @@ export default {
                   default: 0,
                   description: '在该点的停留时间(毫秒)'
                 }
-              },
+              ],
               description: '拖拽经过的路径点'
             },
-            duration: {
+            {
               id: 'duration',
               name: '拖拽时长',
               type: 'number',
@@ -153,11 +154,11 @@ export default {
               default: 1000,
               description: '拖拽动作持续时间(毫秒)'
             }
-          }
+          ]
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'page',

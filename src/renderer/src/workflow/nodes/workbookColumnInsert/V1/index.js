@@ -5,11 +5,12 @@ export default {
   icon: RiInsertColumnRight,
   description: '插入工作表的列',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        type: {
+      fields: [
+        {
           id: 'type',
           name: '类型',
           description: '插入列：在指定列号插入一列\n追加列：在最后追加一列',
@@ -22,7 +23,7 @@ export default {
           quickConfig: true,
           required: false
         },
-        columnIndex: {
+        {
           id: 'columnIndex',
           name: '列号',
           description: '要添加的列号 1 表示插入到第一列', 
@@ -33,9 +34,9 @@ export default {
           quickConfig: true,
           required: false
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [{
     id: 'worksheet',
     name: '工作表',

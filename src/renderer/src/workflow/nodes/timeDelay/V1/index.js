@@ -9,11 +9,12 @@ export default {
   icon: RiRestTimeLine,
   description: '等待指定时间后继续执行',
   view: true,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        mode: {
+      fields: [
+        {
           id: 'mode',
           name: '等待模式',
           type: 'radio',
@@ -31,7 +32,7 @@ export default {
           description: '等待时间模式',
           quickConfig: true
         },
-        duration: {
+        {
           id: 'duration',
           name: '等待时间',
           type: 'number',
@@ -41,7 +42,7 @@ export default {
           quickConfig: true,
           show: "${mode}=='fixed'"
         },
-        minDuration: {
+        {
           id: 'minDuration',
           name: '最小时间',
           type: 'number',
@@ -51,7 +52,7 @@ export default {
           quickConfig: true,
           show: "${mode}=='random'"
         },
-        maxDuration: {
+        {
           id: 'maxDuration',
           name: '最大时间',
           type: 'number',
@@ -61,9 +62,9 @@ export default {
           quickConfig: true,
           show: "${mode}=='random'"
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: []
 }

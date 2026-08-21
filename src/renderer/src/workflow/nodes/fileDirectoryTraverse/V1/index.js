@@ -8,11 +8,12 @@ export default {
   name: '读取目录',
   icon: RiFolderLine,
   description: '读取指定目录下的所有文件或文件夹',
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        directoryPath: {
+      fields: [
+        {
           id: 'directoryPath',
           name: '目录路径',
           type: 'path',
@@ -20,7 +21,7 @@ export default {
           required: true,
           quickConfig: true
         },
-        traverseType: {
+        {
           id: 'traverseType',
           name: '读取类型',
           type: 'checkbox',
@@ -32,7 +33,7 @@ export default {
           description: '选择要读取的内容类型',
           quickConfig: true
         },
-        isDeep: {
+        {
           id: 'isDeep',
           name: '深度读取',
           type: 'switch',
@@ -40,7 +41,7 @@ export default {
           description: '是否递归读取子目录',
           quickConfig: true
         },
-        maxDepth: {
+        {
           id: 'maxDepth',
           name: '最大深度',
           type: 'number',
@@ -50,7 +51,7 @@ export default {
           show: '${isDeep}',
           quickConfig: true
         },
-        includePattern: {
+        {
           id: 'includePattern',
           name: '包含模式',
           type: 'text',
@@ -58,7 +59,7 @@ export default {
           description: '文件名匹配模式（支持通配符，如*.txt）',
           quickConfig: true
         },
-        excludePattern: {
+        {
           id: 'excludePattern',
           name: '排除模式',
           type: 'text',
@@ -66,7 +67,7 @@ export default {
           description: '要排除的文件名模式（支持通配符）',
           quickConfig: true
         },
-        sortBy: {
+        {
           id: 'sortBy',
           name: '排序方式',
           type: 'select',
@@ -81,7 +82,7 @@ export default {
           description: '结果排序方式',
           quickConfig: true
         },
-        sortOrder: {
+        {
           id: 'sortOrder',
           name: '排序顺序',
           type: 'select',
@@ -94,9 +95,9 @@ export default {
           show: '${sortBy} !== "none"',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: [
     {

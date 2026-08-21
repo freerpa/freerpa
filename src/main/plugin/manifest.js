@@ -7,7 +7,7 @@
  *
  * 元数据统一来自 package.json（标准 npm 项目）：
  *   name=插件ID、version=版本、description=简介、main=执行器主文件（相对 package.json）
- *   freerpa={ config, inputs, outputs, clientVersion }（插件声明）
+ *   freerpa=<最低客户端版本>（字符串，如 "1.0.0"；插件所需的客户端最低版本，打包时自动填充）
  *
  * 开发版优先原则：同一插件 ID 存在开发版时，执行与展示均以开发版为准（验证/调试场景）。
  */
@@ -21,6 +21,24 @@ export function parsePluginDirName(dirName) {
   const at = dirName.lastIndexOf('@')
   if (at <= 0 || at === dirName.length - 1) return null
   return { pluginId: dirName.slice(0, at), version: dirName.slice(at + 1) }
+}
+
+/**
+ * 插件根目录下可选的节点契约描述文件（提供 onChange/remoteMethod 等函数钩子）。
+ * 声明配置字段/输入/输出（config/inputs/outputs），存在时渲染端 import 执行解出含函数钩子的声明。
+ * 主进程只读源码文本（不执行），由渲染端 import 执行（信任边界：渲染进程权限）。
+ */
+const CONFIG_FILE = 'freerpa.io.js'
+
+/** 存在 freerpa.io.js 时返回其源码文本，否则返回 null */
+function readConfigSource(dir) {
+  const file = path.join(dir, CONFIG_FILE)
+  if (!fs.existsSync(file)) return null
+  try {
+    return fs.readFileSync(file, 'utf-8')
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -40,9 +58,12 @@ export function readPluginPackage(dir) {
   if (!pluginId) {
     return { pluginId: path.basename(dir), dir, error: 'package.json 缺少 name（插件 ID）' }
   }
-  const freerpa = pkg.freerpa && typeof pkg.freerpa === 'object' ? pkg.freerpa : {}
+  // freerpa 直接表示插件所需的最低客户端版本（字符串，如 "1.0.0"），不再承载 IO 声明
+  const clientVersion = typeof pkg.freerpa === 'string' ? pkg.freerpa : ''
   const main = String(pkg.main || './src/index.js')
   const executePath = path.resolve(dir, main)
+  // 节点契约（config/inputs/outputs）统一来自 freerpa.io.js：存在则透传源码文本，由渲染端 import 执行解出（可含函数）
+  const configSource = readConfigSource(dir)
   return {
     pluginId,
     name: String(pkg.name || pluginId),
@@ -51,10 +72,11 @@ export function readPluginPackage(dir) {
     main,
     executePath,
     hasExecute: fs.existsSync(executePath),
-    config: Array.isArray(freerpa.config) ? freerpa.config : [],
-    inputs: Array.isArray(freerpa.inputs) ? freerpa.inputs : [],
-    outputs: Array.isArray(freerpa.outputs) ? freerpa.outputs : [],
-    clientVersion: String(freerpa.clientVersion || ''),
+    configSource,
+    config: [],
+    inputs: [],
+    outputs: [],
+    clientVersion,
     packageJson: pkg
   }
 }

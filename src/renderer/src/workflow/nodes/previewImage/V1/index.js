@@ -14,7 +14,7 @@ export default {
     width: 300,
     height: 400
   },
-  config: {},
+  config: [],
   inputs: [
     {
       id: 'image',

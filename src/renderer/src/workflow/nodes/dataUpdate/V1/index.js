@@ -9,36 +9,37 @@ export default {
   icon: IconEdit,
   description: '修改数据表中的数据',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
+      fields: [
         // 修改项
-        updateItems: {
+        {
           id: 'updateItems',
           name: '修改项',
           type: 'array',
           description: '设置修改字段',
           quickConfig: true,
-          fields: {
-            field: {
+          fields: [
+            {
               id: 'field',
               name: '字段',
               type: 'input',
               required: true,
               description: '要修改的字段名'
             },
-            value: {
+            {
               id: 'value',
               name: '值',
               type: 'input',
               description: '要修改的值'
             }
-          }
+          ]
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'query',

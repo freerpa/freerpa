@@ -8,11 +8,12 @@ export default {
   icon: IconBranch,
   description: '根据条件执行不同分支',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        matchType: {
+      fields: [
+        {
           id: 'matchType',
           name: '逻辑',
           type: 'radio',
@@ -25,21 +26,21 @@ export default {
           default: 'and',
           description: '多个条件的判断方式'
         },
-        rules: {
+        {
           id: 'rules',
           name: '条件', 
           type: 'array',
           description: '设置判断条件',
           quickConfig: true,
           paramRef: false,
-          fields: {
-            data: {
+          fields: [
+            {
               id: 'data',
               name: '被比项',
               type: 'string',
               quickConfig: false
             },
-            operator: {
+            {
               id: 'operator',
               name: '比较符',
               type: 'select',
@@ -71,31 +72,31 @@ export default {
               ],
               default: 'eq'
             },
-            value: {
+            {
               id: 'value',
               name: '比较项',
               type: 'input',
               show: "['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'contains', 'notContains', 'startsWith', 'endsWith'].includes(${operator})"
             },
-            regex: {
+            {
               id: 'regex',
               name: '表达式',
               type: 'input',
               show: "${operator} === 'regex'"
             },
-            startDate: {
+            {
               id: 'startDate',
               name: '比较日期',
               type: 'date',
               show: "['before', 'after', 'between'].includes(${operator})"
             },
-            endDate: {
+            {
               id: 'endDate',
               name: '结束日期',
               type: 'date',
               show: "${operator} === 'between'"
             },
-            customCode: {
+            {
               id: 'customCode',
               name: '自定义',
               type: 'code',
@@ -105,11 +106,11 @@ export default {
               suffix: '}',
               show: '${operator} === "custom"'
             }
-          }
+          ]
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: []
 }

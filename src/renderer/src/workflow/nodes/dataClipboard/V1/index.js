@@ -9,11 +9,12 @@ export default {
   name: '系统剪贴板',
   icon: IconPaste,
   description: '读取或设置系统剪贴板内容',
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        type: {
+      fields: [
+        {
           id: 'type',
           name: '操作类型',
           type: 'radio',
@@ -40,7 +41,7 @@ export default {
             }
           }
         },
-        content: {
+        {
           id: 'content',
           name: '写入内容',
           type: 'text',
@@ -49,7 +50,7 @@ export default {
           quickConfig: true,
           show: "${type} === 'write'"
         },
-        outputs: {
+        {
           id: 'outputs',
           name: '输出',
           type: 'array',
@@ -62,9 +63,9 @@ export default {
             description: '从剪贴板读取的内容'
           }]
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: [
     {

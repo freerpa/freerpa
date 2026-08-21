@@ -36,11 +36,12 @@ export default {
     ],
     endOutputs: false
   },
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        type: {
+      fields: [
+        {
           id: 'type',
           name: '循环依据',
           type: 'radio',
@@ -52,7 +53,7 @@ export default {
           default: 'data',
           description: '根据数据项循环 或 指定次数循环'
         },
-        times: {
+        {
           id: 'times',
           name: '循环次数',
           type: 'number',
@@ -62,7 +63,7 @@ export default {
           show: '${type} === "times"',
           description: '指定循环的次数，仅在类型为次数循环时生效'
         },
-        indexType: {
+        {
           id: 'indexType',
           name: '索引类型',
           type: 'radio',
@@ -74,9 +75,9 @@ export default {
           default: 'zero',
           description: '指定循环索引的起始值'
         }
-      },
+      ],
     }
-  },
+  ],
   inputs: [
     {
       id: 'data',

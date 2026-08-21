@@ -5,11 +5,12 @@ export default {
   icon: RiFilePdfLine,
   description: '保存当前浏览器页面为PDF文件',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        filePath: {
+      fields: [
+        {
           id: 'filePath',
           name: '文件路径',
           type: 'path',
@@ -18,7 +19,7 @@ export default {
           required: true,
           description: '文件路径'
         },
-        fileName: {
+        {
           id: 'fileName',
           name: '文件名',
           type: 'text',
@@ -27,7 +28,7 @@ export default {
           description: '文件名无需添加后缀'
         },
         // 要排除的元素选择器
-        excludes: {
+        {
           id: 'excludes',
           name: '排除元素',
           type: 'array',
@@ -39,9 +40,9 @@ export default {
           }],
           description: '要排除的元素'
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [{
     id: 'page',
     name: '浏览器',

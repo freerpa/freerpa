@@ -13,11 +13,12 @@ export default {
   prev: false,
   next: true,
   view: true,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '输入项',
-      fields: {
-        params: {
+      fields: [
+        {
           id: 'params',
           name: '输入项',
           nolabel: true,
@@ -26,12 +27,13 @@ export default {
           default: [],
           fields: createDynamicFields()
         }
-      }
+      ]
     },
-    config: {
+    {
+      id: 'config',
       name: '配置项',
-      fields: {
-        config: {
+      fields: [
+        {
           id: 'config',
           name: '配置项',
           nolabel: true,
@@ -40,9 +42,9 @@ export default {
           default: [],
           fields: configFields
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: [
     {

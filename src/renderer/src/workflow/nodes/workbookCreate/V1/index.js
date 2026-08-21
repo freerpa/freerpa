@@ -7,11 +7,12 @@ export default {
   icon: RiFileExcelLine,
   description: '创建 Excel 工作簿（含默认 Sheet1），需调用【保存工作簿】节点保存为 .xlsx',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        createType: {
+      fields: [
+        {
           id: 'createType',
           name: '创建方式',
           description: '工作表的创建方式',
@@ -24,7 +25,7 @@ export default {
           quickConfig: true,
           required: false
         },
-        filePath: {
+        {
           id: 'filePath',
           name: '文件路径',
           type: 'path',
@@ -35,9 +36,9 @@ export default {
           quickConfig: true,
           required: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: [
     {

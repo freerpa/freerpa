@@ -7,11 +7,12 @@ export default {
   icon: RiSave3Line,
   description: '将 Excel 工作簿整体保存为 .xlsx 文件',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        filePath: {
+      fields: [
+        {
           id: 'filePath',
           name: '文件路径',
           type: 'path',
@@ -20,7 +21,7 @@ export default {
           quickConfig: true,
           required: true
         },
-        fileName: {
+        {
           id: 'fileName',
           name: '文件名',
           type: 'string',
@@ -29,16 +30,16 @@ export default {
           quickConfig: true,
           required: true
         },
-        overwrite: {
+        {
           id: 'overwrite',
           name: '覆盖已存在文件',
           type: 'switch',
           default: true,
           description: '文件已存在时是否覆盖'
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [{
     id: 'worksheet',
     name: '工作表',

@@ -10,11 +10,12 @@ export default {
   icon: RiLogoutBoxLine,
   description: '读取全局变量',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        variables: {
+      fields: [
+        {
           id: 'variables',
           name: '变量',
           nolabel: true,
@@ -33,9 +34,9 @@ export default {
           description: '要读取的全局变量',
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: [
     {

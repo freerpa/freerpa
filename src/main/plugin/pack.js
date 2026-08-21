@@ -71,20 +71,25 @@ export async function packFrp(srcDir, outPath, onProgress = () => {}) {
       minify: true
     })
 
-    // 2. 组装 .frp（package.json + 编译产物）
+    // 2. 组装 .frp（package.json + 编译产物 + 可选 ui 配置描述）
     onProgress(70, '组装 .frp 文件')
     const zip = new AdmZip()
-    // 最低客户端版本：打包时自动填充为「打包方当时的客户端版本」，取代手工维护 freerpa.clientVersion。
+    // 最低客户端版本：freerpa 直接为字符串，打包时自动填充为「打包方当时的客户端版本」，取代手工维护。
     // 只写入 .frp，不改动插件源码目录的 package.json。
     const distPkg = {
       ...pkg.packageJson,
-      freerpa: { ...(pkg.packageJson.freerpa || {}), clientVersion: clientPkg.version }
+      freerpa: clientPkg.version
     }
     zip.addFile('package.json', Buffer.from(JSON.stringify(distPkg, null, 2), 'utf-8'))
     // 编译产物相对 srcDir 的路径（如 src/index.js）
     const relOut = pkg.main.split(/[\\/]/).filter(Boolean).join('/')
     if (relOut && relOut !== 'package.json') {
       zip.addLocalFile(outFile, relOut.split('/').slice(0, -1).join('/'), relOut.split('/').pop())
+    }
+    // 节点契约描述（可含函数钩子）：随包分发，渲染端执行（主进程 manifest 在 .frp 内扫描同名文件读取源码）
+    const configFile = path.join(srcDir, 'freerpa.io.js')
+    if (fs.existsSync(configFile)) {
+      zip.addLocalFile(configFile, '', 'freerpa.io.js')
     }
     zip.writeZip(outPath)
     onProgress(100, '打包完成')

@@ -13,7 +13,7 @@ export default {
     name: '工作流',
     startOutputs: []
   },
-  config: {},
+  config: [],
   inputs: [],
   outputs: []
 }

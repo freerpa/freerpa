@@ -8,11 +8,12 @@ export default {
   icon: RiNumber0,
   description: '创建一个计数器，用于计数',
   view: true,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        initialValueCount: {
+      fields: [
+        {
           id: 'initialValueCount',
           name: '初始计数',
           type: 'number',
@@ -20,9 +21,9 @@ export default {
           default: 0,
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: [
     {

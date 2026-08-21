@@ -5,11 +5,12 @@ export default {
   icon: RiInsertRowBottom,
   description: '插入工作表的行',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        type: {
+      fields: [
+        {
           id: 'type',
           name: '类型',
           description: '插入行：在指定行号插入一行\n追加行：在最后追加一行',
@@ -22,7 +23,7 @@ export default {
           quickConfig: true,
           required: false
         },
-        rowIndex: {
+        {
           id: 'rowIndex',
           name: '行号',
           description: '要添加的行号 1 表示插入到第一行',
@@ -33,9 +34,9 @@ export default {
           quickConfig: true,
           required: false
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [{
     id: 'worksheet',
     name: '工作表',

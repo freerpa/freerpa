@@ -13,7 +13,7 @@ export default {
     name: '子流程',
     startOutputs: []
   },
-  config: {},
+  config: [],
   inputs: [],
   outputs: []
 }

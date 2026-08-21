@@ -8,11 +8,12 @@ export default {
   name: '写入文件',
   icon: RiFileEditLine,
   description: '将内容写入本地文件',
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        filePath: {
+      fields: [
+        {
           id: 'filePath',
           name: '文件路径',
           type: 'path',
@@ -21,7 +22,7 @@ export default {
           quickConfig: true,
           required: true
         },
-        content: {
+        {
           id: 'content',
           name: '写入内容',
           type: 'any',
@@ -29,7 +30,7 @@ export default {
           quickConfig: true,
           description: '要写入文件的内容'
         },
-        encoding: {
+        {
           id: 'encoding',
           name: '文件编码',
           type: 'select',
@@ -43,7 +44,7 @@ export default {
           quickConfig: true,
           description: '文件编码格式'
         },
-        writeMode: {
+        {
           id: 'writeMode',
           name: '写入模式',
           type: 'radio',
@@ -55,7 +56,7 @@ export default {
           quickConfig: true,
           description: '文件写入模式'
         },
-        appendLineBreak: {
+        {
           id: 'appendLineBreak',
           name: '追加换行',
           type: 'switch',
@@ -64,9 +65,9 @@ export default {
           show: '${writeMode} === "append"',
           description: '是否在写入内容前添加换行符'
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: []
 }

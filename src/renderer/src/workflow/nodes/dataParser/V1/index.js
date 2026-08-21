@@ -10,19 +10,20 @@ export default {
   icon: IconSwap,
   description: '数据解析节点，根据规则按数据路径提取并转换数据字段，支持格式化输出',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '规则',
-      fields: {
+      fields: [
         // 数据路径
-        dataPath: {
+        {
           id: 'dataPath',
           name: '数据路径',
           type: 'string',
           default: '',
           description: '支持点号如：data.list.0.name'
         },
-        modelId: {
+        {
           id: 'modelId',
           name: '获取字段',
           type: 'select',
@@ -63,29 +64,29 @@ export default {
             formData.value.modelId = ''
           }
         },
-        rules: {
+        {
           id: 'rules',
           name: '解析规则',
           type: 'array',
           description: '仅输出解析规则中映射的字段，其他原始字段将不会输出',
           default: [],  
-          fields: {
-            selector: {
+          fields: [
+            {
               id: 'selector',
               name: '数据路径',
               type: 'string',
               description: '要选取的目标字段'
             },
-            field: {
+            {
               id: 'field',
               name: '输出字段名',
               type: 'string',
               description: '输出的字段名'
             },
             format
-          }
+          ]
         },
-        onlyValue: {
+        {
           id: 'onlyValue',
           name: '仅输出值',
           type: 'switch',
@@ -93,9 +94,9 @@ export default {
           description: '如果解析规则只有一个，则可以仅输出值',
           show: '${rules}.length == 1'
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'data',

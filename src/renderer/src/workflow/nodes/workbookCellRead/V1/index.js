@@ -5,11 +5,12 @@ export default {
   icon: IconNav,
   description: '读取工作表的数据',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        row: {
+      fields: [
+        {
           id: 'row',
           name: '读取行',
           description: '读取行',
@@ -28,7 +29,7 @@ export default {
           quickConfig: true,
           required: true
         },
-        specifyRow: {
+        {
           id: 'specifyRow',
           name: '指定行',
           description: '指定行',
@@ -60,7 +61,7 @@ export default {
           quickConfig: true,
           required: true
         },
-        column: {
+        {
           id: 'column',
           name: '读取列',
           description: '读取列',
@@ -79,7 +80,7 @@ export default {
           quickConfig: true,
           required: true
         },
-        specifyColumn: {
+        {
           id: 'specifyColumn',
           name: '指定列',
           description: '指定列',
@@ -111,9 +112,9 @@ export default {
           quickConfig: true,
           required: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [{
     id: 'worksheet',
     name: '工作表',

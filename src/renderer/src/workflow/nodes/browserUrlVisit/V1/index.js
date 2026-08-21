@@ -8,11 +8,12 @@ export default {
   name: '访问地址',
   icon: IconLink,
   description: '访问指定的URL地址或等待页面加载',
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        action: {
+      fields: [
+        {
           id: 'action',
           name: '操作类型',
           type: 'select',
@@ -28,7 +29,7 @@ export default {
             { label: '仅等待', value: 'listen' }
           ]
         },
-        url: {
+        {
           id: 'url',
           name: 'URL地址',
           type: 'string',
@@ -37,7 +38,7 @@ export default {
           quickConfig: true,
           show: '${action} === "goto" || ${action} === "download"'
         },
-        waitUntil: {
+        {
           id: 'waitUntil',
           name: '等待时机',
           type: 'select',
@@ -50,7 +51,7 @@ export default {
           ],
           quickConfig: true
         },
-        timeout: {
+        {
           id: 'timeout',
           name: '超时时间',
           type: 'number',
@@ -60,9 +61,9 @@ export default {
           step: 1000,
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'page',

@@ -18,8 +18,7 @@ export default {
   // 允许后续节点连接点
   next: false,
   // 配置项
-  config: {
-  },
+  config: [],
   inputs: [],
   outputs: []
 }

@@ -9,11 +9,12 @@ export default {
   icon: IconFilter,
   description: '对数据进行筛选和过滤',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '过滤规则',
-      fields: {
-        matchType: {
+      fields: [
+        {
           id: 'matchType',
           name: '匹配方式',
           type: 'radio',
@@ -25,21 +26,21 @@ export default {
           description: '多个条件的匹配方式',
           quickConfig: false
         },
-        rules: {
+        {
           id: 'rules',
           name: '过滤条件',
           nolabel: true,
           type: 'array',
           description: '设置过滤条件',
-          fields: {
-            dataPath: {
+          fields: [
+            {
               id: 'dataPath',
               name: '数据路径',
               type: 'string',
               description: '要过滤的数据路径,支持点号分隔,如: data.list',
               quickConfig: false
             },
-            operator: {
+            {
               id: 'operator',
               name: '比较方式',
               type: 'select',
@@ -69,31 +70,31 @@ export default {
               ],
               default: 'eq'
             },
-            value: {
+            {
               id: 'value',
               name: '比较值',
               type: 'input',
               show: "['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'contains', 'notContains', 'startsWith', 'endsWith'].includes(${operator})"
             },
-            regex: {
+            {
               id: 'regex',
               name: '表达式',
               type: 'input',
               show: "${operator} === 'regex'"
             },
-            startDate: {
+            {
               id: 'startDate',
               name: '比较日期',
               type: 'date',
               show: "['before', 'after', 'between'].includes(${operator})"
             },
-            endDate: {
+            {
               id: 'endDate',
               name: '结束日期',
               type: 'date',
               show: "${operator} === 'between'"
             },
-            customCode: {
+            {
               id: 'customCode',
               name: '自定义',
               type: 'code',
@@ -105,11 +106,11 @@ export default {
               description: '自定义处理函数',
               show: '${operator} === "custom"'
             }
-          }
+          ]
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'data',

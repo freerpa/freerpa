@@ -8,11 +8,12 @@ export default {
   name: '删除文件',
   icon: RiFileShredLine,
   description: '删除文件或目录',
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        deleteType: {
+      fields: [
+        {
           id: 'deleteType',
           name: '删除类型',
           type: 'radio',
@@ -24,7 +25,7 @@ export default {
           quickConfig: true,
           description: '删除文件或目录'
         },
-        filePath: {
+        {
           id: 'filePath',
           name: '文件路径',
           type: 'path',
@@ -34,7 +35,7 @@ export default {
           quickConfig: true,
           required: true
         },
-        dirPath: {
+        {
           id: 'dirPath',
           name: '目录路径',
           type: 'path',
@@ -44,7 +45,7 @@ export default {
           quickConfig: true,
           required: true
         },
-        force: {
+        {
           id: 'force',
           name: '强制删除',
           type: 'switch',
@@ -52,9 +53,9 @@ export default {
           quickConfig: true,
           description: '是否强制删除（忽略只读属性）'
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [],
   outputs: []
 }

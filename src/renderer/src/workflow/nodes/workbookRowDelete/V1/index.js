@@ -5,11 +5,12 @@ export default {
   icon: RiDeleteRow,
   description: '删除工作表的行',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        rowIndex: {
+      fields: [
+        {
           id: 'rowIndex',
           name: '行号',
           description: '要删除的行号 1 表示删除第一行',
@@ -19,7 +20,7 @@ export default {
           quickConfig: true,
           required: false
         },
-        order: {
+        {
           id: 'order',
           name: '顺序',
           description: '删除行的顺序',
@@ -38,9 +39,9 @@ export default {
             }
           ]
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [{
     id: 'worksheet',
     name: '工作表',

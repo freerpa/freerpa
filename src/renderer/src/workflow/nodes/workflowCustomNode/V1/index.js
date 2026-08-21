@@ -5,7 +5,7 @@ import { IO_FIELD_MAP_NAME_ID } from '../../../io-conventions.js'
 import { IconCode } from '@arco-design/web-vue/es/icon'
 import { createDynamicFields, configFields } from '../../common'
 const fields = createDynamicFields()
-fields.type.options = [
+fields.find((f) => f.id === 'type').options = [
   { label: '文本', value: 'string' },
   { label: '数字', value: 'number' },
   { label: '是否', value: 'boolean' },
@@ -23,12 +23,13 @@ export default {
   icon: IconCode,
   view: true,
   // 节点配置
-  config: {
+  config: [
     // 执行代码
-    basic: {
+    {
+      id: 'basic',
       name: '执行代码',
-      fields: {
-        openSource: {
+      fields: [
+        {
           id: 'openSource',
           name: '是否开源',
           type: 'switch',
@@ -37,7 +38,7 @@ export default {
           show: '${isAuthor}'
         },
         // 自定义代码
-        code: {
+        {
           id: 'code',
           name: '执行代码',
           type: 'code',
@@ -57,12 +58,13 @@ complete({
 })`,
           language: 'javascript'
         }
-      }
+      ]
     },
-    inputs: {
+    {
+      id: 'inputs',
       name: '输入项',
-      fields: {
-        inputs: {
+      fields: [
+        {
           id: 'inputs',
           name: '输入项',
           nolabel: true,
@@ -84,12 +86,13 @@ complete({
             }
           ]
         }
-      }
+      ]
     },
-    config: {
+    {
+      id: 'config',
       name: '配置项',
-      fields: {
-        params: {
+      fields: [
+        {
           id: 'params',
           name: '配置项',
           nolabel: true,
@@ -98,12 +101,13 @@ complete({
           fields: configFields,
           default: []
         }
-      }
+      ]
     },
-    outputs: {
+    {
+      id: 'outputs',
       name: '输出项',
-      fields: {
-        outputs: {
+      fields: [
+        {
           id: 'outputs',
           name: '输出项',
           nolabel: true,
@@ -125,12 +129,13 @@ complete({
             }
           ]
         }
-      }
+      ]
     },
-    description: {
+    {
+      id: 'description',
       name: '节点描述',
-      fields: {
-        description: {
+      fields: [
+        {
           id: 'description',
           name: '节点描述',
           nolabel: true,
@@ -138,9 +143,9 @@ complete({
           paramRef: false,
           description: '在这里填写关于节点的描述，可以包含节点的用途、使用方法、注意事项等'
         }
-      }
+      ]
     }
-  },
+  ],
   // 输入
   inputs: [
     {

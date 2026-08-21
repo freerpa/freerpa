@@ -9,11 +9,12 @@ export default {
   icon: RiIncreaseDecreaseLine,
   description: '操作计数器',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        type: {
+      fields: [
+        {
           id: 'type',
           name: '操作类型',
           type: 'radio',
@@ -35,9 +36,9 @@ export default {
           ],
           quickConfig: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [
     {
       id: 'counter',

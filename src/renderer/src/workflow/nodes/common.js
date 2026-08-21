@@ -10,7 +10,7 @@ export const createDataHandlerNode = ({ type, name, icon, description }) => ({
   icon,
   description,
   view: true,
-  config: {},
+  config: [],
   inputs: [
     {
       type: 'dynamic',
@@ -32,8 +32,8 @@ export const createDataHandlerNode = ({ type, name, icon, description }) => ({
 /**
  * 动态输入/输出项字段（工厂函数：每次返回独立副本，避免多个节点定义共享同一可变对象）
  */
-export const createDynamicFields = () => ({
-  type: {
+export const createDynamicFields = () => [
+  {
     id: 'type',
     name: '参数类型',
     type: 'select',
@@ -41,20 +41,20 @@ export const createDynamicFields = () => ({
     options: Object.keys(typeText).map((key) => ({ label: typeText[key], value: key })),
     default: 'string'
   },
-  name: {
+  {
     id: 'name',
     name: '参数名称',
     type: 'string',
     paramRef: false,
     required: true
   },
-  description: {
+  {
     id: 'description',
     paramRef: false,
     name: '参数说明',
     type: 'string'
   },
-  stringValue: {
+  {
     id: 'stringValue',
     name: '默认值',
     type: 'text',
@@ -62,7 +62,7 @@ export const createDynamicFields = () => ({
     paramRef: false,
     default: ''
   },
-  numberValue: {
+  {
     id: 'numberValue',
     name: '默认值',
     type: 'number',
@@ -70,7 +70,7 @@ export const createDynamicFields = () => ({
     show: '${type} === "number"',
     default: 0
   },
-  switchValue: {
+  {
     id: 'switchValue',
     name: '默认值',
     type: 'switch',
@@ -78,7 +78,7 @@ export const createDynamicFields = () => ({
     show: '${type} === "boolean"',
     default: false
   },
-  arrayValue: {
+  {
     id: 'arrayValue',
     name: '默认值',
     type: 'code',
@@ -86,7 +86,7 @@ export const createDynamicFields = () => ({
     paramRef: false,
     default: `[]`
   },
-  objectValue: {
+  {
     id: 'objectValue',
     name: '默认值',
     type: 'code',
@@ -94,7 +94,7 @@ export const createDynamicFields = () => ({
     paramRef: false,
     default: '{}'
   },
-  anyValue: {
+  {
     id: 'anyValue',
     name: '默认值',
     type: 'code',
@@ -102,7 +102,7 @@ export const createDynamicFields = () => ({
     show: '${type} === "any"',
     default: ''
   },
-  required: {
+  {
     id: 'required',
     name: '是否必填',
     type: 'switch',
@@ -110,7 +110,7 @@ export const createDynamicFields = () => ({
     paramRef: false,
     default: true
   }
-})
+]
 
 const filters = {
   document: {
@@ -333,8 +333,8 @@ const filters = {
   }
 }
 
-export const configFields = {
-  type: {
+export const configFields = [
+  {
     id: 'type',
     name: '配置类型',
     type: 'select',
@@ -375,20 +375,20 @@ export const configFields = {
     },
     default: 'string'
   },
-  name: {
+  {
     id: 'name',
     name: '配置名称',
     type: 'string',
     paramRef: false,
     required: true
   },
-  description: {
+  {
     id: 'description',
     name: '配置说明',
     paramRef: false,
     type: 'string'
   },
-  showTime: {
+  {
     id: 'showTime',
     name: '显示时间',
     type: 'switch',
@@ -403,7 +403,7 @@ export const configFields = {
       }
     }
   },
-  format: {
+  {
     id: 'format',
     name: '日期格式',
     type: 'text',
@@ -411,7 +411,7 @@ export const configFields = {
     show: "${type} == 'date'",
     default: 'YYYY-MM-DD'
   },
-  dataType: {
+  {
     id: 'dataType',
     name: '数据类型',
     type: 'text',
@@ -421,7 +421,7 @@ export const configFields = {
     default: 'string'
   },
   // 文件类型
-  fileType: {
+  {
     id: 'fileType',
     name: '文件类型',
     show: "${type} === 'file'",
@@ -434,7 +434,7 @@ export const configFields = {
     default: 'other'
   },
   //文件格式后缀名
-  fileExt: {
+  {
     id: 'fileExt',
     name: '文件格式',
     description: '文件格式后缀名如 txt png mp4 为空则表示所有文件',
@@ -444,7 +444,7 @@ export const configFields = {
     show: "${fileType} === 'other'"
   },
   // 多选
-  multiple: {
+  {
     id: 'multiple',
     name: '是否多选',
     show: "['select', 'file', 'folder', 'browser', 'model'].includes(${type})",
@@ -461,7 +461,7 @@ export const configFields = {
       }
     }
   },
-  remote: {
+  {
     id: 'remote',
     name: '远程选项',
     show: "${type} === 'select'",
@@ -469,40 +469,40 @@ export const configFields = {
     paramRef: false,
     default: false
   },
-  remoteRules: {
+  {
     id: 'remoteRules',
     name: '远程规则',
     show: "${type} === 'select' && ${remote}",
     type: 'object',
-    fields: {
-      method: {
+    fields: [
+      {
         id: 'method',
         name: '请求方法',
         type: 'select',
         options: ['GET', 'POST', 'PUT', 'DELETE'],
         default: 'GET'
       },
-      url: {
+      {
         id: 'url',
         name: '远程接口',
         type: 'string',
         default: '',
         required: true
       },
-      headers: {
+      {
         id: 'headers',
         name: '请求头',
         type: 'string',
         default: ''
       },
-      body: {
+      {
         id: 'body',
         name: '请求体',
         type: 'string',
         show: "${method} === 'POST' || ${method} === 'PUT'",
         default: ''
       },
-      data: {
+      {
         id: 'data',
         name: '数据路径',
         description: '选项列表路径 如 data.users',
@@ -510,7 +510,7 @@ export const configFields = {
         type: 'string',
         default: ''
       },
-      label: {
+      {
         id: 'label',
         name: '标签字段',
         description: '选项标签字段 如 name',
@@ -518,7 +518,7 @@ export const configFields = {
         type: 'string',
         default: ''
       },
-      value: {
+      {
         id: 'value',
         name: '值字段',
         description: '选项值字段 如 id',
@@ -526,10 +526,10 @@ export const configFields = {
         type: 'string',
         default: ''
       }
-    },
+    ],
     paramRef: false,
   },
-  options: {
+  {
     id: 'options',
     name: '选项列表',
     type: 'array',
@@ -537,22 +537,22 @@ export const configFields = {
     show: "${type} === 'select' && !${remote}",
     codeView: true,
     default: [],
-    fields: {
-      label: {
+    fields: [
+      {
         id: 'label',
         name: '选项名',
         type: 'string',
         paramRef: false
       },
-      value: {
+      {
         id: 'value',
         name: '选项值',
         type: 'string',
         paramRef: false
       }
-    }
+    ]
   },
-  min: {
+  {
     id: 'min',
     name: '最小值',
     type: 'number',
@@ -560,7 +560,7 @@ export const configFields = {
     show: "${type} === 'number'",
     default: 0
   },
-  max: {
+  {
     id: 'max',
     name: '最大值',
     type: 'number',
@@ -568,14 +568,14 @@ export const configFields = {
     show: "${type} === 'number'",
     default: 100
   },
-  required: {
+  {
     id: 'required',
     name: '是否必填',
     type: 'switch',
     paramRef: false,
     default: false
   },
-  show: {
+  {
     id: 'show',
     name: '条件显示',
     description: '支持字段引用 如 ${字段名} == "1"',
@@ -583,49 +583,49 @@ export const configFields = {
     paramRef: false,
     default: ''
   },
-  stringValue: {
+  {
     id: 'stringValue',
     name: '配置值',
     type: 'text',
     show: false,
     default: ''
   },
-  numberValue: {
+  {
     id: 'numberValue',
     name: '配置值',
     type: 'number',
     show: false,
     default: 0
   },
-  switchValue: {
+  {
     id: 'switchValue',
     name: '配置值',
     type: 'switch',
     show: false,
     default: false
   },
-  dateValue: {
+  {
     id: 'dateValue',
     name: '配置值',
     type: 'date',
     show: false,
     default: ''
   },
-  selectValue: {
+  {
     id: 'selectValue',
     name: '配置值',
     type: 'text',
     show: false,
     default: ''
   },
-  colorValue: {
+  {
     id: 'colorValue',
     name: '配置值',
     type: 'color',
     show: false,
     default: '#ffffff00'
   },
-  fileValue: {
+  {
     id: 'fileValue',
     name: '配置值',
     type: 'path',
@@ -633,7 +633,7 @@ export const configFields = {
     pathType: 'file',
     default: ''
   },
-  folderValue: {
+  {
     id: 'folderValue',
     name: '配置值',
     type: 'path',
@@ -641,28 +641,28 @@ export const configFields = {
     pathType: 'folder',
     default: ''
   },
-  selectorValue: {
+  {
     id: 'selectorValue',
     name: '配置值',
     type: 'selector',
     show: false,
     default: ''
   },
-  modelValue: {
+  {
     id: 'modelValue',
     name: '配置值',
     type: 'selector',
     show: false,
     default: ''
   },
-  browserValue: {
+  {
     id: 'browserValue',
     name: '配置值',
     type: 'selector',
     show: false,
     default: ''
   }
-}
+]
 
 export const buildConfigFields = (config) => {
   const field = {
@@ -728,8 +728,8 @@ export const format = {
   name: '格式化',
   type: 'object',
   description: '数据格式化配置',
-  fields: {
-    type: {
+  fields: [
+    {
       id: 'type',
       name: '类型',
       type: 'select',
@@ -744,7 +744,7 @@ export const format = {
       ],
       default: 'none'
     },
-    pattern: {
+    {
       id: 'pattern',
       name: '模板',
       type: 'input',
@@ -752,7 +752,7 @@ export const format = {
       default: '',
       description: '格式化模板,如日期: YYYY-MM-DD'
     },
-    currency: {
+    {
       id: 'currency',
       name: '货币单位',
       type: 'select',
@@ -765,7 +765,7 @@ export const format = {
       ],
       default: 'CNY'
     },
-    precision: {
+    {
       id: 'precision',
       name: '小数位数',
       type: 'number',
@@ -774,7 +774,7 @@ export const format = {
       max: 20,
       default: 2
     },
-    separator: {
+    {
       id: 'separator',
       name: '分隔符',
       type: 'switch',
@@ -782,7 +782,7 @@ export const format = {
       default: true,
       description: '是否使用千分位分隔符'
     },
-    customFormat: {
+    {
       id: 'customFormat',
       name: '代码',
       type: 'code',
@@ -793,7 +793,7 @@ export const format = {
       default: 'return data',
       suffix: '}'
     }
-  }
+  ]
 }
 
 /**
@@ -803,9 +803,10 @@ export const format = {
  * @returns {{name:string, fields:Object}} 配置分组
  */
 export const buildErrorHandleGroup = (remoteMethod) => ({
+  id: 'errorHandle',
   name: '执行配置',
-  fields: {
-    errorHandleType: {
+  fields: [
+    {
       id: 'errorHandleType',
       name: '错误处理',
       type: 'select',
@@ -820,7 +821,7 @@ export const buildErrorHandleGroup = (remoteMethod) => ({
         { label: '终止流程', value: 'stop' }
       ]
     },
-    errorHandleRetryCount: {
+    {
       id: 'errorHandleRetryCount',
       name: '重试次数',
       type: 'number',
@@ -829,7 +830,7 @@ export const buildErrorHandleGroup = (remoteMethod) => ({
       default: 3,
       paramRef: false
     },
-    errorHandleRetryInterval: {
+    {
       id: 'errorHandleRetryInterval',
       name: '重试间隔',
       type: 'number',
@@ -838,7 +839,7 @@ export const buildErrorHandleGroup = (remoteMethod) => ({
       default: 1000,
       paramRef: false
     },
-    errorHandleRetryFailed: {
+    {
       id: 'errorHandleRetryFailed',
       name: '重试失败',
       type: 'select',
@@ -853,7 +854,7 @@ export const buildErrorHandleGroup = (remoteMethod) => ({
         { label: '重试流程', value: 'retryFlow' }
       ]
     },
-    errorHandleSpecifyNode: {
+    {
       id: 'errorHandleSpecifyNode',
       name: '指定节点',
       type: 'select',
@@ -865,24 +866,19 @@ export const buildErrorHandleGroup = (remoteMethod) => ({
       remoteMethod: remoteMethod || null,
       default: ''
     }
-  }
+  ]
 })
 
 /**
- * 将节点定义的 config 分组转换为 { groupName: [field, ...] } 扁平结构
+ * 将节点定义的 config 分组（数组形态）转换为 { groupName: [] } 扁平结构
  * useNodeConfig.allConfigFieldsWithGroup 与 FlowCanvas.getNodeConfigFields 共用
- * @param {{config?:Object}} nodeDefinition 节点定义（含 config 分组结构）
+ * @param {{config?:Array}} nodeDefinition 节点定义（config 为数组分组）
  * @returns {Object<string, Array>} groupName → 字段数组
  */
 export const getConfigFieldGroups = (nodeDefinition) => {
   const groups = {}
-  const config = nodeDefinition?.config
-  if (!config) return groups
-  Object.values(config).forEach((group) => {
-    groups[group.name] = []
-    Object.values(group.fields || {}).forEach((field) => {
-      groups[group.name].push(field)
-    })
-  })
+  for (const group of nodeDefinition?.config || []) {
+    groups[group?.name] = group?.fields ? [...group.fields] : []
+  }
   return groups
 }

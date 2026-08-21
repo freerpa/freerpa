@@ -5,11 +5,12 @@ export default {
   icon: RiTextSnippet,
   description: '写入工作表数据',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        writeData: {
+      fields: [
+        {
           id: 'writeData',
           name: '数据',
           description: '写入工作表的数据',
@@ -49,9 +50,9 @@ export default {
           quickConfig: true,
           required: true
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [{
     id: 'worksheet',
     name: '工作表',

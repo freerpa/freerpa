@@ -8,7 +8,7 @@ export default {
   icon: IconMusic,
   description: '预览音频文件',
   view: true,
-  config: {},
+  config: [],
   inputs: [
     {
       id: 'audio',

@@ -5,11 +5,12 @@ export default {
   icon: RiSplitCellsVertical,
   description: '取消合并工作表中的单元格',
   view: false,
-  config: {
-    basic: {
+  config: [
+    {
+      id: 'basic',
       name: '基础配置',
-      fields: {
-        rowIndex: {
+      fields: [
+        {
           id: 'rowIndex',
           name: '行号',
           description: '单元格行号 1 表示第一行',
@@ -19,7 +20,7 @@ export default {
           quickConfig: true,
           required: false
         },
-        columnIndex: {
+        {
           id: 'columnIndex',
           name: '列号',
           description: '单元格列号 1 表示 A 列',
@@ -29,9 +30,9 @@ export default {
           quickConfig: true,
           required: false
         }
-      }
+      ]
     }
-  },
+  ],
   inputs: [{
     id: 'worksheet',
     name: '工作表',
