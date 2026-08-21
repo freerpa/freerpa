@@ -1,12 +1,13 @@
 import { ipcMain, screen, dialog, shell, app, Notification } from 'electron'
-import { sendToRenderer } from './workflow/host/rendererUtils'
-import { manager as workflowManager } from './workflow/index'
-import { get, flush as flushStore } from './store/index'
-import { destroyTray } from './app/tray'
+import { sendToRenderer } from './workflow/host/rendererUtils.js'
+import { manager as workflowManager } from './workflow/index.js'
+import { get, flush as flushStore } from './store/index.js'
+import { destroyTray } from './app/tray.js'
+import { compareSemver } from './utils.js'
 import fs from 'fs'
 import path from 'path'
 import pkg from '../../package.json'
-import { API_CONFIG } from './api/config'
+import { API_CONFIG } from './api/config.js'
 export const register = () => {
   // 窗口控制
   ipcMain.on('window-min', () => global.mainWindow.minimize())
@@ -38,39 +39,24 @@ export const register = () => {
     // 等待配置写入落库后退出，防丢最近一次 set
     flushStore().finally(() => app.exit(0))
   })
-  // 注册路径选择对话框处理
-  ipcMain.handle('dialog:openPath', async (event, options) => {
-    if (!options.defaultPath) {
-      options.defaultPath = get('allowedRoot')
-    } else {
-      //首先获取真实路径
-      let realPath = path.resolve(options.defaultPath)
-      //判断默认展示目录是否存在不存在打开安全目录
-      if (!fs.existsSync(realPath)) {
-        realPath = get('allowedRoot')
-      }
-      options.defaultPath = realPath
-    }
+  /** 归一对话框默认目录：请求目录不存在时回退安全目录（allowedRoot） */
+  const resolveDialogDefaultPath = (requestedPath) => {
+    const fallback = get('allowedRoot')
+    if (!requestedPath) return fallback
+    const realPath = path.resolve(requestedPath)
+    return fs.existsSync(realPath) ? realPath : fallback
+  }
 
-    const result = await dialog.showOpenDialog(global.mainWindow, options)
-    return result
+  // 注册路径选择对话框处理
+  ipcMain.handle('dialog:openPath', (event, options) => {
+    options.defaultPath = resolveDialogDefaultPath(options.defaultPath)
+    return dialog.showOpenDialog(global.mainWindow, options)
   })
 
-  ipcMain.handle('dialog:savePath', async (event, options) => {
-    if (!options.defaultPath) {
-      options.defaultPath = get('allowedRoot')
-    } else {
-      //首先获取真实路径
-      let realPath = path.resolve(options.defaultPath)
-      //判断默认展示目录是否存在不存在打开安全目录
-      if (!fs.existsSync(realPath)) {
-        realPath = get('allowedRoot')
-      }
-      options.defaultPath = realPath
-    }
-    options.defaultPath = path.join(options.defaultPath, options.defaultFilename || '导出文件')
-    const result = await dialog.showSaveDialog(global.mainWindow, options)
-    return result
+  ipcMain.handle('dialog:savePath', (event, options) => {
+    const basePath = resolveDialogDefaultPath(options.defaultPath)
+    options.defaultPath = path.join(basePath, options.defaultFilename || '导出文件')
+    return dialog.showSaveDialog(global.mainWindow, options)
   })
 
   ipcMain.handle('shell:openPath', async (event, path) => {
@@ -102,20 +88,6 @@ export const register = () => {
     return pkg.version
   })
 
-  /** 语义化版本比较：1.10.0 > 1.9.0（逐段数字，避免字符串比较的坑） */
-  const compareVersions = (a, b) => {
-    const pa = String(a || '').split('.').map((n) => parseInt(n, 10) || 0)
-    const pb = String(b || '').split('.').map((n) => parseInt(n, 10) || 0)
-    const len = Math.max(pa.length, pb.length)
-    for (let i = 0; i < len; i++) {
-      const na = pa[i] || 0
-      const nb = pb[i] || 0
-      if (na > nb) return 1
-      if (na < nb) return -1
-    }
-    return 0
-  }
-
   /** 版本接口的平台参数（与网站 fr_app_versions 平台字段一致） */
   const updatePlatformKey = () => {
     if (process.platform === 'darwin') return 'macos'
@@ -145,7 +117,7 @@ export const register = () => {
       if (!data || !data.version) {
         return { hasUpdate: false, error: '' }
       }
-      const hasUpdate = compareVersions(data.version, pkg.version) > 0
+      const hasUpdate = compareSemver(data.version, pkg.version) > 0
       return {
         hasUpdate,
         version: data.version,

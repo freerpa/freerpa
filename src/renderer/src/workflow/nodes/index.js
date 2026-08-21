@@ -144,6 +144,10 @@ export default nodes
 export const PLUGIN_NODE_PREFIX = 'plu_'
 const registeredPluginTypes = new Set()
 
+/** 归一插件标识：已有 identifier 直接用；否则开发版 pluginId@dev、正式版 pluginId@version */
+const resolvePluginIdentifier = (plugin) =>
+  plugin.identifier || (plugin.isDev ? `${plugin.pluginId}@dev` : `${plugin.pluginId}@${plugin.version}`)
+
 /** 插件声明类型 → 渲染端字段类型映射 */
 const PLUGIN_FIELD_TYPE_MAP = {
   string: 'text',
@@ -155,7 +159,7 @@ const PLUGIN_FIELD_TYPE_MAP = {
 
 /** 根据插件条目生成 plu_<identifier> 节点定义（每版本独立节点；config 数组 → 渲染端基础分组字段） */
 const buildPluginNodeDef = (plugin) => {
-  const identifier = plugin.identifier || (plugin.isDev ? `${plugin.pluginId}@dev` : `${plugin.pluginId}@${plugin.version}`)
+  const identifier = resolvePluginIdentifier(plugin)
   // 插件 config 数组（[{id,name,type,description,show,required}]）→ 渲染端字段对象
   const fields = {}
   const rawConfig = Array.isArray(plugin.config) ? plugin.config : []
@@ -230,7 +234,7 @@ const buildPluginNodeDef = (plugin) => {
 /** 注册/更新单个本地插件节点（每版本独立节点；加载失败的插件不注册） */
 export const registerPluginNode = (plugin) => {
   if (!plugin?.pluginId || plugin.error) return
-  const identifier = plugin.identifier || (plugin.isDev ? `${plugin.pluginId}@dev` : `${plugin.pluginId}@${plugin.version}`)
+  const identifier = resolvePluginIdentifier(plugin)
   const type = `${PLUGIN_NODE_PREFIX}${identifier}`
   nodes[type] = buildPluginNodeDef(plugin)
   registeredPluginTypes.add(type)
@@ -250,7 +254,7 @@ export const loadPluginNodes = async () => {
   try {
     const plugins = (await window.electronAPI.plugin.list()) || []
     // 已注册的版本节点按 identifier（pluginId@version）清理；pluginId 用于清理残留的旧 plu_<id> 节点
-    const identifiers = new Set(plugins.map((p) => p.identifier || (p.isDev ? `${p.pluginId}@dev` : `${p.pluginId}@${p.version}`)))
+    const identifiers = new Set(plugins.map(resolvePluginIdentifier))
     const pluginIds = new Set(plugins.map((p) => p.pluginId))
     for (const type of [...registeredPluginTypes]) {
       const suffix = type.slice(PLUGIN_NODE_PREFIX.length)

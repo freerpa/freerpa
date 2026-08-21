@@ -3,8 +3,8 @@ import { IO_FIELD_MAP_NAME_ID } from '../../../io-conventions.js'
  * @file: 自定义节点
  */
 import { IconCode } from '@arco-design/web-vue/es/icon'
-import { dynamicFields, configFields } from '../../common'
-const fields = JSON.parse(JSON.stringify(dynamicFields))
+import { createDynamicFields, configFields } from '../../common'
+const fields = createDynamicFields()
 fields.type.options = [
   { label: '文本', value: 'string' },
   { label: '数字', value: 'number' },

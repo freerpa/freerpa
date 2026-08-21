@@ -117,8 +117,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 工作流管理模块API
   workflow: {
-    // 工作流执行
-    decryptData: (data) => ipcRenderer.invoke('workflow:decryptData', data),
     // 工作流本地 CRUD
     getWorkflows: (params) => ipcRenderer.invoke('workflow:getWorkflows', params),
     getWorkflow: (id) => ipcRenderer.invoke('workflow:getWorkflow', id),

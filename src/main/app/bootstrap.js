@@ -16,7 +16,6 @@ import { register as registerIPC } from '../ipc'
 import { register as cacheRegisterIPC } from '../cache/ipc'
 import { register as dbInfoRegisterIPC } from '../data/dbIpc'
 import { register as pluginRegisterIPC } from '../plugin/ipc'
-import { registerDecryptIpc } from '../crypto'
 import { register as aiRegisterIPC } from '../ai'
 
 /**
@@ -102,7 +101,6 @@ export const bootstrap = async () => {
   dbInfoRegisterIPC()
   pluginRegisterIPC()
   aiRegisterIPC()
-  registerDecryptIpc()
   registerIPC()
 
   // 所有窗口关闭：生产模式保持后台常驻（主窗口与小窗均为隐藏语义，托盘常驻）；

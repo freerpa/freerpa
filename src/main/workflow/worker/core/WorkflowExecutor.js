@@ -39,7 +39,21 @@ class WorkflowExecutor extends EventEmitter {
       this.nodes.forEach((n) => this._nodeMap.set(n.id, n))
     }
 
-    this.executorsManager = new ExecutorManager(this)
+    // 邻接表预计算：getInputs/next 按节点 O(1) 取边，避免每次执行全量过滤 O(N*E)
+    this._inEdges = new Map()
+    this._outEdges = new Map()
+    if (this.edges) {
+      for (const edge of this.edges) {
+        if (edge.targetHandle !== 'prev') {
+          if (!this._inEdges.has(edge.target)) this._inEdges.set(edge.target, [])
+          this._inEdges.get(edge.target).push(edge)
+        }
+        if (!this._outEdges.has(edge.source)) this._outEdges.set(edge.source, [])
+        this._outEdges.get(edge.source).push(edge)
+      }
+    }
+
+    this.executorManager = new ExecutorManager(this)
     this.state = 'pending'
     this.runningCount = 0 // 运行中（running/retrying）执行器计数：归零后延迟复核即全部完成，替代 250ms 轮询
     this.completeTimer = null // 完成判定复核计时器（计数归零后延迟一窗口，等待 next() 启动的后续节点）
@@ -48,14 +62,14 @@ class WorkflowExecutor extends EventEmitter {
     this.nodeExecuteTime = {}
     this.nodeErrorCount = {}
 
-    this._boundHandleNodeStateChange = this.handleNodeStateChange.bind(this)
+    this._boundHandleNodeStateChange = this._handleNodeStateChange.bind(this)
   }
 
   _findNode(nodeId) {
     return this._nodeMap.get(nodeId)
   }
 
-  handleNodeStateChange({ state }) {
+  _handleNodeStateChange({ state }) {
     // 引擎已终态（completed/error/stopped）后忽略节点状态事件
     if (['completed', 'error', 'stopped'].includes(this.state)) return
     // error/stopped 由 executeNode 的 catch（_handleNodeError）与 stop() 处理，此处不做完成判定
@@ -106,68 +120,85 @@ class WorkflowExecutor extends EventEmitter {
     }
   }
 
-  traverseObject(data, callback, currentPath = '', visited = new Set()) {
-    if (data === null || data === undefined) {
-      callback(currentPath || 'root', data, currentPath, null)
+  // 深度遍历任意嵌套对象（含循环引用防护），回调可写入修改父对象
+  _traverseObject(data, callback, visited = new Set()) {
+    if (data === null || typeof data !== 'object') {
+      callback(data, null)
       return
     }
 
-    if (typeof data === 'object') {
-      if (visited.has(data)) {
-        callback(currentPath || 'root', '[Circular Reference]', currentPath, null)
-        return
-      }
-      visited.add(data)
+    if (visited.has(data)) {
+      callback('[Circular Reference]', null)
+      return
     }
+    visited.add(data)
 
     if (Array.isArray(data)) {
       data.forEach((item, index) => {
-        const newPath = currentPath ? `${currentPath}[${index}]` : `[${index}]`
-        callback(index, item, newPath, data)
+        callback(index, item, data)
         if (item !== null && typeof item === 'object') {
-          this.traverseObject(item, callback, newPath, visited)
-        }
-      })
-    } else if (typeof data === 'object') {
-      Object.entries(data).forEach(([key, value]) => {
-        const newPath = currentPath ? `${currentPath}.${key}` : key
-        callback(key, value, newPath, data)
-        if (value !== null && typeof value === 'object') {
-          this.traverseObject(value, callback, newPath, visited)
+          this._traverseObject(item, callback, visited)
         }
       })
     } else {
-      callback(currentPath || 'root', data, currentPath, null)
+      Object.entries(data).forEach(([key, value]) => {
+        callback(key, value, data)
+        if (value !== null && typeof value === 'object') {
+          this._traverseObject(value, callback, visited)
+        }
+      })
     }
 
-    if (typeof data === 'object') {
-      visited.delete(data)
-    }
+    visited.delete(data)
   }
 
-  replaceParameters(paramsString) {
-    const params = JSON.parse(paramsString)
-    this.traverseObject(params, (key, value, path, parent) => {
-      if (typeof value === 'string') {
-        if (isParamRefer(value)) {
-          parent[key] = getRefer(value)
-        }
-        if (/^\{\{[^{}]+\.[^{}]+\}\}$/.test(parent[key])) {
-          const paramPath = parent[key].slice(2, -2).split('.')
-          parent[key] = paramPath.reduce((obj, key) => obj?.[key], this.nodeOutputs)
-        } else {
-          parent[key] = parent[key].replace(paramReferRegex, (match) => {
-            const paramPath = match.slice(2, -2).split('.')
-            let paramValue = paramPath.reduce((obj, key) => obj?.[key], this.nodeOutputs)
-            if (typeof paramValue !== 'string') {
-              paramValue = JSON.stringify(paramValue)
-            }
-            return paramValue?.trim() || ''
-          })
-        }
+  /** 整个字符串恰好是一个参数引用 {{x.y}} */
+  _isWholeStringRefer(value) {
+    return /^\{\{[^{}]+\.[^{}]+\}\}$/.test(value)
+  }
+
+  /** 从 nodeOutputs 中按引用路径取值，如 {{a.b}} → nodeOutputs.a.b */
+  _lookupNodeOutput(refer) {
+    const paramPath = refer.slice(2, -2).split('.')
+    return paramPath.reduce((obj, key) => obj?.[key], this.nodeOutputs)
+  }
+
+  // 解析节点配置字符串中的参数引用，返回解析后的配置副本
+  resolveConfigReferences(configString) {
+    const config = JSON.parse(configString)
+    this._traverseObject(config, (key, value, parent) => {
+      if (typeof value !== 'string') return
+
+      // 参数引用值（含旧值分隔符）先还原为纯引用串 {{x.y}}
+      if (isParamRefer(value)) {
+        parent[key] = getRefer(value)
+      }
+
+      const current = parent[key]
+      if (this._isWholeStringRefer(current)) {
+        // 整串即引用 → 直接替换为引用值（保留对象/数字等原始类型）
+        parent[key] = this._lookupNodeOutput(current)
+      } else {
+        // 引用内嵌在普通字符串中 → 逐段替换为字符串
+        parent[key] = current.replace(paramReferRegex, (match) => {
+          const referValue = this._lookupNodeOutput(match)
+          const text = typeof referValue !== 'string' ? JSON.stringify(referValue) : referValue
+          return text?.trim() || ''
+        })
       }
     })
-    return params
+    return config
+  }
+
+  // 同一节点两次启动的最小间隔（节流）：紧凑循环中防止节点被过于频繁地重复执行
+  async _throttleNodeStart(nodeId) {
+    const MIN_INTERVAL = 100
+    const lastStart = this.nodeExecuteTime[nodeId] || 0
+    const elapsed = Date.now() - lastStart
+    if (elapsed < MIN_INTERVAL) {
+      await new Promise((resolve) => setTimeout(resolve, MIN_INTERVAL - elapsed))
+    }
+    this.nodeExecuteTime[nodeId] = Date.now()
   }
 
   async executeNode(nodeId, prevNodeId) {
@@ -175,31 +206,24 @@ class WorkflowExecutor extends EventEmitter {
     if (!node) throw new Error(`Node ${nodeId} not found`)
 
     try {
-      const startTime = this.nodeExecuteTime[nodeId] || 0
-      const elapsed = Date.now() - startTime
-      if (elapsed < 100) {
-        await new Promise((resolve) => setTimeout(resolve, 100 - elapsed))
-      }
-      this.nodeExecuteTime[nodeId] = Date.now()
+      await this._throttleNodeStart(nodeId)
 
       if (!Object.prototype.hasOwnProperty.call(node, 'originalConfig')) {
         node.originalConfig = JSON.stringify(node.config)
       }
 
       // 参数引用解析写入副本：不污染原始 node.config（避免二次执行/调试时原始配置被替换值覆盖）
-      const nodeConfig = this.replaceParameters(node.originalConfig)
+      const nodeConfig = this.resolveConfigReferences(node.originalConfig)
       const execNode = { ...node, config: { ...nodeConfig } }
 
-      let executor
-      if (!this.executorsManager.get(nodeId)) {
-        executor = this.executorsManager.create(execNode)
+      // 执行器仅首次创建时绑定状态监听（复用时不重复 off/on）
+      let executor = this.executorManager.get(nodeId)
+      if (!executor) {
+        executor = this.executorManager.create(execNode)
+        executor.on('stateChange', this._boundHandleNodeStateChange)
       } else {
-        executor = this.executorsManager.get(nodeId)
         executor.node = execNode // 复用执行器时同步最新解析配置
       }
-
-      executor.off('stateChange', this._boundHandleNodeStateChange)
-      executor.on('stateChange', this._boundHandleNodeStateChange)
 
       executor.setInputs(this.getInputs(nodeId, prevNodeId))
       await executor.execute()
@@ -229,7 +253,7 @@ class WorkflowExecutor extends EventEmitter {
       const maxRetry = node.config.errorHandleRetryCount || 0
       if (maxRetry > this.nodeErrorCount[nodeId]) {
         this.nodeErrorCount[nodeId]++
-        const executor = this.executorsManager.get(nodeId)
+        const executor = this.executorManager.get(nodeId)
         if (executor) {
           executor.setState('retrying', this.nodeErrorCount[nodeId])
         }
@@ -270,7 +294,7 @@ class WorkflowExecutor extends EventEmitter {
 
   getInputs(nodeId, prevNodeId) {
     const inputValues = {}
-    const inputEdges = this.edges.filter((e) => e.target === nodeId && e.targetHandle !== 'prev')
+    const inputEdges = this._inEdges.get(nodeId) || []
     const prevNodeOutputs = {}
 
     for (const inputEdge of inputEdges) {
@@ -313,18 +337,16 @@ class WorkflowExecutor extends EventEmitter {
 
   async executeSubFlow(masterNodeId, startInputs) {
     const subFlowNodeId = masterNodeId + '-subFlow'
-    const childNodes = JSON.parse(
-      JSON.stringify(this.allNodes.filter((n) => n.parentNode === subFlowNodeId))
+    const childNodes = structuredClone(
+      this.allNodes.filter((n) => n.parentNode === subFlowNodeId)
     ).map((n) => {
       n.parentNode = null
       n.masterNodeId = masterNodeId
       return n
     })
-    const childEdges = JSON.parse(
-      JSON.stringify(
-        this.allEdges.filter((e) =>
-          childNodes.some((n) => n.id === e.source || n.id === e.target)
-        )
+    const childEdges = structuredClone(
+      this.allEdges.filter((e) =>
+        childNodes.some((n) => n.id === e.source || n.id === e.target)
       )
     )
 
@@ -374,14 +396,14 @@ class WorkflowExecutor extends EventEmitter {
   async next(nodeId) {
     this.nodeErrorCount[nodeId] = 0
 
-    let nextEdges = this.edges.filter(
-      (edge) => edge.source === nodeId && edge.sourceHandle === 'next'
+    let nextEdges = (this._outEdges.get(nodeId) || []).filter(
+      (edge) => edge.sourceHandle === 'next'
     )
 
     const node = this._findNode(nodeId)
     if (node?.type === 'workflowIf' && this.nodeOutputs[nodeId]?.result === false) {
-      nextEdges = this.edges.filter(
-        (edge) => edge.source === nodeId && edge.sourceHandle === 'next-false'
+      nextEdges = (this._outEdges.get(nodeId) || []).filter(
+        (edge) => edge.sourceHandle === 'next-false'
       )
     }
 
@@ -400,12 +422,12 @@ class WorkflowExecutor extends EventEmitter {
     }
     this.subFlows.clear()
 
-    await this.executorsManager.cleanup()
+    await this.executorManager.cleanup()
 
     clearTimeout(this.completeTimer)
     this.completeTimer = null
 
-    this.executorsManager = new ExecutorManager(this)
+    this.executorManager = new ExecutorManager(this)
     this.runningCount = 0
     this.nodeErrorCount = {}
     this.nodeExecuteTime = {}
@@ -426,7 +448,7 @@ class WorkflowExecutor extends EventEmitter {
     }
     this.subFlows.clear()
 
-    await this.executorsManager.cleanup()
+    await this.executorManager.cleanup()
     clearTimeout(this.completeTimer)
     this.completeTimer = null
     this.runningCount = 0
@@ -438,6 +460,8 @@ class WorkflowExecutor extends EventEmitter {
     }
     this.nodes = null
     this.edges = null
+    this._inEdges = null
+    this._outEdges = null
     this.debug = false
     this.startInputs = null
     this.nodeExecuteTime = null

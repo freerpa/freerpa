@@ -14,18 +14,15 @@ import { dbCloseAll } from '../db-manager.js'
 import { resolveWorkflowPaths } from '../paths.js'
 
 class EngineHost extends EventEmitter {
+  #proc = null
+  #pending = new Map()
+  #seq = 0
+
   constructor() {
     super()
     this.paths = resolveWorkflowPaths()
     this.runningFlows = new Set() // 运行中的工作流 flowId（用于并发上限与状态跟踪）
-    this.#proc = null
-    this.#pending = new Map()
-    this.#seq = 0
   }
-
-  #proc = null
-  #pending = null
-  #seq = 0
 
   /** 确保宿主进程已启动（退出后自动重启） */
   async ensure() {
@@ -45,7 +42,7 @@ class EngineHost extends EventEmitter {
       '--node-modules-dir=manual', // manual：直接复用现有本地 node_modules 解析裸 npm 包（插件依赖如 js-md5），不写 .deno 管理目录
       path.join(workerRoot, 'host.js')
     ]
-    console.log('[engine] 启动 deno 宿主:', denoBin, args.join(' '))
+    console.log('[engine] 启动 deno 宿主:', denoBin)
     this.#proc = spawn(denoBin, args, { stdio: ['pipe', 'pipe', 'pipe'], cwd: workerRoot })
 
     const decoder = new LineDecoder((msg) => this.#onMsg(msg))

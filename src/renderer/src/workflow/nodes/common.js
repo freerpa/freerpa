@@ -29,7 +29,10 @@ export const createDataHandlerNode = ({ type, name, icon, description }) => ({
   ]
 })
 
-export const dynamicFields = {
+/**
+ * 动态输入/输出项字段（工厂函数：每次返回独立副本，避免多个节点定义共享同一可变对象）
+ */
+export const createDynamicFields = () => ({
   type: {
     id: 'type',
     name: '参数类型',
@@ -107,7 +110,7 @@ export const dynamicFields = {
     paramRef: false,
     default: true
   }
-}
+})
 
 const filters = {
   document: {
@@ -709,7 +712,7 @@ export const buildConfigFields = (config) => {
           })('${keyWord.toString() || ''}',${JSON.stringify(formData.value)})`)
           const result = getOptionsFunc()
           return result
-        } catch (error) {
+        } catch {
           return []
         }
       }

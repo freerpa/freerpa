@@ -3,7 +3,7 @@ import { IO_FIELD_MAP_NAME_ID } from '../../../io-conventions.js'
  * @file: 结束工作流节点
  */
 import { IconRecordStop } from '@arco-design/web-vue/es/icon'
-import { dynamicFields } from '../../common'
+import { createDynamicFields } from '../../common'
 export default {
   // 节点名称
   name: '结束流程',
@@ -30,7 +30,7 @@ export default {
           nolabel: true,
           type: 'array',
           description: '设置结束时的输出',
-          fields: dynamicFields
+          fields: createDynamicFields()
         }
       }
     }

@@ -3,7 +3,7 @@ import { IO_FIELD_MAP_NAME_ID } from '../../../io-conventions.js'
  * @file: 开始节点
  */
 import { IconPlayCircle } from '@arco-design/web-vue/es/icon'
-import { dynamicFields, configFields } from '../../common'
+import { createDynamicFields, configFields } from '../../common'
 
 export default {
   type: 'workflowStart',
@@ -24,7 +24,7 @@ export default {
           type: 'array',
           description: '设置开始时的参数',
           default: [],
-          fields: dynamicFields
+          fields: createDynamicFields()
         }
       }
     },

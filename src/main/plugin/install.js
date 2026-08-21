@@ -9,7 +9,7 @@ import os from 'os'
 import path from 'path'
 import AdmZip from 'adm-zip'
 import { getPluginRoot, pluginDirName, addDevPlugin, removeDevPlugin } from './store.js'
-import { readPluginPackage, compareSemver } from './manifest.js'
+import { readPluginPackage } from './manifest.js'
 
 /** 包内 package.json 是否位于包根（而非单层包裹目录） */
 function locatePackageRoot(zip) {
@@ -135,5 +135,3 @@ export async function importDevPlugin(dir) {
   addDevPlugin({ pluginId: pkg.pluginId, path: path.resolve(dir), importedAt: Date.now() })
   return { pluginId: pkg.pluginId, version: 'dev', dir: path.resolve(dir) }
 }
-
-export { compareSemver }

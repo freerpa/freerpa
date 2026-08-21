@@ -11,12 +11,12 @@
     :has-more="hasMore"
     @create="handleCreate"
     @import="handleImport"
-    @refresh="fetchElementSets(true)"
+    @refresh="refetch"
     @edit="handleEdit"
     @category-change="onCategoryChange"
     @scroll="loadMore"
-    @batch-delete="handleBatchDelete"
-    @batch-export="handleBatchExport"
+    @batch-delete="batchDelete"
+    @batch-export="batchExport"
   >
     <template #extra-actions>
       <a-button @click="showTrash = true"><template #icon><icon-delete /></template>回收站</a-button>
@@ -37,7 +37,7 @@
                 <a-doption @click="handleEdit(es)"><icon-edit /> 编辑</a-doption>
                 <a-doption @click="handleCopy(es)"><icon-copy /> 复制</a-doption>
                 <a-doption @click="handleDelete(es, index)"><icon-delete /> 删除</a-doption>
-                <a-doption @click="handleExport(es)"><icon-export /> 导出</a-doption>
+                <a-doption @click="exportElementSet(es)"><icon-export /> 导出</a-doption>
               </template>
             </a-dropdown>
           </a-space>
@@ -60,113 +60,70 @@
     @success="handleEditorSuccess"
   />
 
-  <RecycleBin v-model:visible="showTrash" :api="elementSetAPI" :on-restored="() => fetchElementSets(true)" />
+  <RecycleBin v-model:visible="showTrash" :api="elementSetAPI" :on-restored="refetch" />
 
-  <CopyCountModal v-model:visible="showCopyModal" name="元素集" @confirm="handleCopyConfirm" />
+  <CopyCountModal v-model:visible="showCopyModal" name="元素集" @confirm="(count) => handleCopyConfirm(count, copyElementSet)" />
 </template>
 
 <script setup>
-import { ref, watch, onActivated } from 'vue'
-import { Message, Modal } from '@arco-design/web-vue'
+import { ref } from 'vue'
 import { IconEdit, IconDelete, IconMoreVertical, IconExport, IconCopy } from '@arco-design/web-vue/es/icon'
 import { RiStackLine } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
 import RecycleBin from '@/components/RecycleBin.vue'
 import ElementSetEditor from './components/ElementSetEditor.vue'
 import CopyCountModal from '@/components/CopyCountModal.vue'
-import { debounce } from 'lodash-es'
-import { exportToFile, batchExportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
+import { MODULE_CONFIG } from '@/utils/importer'
+import { useResourceList } from '@/composables/useResourceList'
 
 const { elementSet: elementSetAPI } = window.electronAPI
 const showTrash = ref(false)
-
-const elementSets = ref([])
-const searchKeyword = ref('')
 const showEditor = ref(false)
 const selectedId = ref(null)
-const selectedIds = ref([])
-const showCopyModal = ref(false)
-const copyTarget = ref(null)
-const loading = ref(false)
-const currentPage = ref(1)
-const pageSize = 24
-const hasMore = ref(true)
-const categoryId = ref('')
 
-const onCategoryChange = (val) => { categoryId.value = val; fetchElementSets(true) }
-const loadMore = () => { currentPage.value++; fetchElementSets() }
-
-const fetchElementSets = async (refresh = false) => {
-  if (refresh) { currentPage.value = 1; hasMore.value = true }
-  loading.value = true
-  try {
-    const result = await elementSetAPI.getElementSets({
-      page: currentPage.value, pageSize,
-      keyword: searchKeyword.value,
-      category_id: categoryId.value
-    })
-    if (result.data.length < pageSize) hasMore.value = false
-    // 预取元素数量（并行，避免 24×RTT 串行往返）
-    await Promise.all(
-      result.data.map(async (es) => {
-        const full = await elementSetAPI.getElementSet(es.id)
-        es.elementCount = full?.elements?.length ?? 0
-      })
-    )
-    elementSets.value = currentPage.value === 1 ? result.data : [...elementSets.value, ...result.data]
-  } catch (e) { Message.error('获取元素集列表失败') } finally { loading.value = false }
-}
+const {
+  items: elementSets,
+  searchKeyword, selectedIds, loading, hasMore, showCopyModal,
+  onCategoryChange, loadMore, refetch,
+  handleCopy, handleCopyConfirm,
+  confirmDelete, handleBatchDelete,
+  handleExport, handleBatchExport, handleImport
+} = useResourceList({
+  api: {
+    list: (params) => elementSetAPI.getElementSets(params),
+    get: (id) => elementSetAPI.getElementSet(id),
+    remove: (id) => elementSetAPI.deleteElementSet(id)
+  },
+  moduleConfig: MODULE_CONFIG.elementSet,
+  listErrorMsg: '获取元素集列表失败'
+})
 
 const handleCreate = () => { selectedId.value = null; showEditor.value = true }
 const handleEdit = (es) => { selectedId.value = es.id; showEditor.value = true }
 
 const handleEditorSuccess = () => {
   showEditor.value = false
-  fetchElementSets(true)
+  refetch()
 }
 
 const handleDelete = (es, index) => {
-  Modal.confirm({
-    title: '删除确认',
-    content: `确认删除"${es.title}"吗？`,
-    okText: '删除',
-    okButtonProps: { status: 'danger', type: 'primary', style: { width: '160px' } },
-    cancelButtonProps: { style: { width: '160px' } },
-    onOk: async () => {
-      await elementSetAPI.deleteElementSet(es.id)
-      elementSets.value.splice(index, 1)
-    }
+  confirmDelete(es, (e) => e.title, async () => {
+    await elementSetAPI.deleteElementSet(es.id)
+    elementSets.value.splice(index, 1)
   })
 }
 
-const handleCopy = (es) => { copyTarget.value = es; showCopyModal.value = true }
-
-const handleCopyConfirm = async (count) => {
-  const es = copyTarget.value
-  try {
-    const full = await elementSetAPI.getElementSet(es.id)
-    for (let i = 1; i <= count; i++) {
-      const suffix = count > 1 ? ` - 副本${i}` : ' - 副本'
-      await elementSetAPI.createElementSet({
-        title: `${full.title}${suffix}`,
-        description: full.description,
-        category_id: full.category_id,
-        elements: full.elements || []
-      })
-    }
-    Message.success(`已复制 ${count} 份`); fetchElementSets(true)
-  } catch (e) { Message.error('复制失败') }
+const copyElementSet = async (es, suffix) => {
+  const full = await elementSetAPI.getElementSet(es.id)
+  await elementSetAPI.createElementSet({
+    title: `${full.title}${suffix}`,
+    description: full.description,
+    category_id: full.category_id,
+    elements: full.elements || []
+  })
 }
 
-// 批量移入回收站
-const handleBatchDelete = async (ids) => {
-  try {
-    await Promise.all(ids.map((id) => elementSetAPI.deleteElementSet(id)))
-    Message.success(`已移入回收站 ${ids.length} 项`)
-  } catch (e) { Message.error('批量删除失败') }
-  selectedIds.value = []
-  fetchElementSets(true)
-}
+const batchDelete = (ids) => handleBatchDelete(ids, (id) => elementSetAPI.deleteElementSet(id))
 
 const buildElementSetPayload = (full) => ({
   title: full.title,
@@ -183,22 +140,8 @@ const buildElementSetPayload = (full) => ({
   }))
 })
 
-const handleExport = async (es) => {
-  const full = await elementSetAPI.getElementSet(es.id)
-  await exportToFile(async () => buildElementSetPayload(full), MODULE_CONFIG.elementSet)
-}
-
-const handleBatchExport = async (ids) => {
-  const fulls = await Promise.all(ids.map((id) => elementSetAPI.getElementSet(id)))
-  await batchExportToFile(async () => fulls.map(buildElementSetPayload), MODULE_CONFIG.elementSet)
-}
-
-const handleImport = () => {
-  importFromFile(() => fetchElementSets(true))
-}
-
-watch(searchKeyword, debounce(() => { currentPage.value = 1; fetchElementSets(true) }, 300))
-onActivated(() => fetchElementSets(true))
+const exportElementSet = (es) => handleExport(es, buildElementSetPayload)
+const batchExport = (ids) => handleBatchExport(ids, buildElementSetPayload)
 </script>
 
 <style lang="less" scoped>

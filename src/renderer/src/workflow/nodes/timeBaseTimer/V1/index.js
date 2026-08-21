@@ -2,7 +2,6 @@
  * @file: 计时器节点
  */
 import { RiTimerLine } from "@remixicon/vue"
-import { dynamicFields, configFields } from '../../common'
 
 export default {
   type: 'timeBaseTimer',

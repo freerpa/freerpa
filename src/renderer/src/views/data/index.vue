@@ -11,12 +11,12 @@
     :has-more="hasMore"
     @create="showCreateModal = true; editingModel = null"
     @import="handleImport"
-    @refresh="fetchModels(true)"
+    @refresh="refetch"
     @edit="handleEdit"
     @category-change="onCategoryChange"
     @scroll="loadMore"
-    @batch-delete="handleBatchDelete"
-    @batch-export="handleBatchExport"
+    @batch-delete="batchDelete"
+    @batch-export="batchExport"
   >
     <template #extra-actions>
       <a-button @click="showTrash = true"><template #icon><icon-delete /></template>回收站</a-button>
@@ -38,7 +38,7 @@
               <a-doption @click="handleEdit(model)"><icon-edit /> 编辑</a-doption>
               <a-doption @click="handleCopy(model)"><icon-copy /> 复制</a-doption>
               <a-doption @click="handleDelete(model, index)"><icon-delete /> 删除</a-doption>
-              <a-doption @click="handleExport(model)"><icon-export /> 导出</a-doption>
+              <a-doption @click="exportModel(model)"><icon-export /> 导出</a-doption>
             </template>
           </a-dropdown>
         </template>
@@ -64,14 +64,14 @@
     :model-id="editingModel?.id"
     @success="handleEditorSuccess"
   />
-  <RecycleBin v-model:visible="showTrash" :api="dataAPI" :on-restored="() => fetchModels(true)" />
+  <RecycleBin v-model:visible="showTrash" :api="dataAPI" :on-restored="refetch" />
 
-  <CopyCountModal v-model:visible="showCopyModal" name="数据表" @confirm="handleCopyConfirm" />
+  <CopyCountModal v-model:visible="showCopyModal" name="数据表" @confirm="(count) => handleCopyConfirm(count, copyModel)" />
 </template>
 
 <script setup>
-import { ref, onMounted, watch, onActivated } from 'vue'
-import { Message, Modal } from '@arco-design/web-vue'
+import { ref } from 'vue'
+import { Message } from '@arco-design/web-vue'
 import { IconEdit, IconDelete, IconMoreVertical, IconSettings, IconCopy, IconExport } from '@arco-design/web-vue/es/icon'
 import { RiDatabase2Line } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
@@ -80,8 +80,8 @@ import RecycleBin from '@/components/RecycleBin.vue'
 import CopyCountModal from '@/components/CopyCountModal.vue'
 import { useStore } from '@/store'
 import { storeToRefs } from 'pinia'
-import { exportToFile, batchExportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
-import { debounce } from 'lodash-es'
+import { MODULE_CONFIG } from '@/utils/importer'
+import { useResourceList } from '@/composables/useResourceList'
 
 const store = useStore()
 const { openedTabs } = storeToRefs(store)
@@ -89,50 +89,38 @@ const { switchTab } = store
 const { data: dataAPI } = window.electronAPI
 
 const showTrash = ref(false)
-
-const models = ref([])
-const searchKeyword = ref('')
 const showCreateModal = ref(false)
 const editingModel = ref(null)
-const selectedIds = ref([])
-const showCopyModal = ref(false)
-const copyTarget = ref(null)
-const currentPage = ref(1)
-const pageSize = 24
-const loading = ref(false)
-const hasMore = ref(true)
-const categoryId = ref('')
 
-const onCategoryChange = (val) => { categoryId.value = val; fetchModels(true) }
-const loadMore = () => { currentPage.value++; fetchModels() }
-
-const fetchModels = async (refresh = false) => {
-  if (refresh) { currentPage.value = 1; hasMore.value = true }
-  loading.value = true
-  try {
-    const result = await dataAPI.getModels({ page: currentPage.value, pageSize, keyword: searchKeyword.value, category_id: categoryId.value })
-    if (result.data.length < pageSize) hasMore.value = false
-    models.value = currentPage.value === 1 ? result.data : [...models.value, ...result.data]
-  } catch (error) { Message.error('获取数据表失败') } finally { loading.value = false }
-}
+const {
+  items: models,
+  searchKeyword, selectedIds, loading, hasMore, showCopyModal,
+  onCategoryChange, loadMore, refetch,
+  handleCopy, handleCopyConfirm,
+  confirmDelete, handleBatchDelete,
+  handleExport, handleBatchExport, handleImport
+} = useResourceList({
+  api: {
+    list: (params) => dataAPI.getModels(params),
+    get: (id) => dataAPI.getModel(id),
+    remove: (id) => dataAPI.deleteModel(id)
+  },
+  moduleConfig: MODULE_CONFIG.model,
+  listErrorMsg: '获取数据表失败'
+})
 
 const handleEdit = (model) => { editingModel.value = model?.id ? model : {}; showCreateModal.value = true }
 
 const handleEditorSuccess = () => {
   showCreateModal.value = false
-  fetchModels(true)
+  refetch()
 }
 
-const handleDelete = async (model, index) => {
-  Modal.confirm({
-    title: '删除确认', content: `确认删除 "${model.name}" 吗？`,
-    okText: '删除', okButtonProps: { status: 'danger', type: 'primary', style: { width: '160px' } },
-    cancelButtonProps: { style: { width: '160px' } },
-    async onOk() {
-      await dataAPI.deleteModel(model.id)
-      Message.success('删除成功')
-      models.value.splice(index, 1)
-    }
+const handleDelete = (model, index) => {
+  confirmDelete(model, (m) => m.name, async () => {
+    await dataAPI.deleteModel(model.id)
+    Message.success('删除成功')
+    models.value.splice(index, 1)
   })
 }
 
@@ -141,28 +129,7 @@ const handleViewData = (model) => {
   switchTab(model.id)
 }
 
-const handleCopy = (model) => { copyTarget.value = model; showCopyModal.value = true }
-
-const handleCopyConfirm = async (count) => {
-  const model = copyTarget.value
-  try {
-    for (let i = 1; i <= count; i++) {
-      const suffix = count > 1 ? ` - 副本${i}` : ' - 副本'
-      await dataAPI.copyModel(model.id, `${model.name}${suffix}`)
-    }
-    Message.success(`已复制 ${count} 份`); fetchModels(true)
-  } catch (e) { Message.error('复制失败: ' + e.message) }
-}
-
-// 批量移入回收站
-const handleBatchDelete = async (ids) => {
-  try {
-    await Promise.all(ids.map((id) => dataAPI.deleteModel(id)))
-    Message.success(`已移入回收站 ${ids.length} 项`)
-  } catch (e) { Message.error('批量删除失败') }
-  selectedIds.value = []
-  fetchModels(true)
-}
+const copyModel = (model, suffix) => dataAPI.copyModel(model.id, `${model.name}${suffix}`)
 
 const buildModelPayload = (modelData) => ({
   name: modelData.name,
@@ -170,23 +137,9 @@ const buildModelPayload = (modelData) => ({
   fields: JSON.parse(modelData.fields)
 })
 
-const handleExport = async (model) => {
-  const modelData = await dataAPI.getModel(model.id)
-  await exportToFile(async () => buildModelPayload(modelData), MODULE_CONFIG.model, { data: [] })
-}
-
-const handleBatchExport = async (ids) => {
-  const modelDataList = await Promise.all(ids.map((id) => dataAPI.getModel(id)))
-  await batchExportToFile(async () => modelDataList.map(buildModelPayload), MODULE_CONFIG.model)
-}
-
-const handleImport = () => {
-  importFromFile(() => fetchModels(true))
-}
-
-watch(searchKeyword, debounce(() => { currentPage.value = 1; fetchModels(true) }, 300))
-onMounted(() => fetchModels(true))
-onActivated(() => fetchModels(true))
+const exportModel = (model) => handleExport(model, buildModelPayload)
+const batchExport = (ids) => handleBatchExport(ids, buildModelPayload)
+const batchDelete = (ids) => handleBatchDelete(ids, (id) => dataAPI.deleteModel(id))
 </script>
 
 <style lang="less" scoped>

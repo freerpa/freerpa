@@ -5,7 +5,6 @@ import {
   getInitNodeData,
   getNodeName,
   locateNode,
-  decryptedData,
   rebuildElementIds,
   handleNodeCopy,
   handleNodePaste,
@@ -155,16 +154,13 @@ export function useNodeCrud({ vueFlowRef, isExecuting, clipboard, createConnecti
     let elements = null
     // 如果子流程有工作流，则获取工作流节点并预计算子流程的宽度
     if (workFlow) {
-      let elementsData = workFlow.elements
-      // 本地工作流：elements 已是纯 JSON，远程工作流需要解密
+      const elementsData = workFlow.elements
+      // 本地工作流：elements 已是纯 JSON（远程加密工作流已不支持）
       if (typeof elementsData === 'string') {
         try {
-          // 先尝试直接解析（本地模式）
           elements = JSON.parse(elementsData)
-        } catch (e) {
-          // 解密后再解析（远程模式）
-          const decryptedElements = await decryptedData(elementsData)
-          elements = JSON.parse(decryptedElements)
+        } catch {
+          throw new Error('子流程工作流数据格式无效，无法解析')
         }
       } else if (typeof elementsData === 'object') {
         elements = elementsData

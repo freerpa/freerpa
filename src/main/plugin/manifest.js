@@ -14,25 +14,13 @@
 import fs from 'fs'
 import path from 'path'
 import { getPluginRoot, getDevPlugins } from './store.js'
+import { compareSemver } from '../utils.js'
 
 /** 解析正式版目录名：{pluginId}@{version}；不满足返回 null */
 export function parsePluginDirName(dirName) {
   const at = dirName.lastIndexOf('@')
   if (at <= 0 || at === dirName.length - 1) return null
   return { pluginId: dirName.slice(0, at), version: dirName.slice(at + 1) }
-}
-
-/** semver 数字序列比较（1 / 1.2 / 1.2.3）：a>b → 1，a<b → -1，相等 → 0 */
-export function compareSemver(a, b) {
-  const pa = String(a ?? '').split('.').map((n) => parseInt(n, 10) || 0)
-  const pb = String(b ?? '').split('.').map((n) => parseInt(n, 10) || 0)
-  const len = Math.max(pa.length, pb.length)
-  for (let i = 0; i < len; i++) {
-    const va = pa[i] || 0
-    const vb = pb[i] || 0
-    if (va !== vb) return va > vb ? 1 : -1
-  }
-  return 0
 }
 
 /**

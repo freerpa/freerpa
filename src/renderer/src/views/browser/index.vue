@@ -11,12 +11,12 @@
     :has-more="hasMore"
     @create="handleEdit({})"
     @import="handleImport"
-    @refresh="fetchBrowsers(true)"
+    @refresh="refetch"
     @edit="handleEdit"
     @category-change="onCategoryChange"
     @scroll="loadMore"
-    @batch-delete="handleBatchDelete"
-    @batch-export="handleBatchExport"
+    @batch-delete="batchDelete"
+    @batch-export="batchExport"
   >
     <template #extra-actions>
       <a-button @click="showTrash = true"><template #icon><icon-delete /></template>回收站</a-button>
@@ -36,7 +36,7 @@
               <a-doption @click="handleEdit(env)"><icon-edit /> 编辑</a-doption>
               <a-doption @click="handleCopy(env)"><icon-copy /> 复制</a-doption>
               <a-doption @click="handleDelete(env, index)"><icon-delete /> 删除</a-doption>
-              <a-doption @click="handleExport(env)"><icon-export /> 导出</a-doption>
+              <a-doption @click="exportBrowser(env)"><icon-export /> 导出</a-doption>
             </template>
           </a-dropdown>
         </template>
@@ -59,14 +59,13 @@
   <a-modal v-model:visible="showCreateModal" :title="selectedEnv?.id ? '编辑浏览器' : '新建浏览器'" :footer="false" :mask-closable="false" width="600px" unmount-on-close>
     <BrowserEditor v-if="showCreateModal" :env-id="selectedEnv?.id" @success="handleEditorSuccess" @cancel="showCreateModal=false" />
   </a-modal>
-  <RecycleBin v-model:visible="showTrash" :api="browserAPI" :on-restored="() => fetchBrowsers(true)" />
+  <RecycleBin v-model:visible="showTrash" :api="browserAPI" :on-restored="refetch" />
 
-  <CopyCountModal v-model:visible="showCopyModal" name="浏览器" @confirm="handleCopyConfirm" />
+  <CopyCountModal v-model:visible="showCopyModal" name="浏览器" @confirm="(count) => handleCopyConfirm(count, copyBrowser)" />
 </template>
 
 <script setup>
-import { ref, watch, onActivated, onMounted, onUnmounted, reactive } from 'vue'
-import { Message, Modal } from '@arco-design/web-vue'
+import { ref, onMounted, onUnmounted, onActivated, reactive } from 'vue'
 import { IconEdit, IconDelete, IconMoreVertical, IconStop, IconExport, IconCopy } from '@arco-design/web-vue/es/icon'
 import { RiChromeLine } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
@@ -74,87 +73,61 @@ import BrowserEditor from './components/BrowserEditor.vue'
 import RecycleBin from '@/components/RecycleBin.vue'
 import BrowserOpenModal from './components/BrowserOpenModal.vue'
 import CopyCountModal from '@/components/CopyCountModal.vue'
-import { debounce } from 'lodash-es'
-import { exportToFile, batchExportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
+import { MODULE_CONFIG } from '@/utils/importer'
+import { useResourceList } from '@/composables/useResourceList'
 
 const { browserLocal: browserAPI } = window.electronAPI
 const showTrash = ref(false)
-
-const browsers = ref([])
-const searchKeyword = ref('')
 const showCreateModal = ref(false)
 const selectedEnv = ref(null)
-const selectedIds = ref([])
-const showCopyModal = ref(false)
-const copyTarget = ref(null)
-const loading = ref(false)
-const currentPage = ref(1)
-const pageSize = 24
-const hasMore = ref(true)
-const categoryId = ref('')
-const envStatusMap = reactive({})
-const loadingMap = reactive({})
 const showOpenModal = ref(false)
 const selectedEnvForOpen = ref(null)
+const envStatusMap = reactive({})
+const loadingMap = reactive({})
 
-const onCategoryChange = (val) => { categoryId.value = val; fetchBrowsers(true) }
-const loadMore = () => { currentPage.value++; fetchBrowsers() }
-
-const fetchBrowsers = async (refresh = false) => {
-  if (refresh) { currentPage.value = 1; hasMore.value = true }
-  loading.value = true
-  try {
-    const result = await browserAPI.getBrowsers({ page: currentPage.value, pageSize, keyword: searchKeyword.value, category_id: categoryId.value })
-    if (result.data.length < pageSize) hasMore.value = false
-    browsers.value = currentPage.value === 1 ? result.data : [...browsers.value, ...result.data]
-  } catch (e) { Message.error('获取浏览器列表失败') } finally { loading.value = false }
-}
+const {
+  items: browsers,
+  searchKeyword, selectedIds, loading, hasMore, showCopyModal,
+  onCategoryChange, loadMore, refetch,
+  handleCopy, handleCopyConfirm,
+  confirmDelete, handleBatchDelete,
+  handleExport, handleBatchExport, handleImport
+} = useResourceList({
+  api: {
+    list: (params) => browserAPI.getBrowsers(params),
+    get: (id) => browserAPI.getBrowser(id),
+    remove: (id) => browserAPI.deleteBrowser(id)
+  },
+  moduleConfig: MODULE_CONFIG.browser,
+  listErrorMsg: '获取浏览器列表失败'
+})
 
 const handleEdit = (env) => { selectedEnv.value = env; showCreateModal.value = true }
-const handleEditorSuccess = (env) => { showCreateModal.value = false; fetchBrowsers(true) }
+const handleEditorSuccess = () => { showCreateModal.value = false; refetch() }
 
 const handleDelete = (env, index) => {
-  Modal.confirm({
-    title: '删除确认', content: `确认删除"${env.name}"吗？`, okText: '删除',
-    okButtonProps: { status: 'danger', type: 'primary', style: { width: '160px' } },
-    cancelButtonProps: { style: { width: '160px' } },
-    onOk: async () => { await browserAPI.deleteBrowser(env.id); browsers.value.splice(index, 1) }
+  confirmDelete(env, (e) => e.name, async () => {
+    await browserAPI.deleteBrowser(env.id)
+    browsers.value.splice(index, 1)
   })
 }
 
-const handleCopy = (env) => { copyTarget.value = env; showCopyModal.value = true }
-
-const handleCopyConfirm = async (count) => {
-  const env = copyTarget.value
-  try {
-    const full = await browserAPI.getBrowser(env.id)
-    for (let i = 1; i <= count; i++) {
-      const suffix = count > 1 ? ` - 副本${i}` : ' - 副本'
-      await browserAPI.createBrowser({
-        name: `${full.name}${suffix}`,
-        description: full.description,
-        category_id: full.category_id,
-        kernel_id: full.kernel_id,
-        proxy_url: full.proxy_url,
-        config: full.config || {}
-      })
-    }
-    Message.success(`已复制 ${count} 份`); fetchBrowsers(true)
-  } catch (e) { Message.error('复制失败') }
+const copyBrowser = async (env, suffix) => {
+  const full = await browserAPI.getBrowser(env.id)
+  await browserAPI.createBrowser({
+    name: `${full.name}${suffix}`,
+    description: full.description,
+    category_id: full.category_id,
+    kernel_id: full.kernel_id,
+    proxy_url: full.proxy_url,
+    config: full.config || {}
+  })
 }
 
-// 批量移入回收站
-const handleBatchDelete = async (ids) => {
-  try {
-    await Promise.all(ids.map((id) => browserAPI.deleteBrowser(id)))
-    Message.success(`已移入回收站 ${ids.length} 项`)
-  } catch (e) { Message.error('批量删除失败') }
-  selectedIds.value = []
-  fetchBrowsers(true)
-}
+const batchDelete = (ids) => handleBatchDelete(ids, (id) => browserAPI.deleteBrowser(id))
 
 const handleOpenBrowser = async (env) => {
-  try { selectedEnvForOpen.value = await browserAPI.getBrowser(env.id) || env } catch (e) { selectedEnvForOpen.value = env }
+  try { selectedEnvForOpen.value = await browserAPI.getBrowser(env.id) || env } catch { selectedEnvForOpen.value = env }
   showOpenModal.value = true
 }
 const handleBrowserOpened = (envId) => { envStatusMap[envId] = true; showOpenModal.value = false }
@@ -176,22 +149,14 @@ const buildBrowserPayload = (d) => ({
   proxy_url: d.proxy_url
 })
 
-const handleExport = async (env) => {
-  const envData = await browserAPI.getBrowser(env.id)
-  await exportToFile(async () => buildBrowserPayload(envData), MODULE_CONFIG.browser)
-}
-
-const handleBatchExport = async (ids) => {
-  const envDataList = await Promise.all(ids.map((id) => browserAPI.getBrowser(id)))
-  await batchExportToFile(async () => envDataList.map(buildBrowserPayload), MODULE_CONFIG.browser)
-}
-
-const handleImport = () => {
-  importFromFile(() => fetchBrowsers(true))
-}
+const exportBrowser = (env) => handleExport(env, buildBrowserPayload)
+const batchExport = (ids) => handleBatchExport(ids, buildBrowserPayload)
 
 const fetchBrowserStatus = async () => {
-  try { const res = await window.electronAPI.env.getAllBrowserStatus(); if (res.code === 200) Object.assign(envStatusMap, res.data) } catch (e) {}
+  try {
+    const res = await window.electronAPI.env.getAllBrowserStatus()
+    if (res.code === 200) Object.assign(envStatusMap, res.data)
+  } catch {}
 }
 
 let remove1, remove2, remove3
@@ -201,15 +166,14 @@ onMounted(() => {
     remove1 = envAPI.onBrowserOpened(({ envId }) => { envStatusMap[envId] = true; loadingMap[envId] = false })
     remove2 = envAPI.onBrowserClosed(({ envId }) => { envStatusMap[envId] = false; loadingMap[envId] = false })
     remove3 = envAPI.onSaveSession(async ({ envId, fingerprint }) => {
-      if (fingerprint) { try { await browserAPI.updateBrowser({ id: envId, config: { fingerprint } }) } catch (e) {} }
+      if (fingerprint) { try { await browserAPI.updateBrowser({ id: envId, config: { fingerprint } }) } catch {} }
     })
   }
   fetchBrowserStatus()
 })
 onUnmounted(() => { remove1?.(); remove2?.(); remove3?.() })
 
-watch(searchKeyword, debounce(() => { currentPage.value = 1; fetchBrowsers(true) }, 300))
-onActivated(() => { fetchBrowsers(true); fetchBrowserStatus() })
+onActivated(() => { fetchBrowserStatus() })
 </script>
 
 <style lang="less" scoped>

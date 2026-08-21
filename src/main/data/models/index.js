@@ -3,6 +3,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid'
+import ExcelJS from 'exceljs'
 import { initDatabase } from '../db.js'
 import { queryPage } from '../crud.js'
 import { createEntityCrud } from '../crudFactory.js'
@@ -22,10 +23,10 @@ const ensureModelsTable = async (db) => {
       updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
     )
   `)
-  // 兼容旧表
-  try { await db.exec(`ALTER TABLE models ADD COLUMN category_id TEXT DEFAULT ''`) } catch (e) {}
-  try { await db.exec(`ALTER TABLE models ADD COLUMN deleted_at TIMESTAMP DEFAULT NULL`) } catch (e) {}
-  try { await db.exec(`ALTER TABLE models ADD COLUMN updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))`) } catch (e) {}
+  // 兼容旧表（列已存在时 ALTER 失败，忽略即可）
+  try { await db.exec(`ALTER TABLE models ADD COLUMN category_id TEXT DEFAULT ''`) } catch { /* 忽略 */ }
+  try { await db.exec(`ALTER TABLE models ADD COLUMN deleted_at TIMESTAMP DEFAULT NULL`) } catch { /* 忽略 */ }
+  try { await db.exec(`ALTER TABLE models ADD COLUMN updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))`) } catch { /* 忽略 */ }
 }
 
 // 获取模型
@@ -37,14 +38,25 @@ export const getModels = (params) =>
   withDb('models', ensureModelsTable, async (db) => {
     const result = await queryPage({ db, table: 'models', keywordCols: ['name', 'description'], defaultOrder: 'created_at DESC', pageSize: 8, ...params })
 
-    const getTableName = (id) => `model_data_${id}`
-    for (const model of result.data) {
-      try {
-        const countResult = await db.get(`SELECT COUNT(*) as count FROM ${getTableName(model.id)}`)
-        model.data_count = countResult.count
-      } catch (error) {
-        model.data_count = 0
+    // 数据量统计：单次 UNION ALL 批量取回（消除每模型 N+1 查询）
+    const ids = result.data.map((m) => m.id)
+    const counts = {}
+    if (ids.length > 0) {
+      const tables = await db.all(`SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'model_data_%'`)
+      const existing = new Set(tables.map((t) => t.name))
+      // 模型 id 由 uuid 去横线生成（仅含字母数字下划线），可直接作为表名/别名安全拼接
+      const countSql = ids
+        .filter((id) => existing.has(`model_data_${id}`))
+        .map((id) => `SELECT '${id}' AS id, COUNT(*) AS count FROM model_data_${id}`)
+        .join(' UNION ALL ')
+      if (countSql) {
+        const rows = await db.all(countSql)
+        for (const row of rows) counts[row.id] = row.count
       }
+    }
+
+    for (const model of result.data) {
+      model.data_count = counts[model.id] || 0
 
       const fields = JSON.parse(model.fields)
       model.field_stats = {
@@ -212,10 +224,17 @@ export const copyModel = (id, newName) =>
 
 const convertDataType = (value, fieldType) => {
   switch (fieldType) {
-    case 'number':
-      try { return Number(value) } catch (err) { return 0 }
-    case 'date':
-      try { return new Date(value).toLocaleString('sv-SE').substring(0, 10) } catch (err) { return new Date().toLocaleString('sv-SE').substring(0, 10) }
+    case 'number': {
+      // Number(value) 对非法输入返回 NaN 而非抛错，需显式判断
+      const num = Number(value)
+      return Number.isFinite(num) ? num : 0
+    }
+    case 'date': {
+      const date = new Date(value)
+      return Number.isNaN(date.getTime())
+        ? new Date().toLocaleString('sv-SE').substring(0, 10)
+        : date.toLocaleString('sv-SE').substring(0, 10)
+    }
     default: return value
   }
 }
@@ -353,7 +372,10 @@ export const deleteModelData = async ({ modelId, ids }) => {
   const model = await db.get('SELECT * FROM models WHERE id = ?', modelId)
   if (!model) throw new Error('模型不存在')
   const tableName = `model_data_${modelId}`
-  await db.run(`DELETE FROM ${tableName} WHERE id in (${ids.join(',')})`)
+  await db.run(
+    `DELETE FROM ${tableName} WHERE id IN (${ids.map(() => '?').join(',')})`,
+    ids
+  )
 }
 
 export const clearModelData = async ({ modelId }) => {
@@ -396,7 +418,6 @@ export const batchCreateModelData = async ({ modelId, data, batchSize = 1000 }) 
   return results
 }
 
-import ExcelJS from 'exceljs'
 export const exportExcel = async ({ filePath, modelId, conditions, filters, sort, readFields }) => {
   let total = 1
   let exportDataNum = 0
@@ -426,31 +447,31 @@ export const exportExcel = async ({ filePath, modelId, conditions, filters, sort
   await workbook.commit()
 }
 
-export const importExcel = ({ filePath, modelId }) => {
-  return new Promise(async (resolve, reject) => {
-    const model = await getModel(modelId).catch(() => null)
-    if (!model) { reject(new Error('模型不存在')); return }
-    const fields = JSON.parse(model.fields)
-    const reader = new ExcelJS.stream.xlsx.WorkbookReader(filePath)
-    const rows = []
-    let finished = 0
-    reader.on('worksheet', async (worksheet) => {
-      let isColumnHeader = true
-      const pageSize = 1000
-      worksheet.on('row', async (row) => {
-        if (isColumnHeader) { isColumnHeader = false; return }
-        const item = {}
-        fields.forEach((h, index) => { item[h.name] = row.getCell(index + 1).value })
-        rows.push(item)
-        if (rows.length >= pageSize) {
-          const batchRows = [...rows]
-          rows.length = 0
-          await batchCreateModelData({ modelId, data: batchRows, batchSize: pageSize }).catch(() => null)
-          finished += batchRows.length
-          global.mainView.webContents.send('data:importExcelProgress', { total: '', finished })
-        }
-      })
+export const importExcel = async ({ filePath, modelId }) => {
+  const model = await getModel(modelId).catch(() => null)
+  if (!model) throw new Error('模型不存在')
+  const fields = JSON.parse(model.fields)
+  const reader = new ExcelJS.stream.xlsx.WorkbookReader(filePath)
+  const rows = []
+  let finished = 0
+  reader.on('worksheet', (worksheet) => {
+    let isColumnHeader = true
+    const pageSize = 1000
+    worksheet.on('row', async (row) => {
+      if (isColumnHeader) { isColumnHeader = false; return }
+      const item = {}
+      fields.forEach((h, index) => { item[h.name] = row.getCell(index + 1).value })
+      rows.push(item)
+      if (rows.length >= pageSize) {
+        const batchRows = [...rows]
+        rows.length = 0
+        await batchCreateModelData({ modelId, data: batchRows, batchSize: pageSize }).catch(() => null)
+        finished += batchRows.length
+        global.mainView.webContents.send('data:importExcelProgress', { total: '', finished })
+      }
     })
+  })
+  return new Promise((resolve, reject) => {
     reader.on('end', async () => {
       if (rows.length > 0) {
         await batchCreateModelData({ modelId, data: rows }).catch(() => null)
@@ -458,7 +479,7 @@ export const importExcel = ({ filePath, modelId }) => {
       }
       resolve()
     })
-    reader.on('error', (err) => { reject(err) })
+    reader.on('error', reject)
     reader.read()
   })
 }

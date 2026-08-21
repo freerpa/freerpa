@@ -6,6 +6,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import { createEntityCrud } from '../crudFactory.js'
 import { withDb } from '../dbHelper.js'
+import { queryPage } from '../crud.js'
 
 const ensureTables = async (db) => {
   await db.exec(`
@@ -51,7 +52,23 @@ const crud = createEntityCrud({
   keywordCols: ['title', 'description']
 })
 
-export const getElementSets = crud.list
+export const getElementSets = async (params) => {
+  return withDb('es_sets', ensureTables, async (db) => {
+    const result = await queryPage({ db, table: 'es_sets', keywordCols: ['title', 'description'], ...params })
+    // 元素数量一次性批量取回（消除列表每项 N+1 查询）
+    if (result.data.length > 0) {
+      const ids = result.data.map((s) => s.id)
+      const rows = await db.all(
+        `SELECT set_id, COUNT(*) AS count FROM es_elements WHERE set_id IN (${ids.map(() => '?').join(',')}) GROUP BY set_id`,
+        ids
+      )
+      const countMap = new Map(rows.map((r) => [r.set_id, r.count]))
+      for (const set of result.data) set.elementCount = countMap.get(set.id) || 0
+    }
+    return result
+  })
+}
+
 export const deleteElementSet = crud.del
 export const getTrashElementSets = crud.trash
 export const restoreElementSet = crud.restore

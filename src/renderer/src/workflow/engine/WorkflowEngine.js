@@ -13,7 +13,7 @@ export class WorkflowEngine {
     this.flowId = workflowId
     this.eventHandlers = new Map()
     this.status = 'idle'
-    this.listener = []
+    this.unsubscribers = []
   }
 
   // 事件处理
@@ -46,12 +46,12 @@ export class WorkflowEngine {
   // 注册工作流状态事件（onFlowEvent 的 stateChange/onNotice 通道）
   registerStatusEvent() {
     // 监听工作流状态
-    this.listener.push(
+    this.unsubscribers.push(
       window.electronAPI.onFlowEvent('stateChange', this.flowId, null, (event, state) => {
         this.setStatus(state.state)
       })
     )
-    this.listener.push(
+    this.unsubscribers.push(
       window.electronAPI.onFlowEvent('onNotice', this.flowId, null, (event, data) => {
         this.store.onNotice(data)
       })
@@ -119,7 +119,6 @@ export class WorkflowEngine {
       Message.error(error.message)
       return
     }
-    await new Promise((resolve) => setTimeout(resolve, 100))
     this.cleanup()
     this.emit('beforeStart')
     // 注册工作流状态事件
@@ -134,20 +133,15 @@ export class WorkflowEngine {
 
   // 停止工作流
   async stop() {
-    try {
-      // 如果工作流id存在，停止工作流
-      if (this.flowId) {
-        await window.electronAPI.emitFlowEvent('stopFlow', null, null, this.flowId)
-      }
-    } finally {
-      // 清理工作流
-      // this.cleanup()
+    if (this.flowId) {
+      await window.electronAPI.emitFlowEvent('stopFlow', null, null, this.flowId)
     }
   }
+
   // 清理
   async cleanup() {
-    this.listener.forEach((listener) => listener())
-    this.listener = []
+    this.unsubscribers.forEach((unsubscribe) => unsubscribe())
+    this.unsubscribers = []
     this.emit('cleanup')
   }
 }

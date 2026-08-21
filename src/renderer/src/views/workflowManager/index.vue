@@ -11,12 +11,12 @@
     :has-more="hasMore"
     @create="handleCreate"
     @import="handleImport"
-    @refresh="fetchWorkflows(true)"
+    @refresh="refetch"
     @edit="handleEdit"
     @category-change="onCategoryChange"
     @scroll="loadMore"
     @batch-delete="handleBatchDelete"
-    @batch-export="handleBatchExport"
+    @batch-export="batchExport"
   >
     <template #extra-actions>
       <a-button @click="showTrash = true"><template #icon><icon-delete /></template>回收站</a-button>
@@ -37,7 +37,7 @@
                 <a-doption @click="handleEdit(workflow)"><icon-edit /> 编辑</a-doption>
                 <a-doption @click="handleCopy(workflow)"><icon-copy /> 复制</a-doption>
                 <a-doption :disabled="getStatus(workflow.id) === 'running'" @click="handleDelete(workflow, index)"><icon-delete /> 删除</a-doption>
-                <a-doption @click="handleExport(workflow)"><icon-export /> 导出</a-doption>
+                <a-doption @click="exportWorkflow(workflow)"><icon-export /> 导出</a-doption>
               </template>
             </a-dropdown>
           </a-space>
@@ -56,14 +56,14 @@
 
   <WorkflowInfoEditor v-model:visible="showWorkflowInfoEditor" :model-id="selectedWorkflow?.id" @success="handleEditorSuccess" />
 
-  <CopyCountModal v-model:visible="showCopyModal" name="工作流" @confirm="handleCopyConfirm" />
+  <CopyCountModal v-model:visible="showCopyModal" name="工作流" @confirm="(count) => handleCopyConfirm(count, copyWorkflow)" />
 
-  <RecycleBin v-model:visible="showTrash" :api="workflowAPI" :on-restored="() => fetchWorkflows(true)" />
+  <RecycleBin v-model:visible="showTrash" :api="workflowAPI" :on-restored="refetch" />
 </template>
 
 <script setup>
-import { ref, watch, onActivated } from 'vue'
-import { Message, Modal } from '@arco-design/web-vue'
+import { ref } from 'vue'
+import { Message } from '@arco-design/web-vue'
 import { IconEdit, IconDelete, IconMoreVertical, IconCopy, IconExport } from '@arco-design/web-vue/es/icon'
 import { RiFlowChart } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
@@ -73,70 +73,56 @@ import CopyCountModal from '@/components/CopyCountModal.vue'
 import { useFlowStore } from '@/workflow/store'
 import { useStore } from '@/store'
 import { storeToRefs } from 'pinia'
-import { debounce } from 'lodash-es'
-import { exportToFile, batchExportToFile, importFromFile, MODULE_CONFIG } from '@/utils/importer'
+import { MODULE_CONFIG } from '@/utils/importer'
+import { useResourceList } from '@/composables/useResourceList'
 
 const { workflow: workflowAPI } = window.electronAPI
 const showTrash = ref(false)
 const store = useStore()
 const { openedTabs } = storeToRefs(store)
-
-const workflows = ref([])
-const searchKeyword = ref('')
 const showWorkflowInfoEditor = ref(false)
 const selectedWorkflow = ref(null)
-const selectedIds = ref([])
-const showCopyModal = ref(false)
-const copyTarget = ref(null)
-const loading = ref(false)
-const currentPage = ref(1)
-const pageSize = 24
-const hasMore = ref(true)
-const categoryId = ref('')
 
-const onCategoryChange = (val) => { categoryId.value = val; fetchWorkflows(true) }
-const loadMore = () => { currentPage.value++; fetchWorkflows() }
-
-const fetchWorkflows = async (refresh = false) => {
-  if (refresh) { currentPage.value = 1; hasMore.value = true }
-  loading.value = true
-  try {
-    const result = await workflowAPI.getWorkflows({ page: currentPage.value, pageSize, keyword: searchKeyword.value, category_id: categoryId.value })
-    if (result.data.length < pageSize) hasMore.value = false
-    workflows.value = currentPage.value === 1 ? result.data : [...workflows.value, ...result.data]
-  } catch (e) { Message.error('获取工作流列表失败') } finally { loading.value = false }
-}
+const {
+  items: workflows,
+  searchKeyword, selectedIds, loading, hasMore, showCopyModal,
+  onCategoryChange, loadMore, refetch, clearSelectionAndRefetch,
+  handleCopy, handleCopyConfirm,
+  confirmDelete, handleExport, handleBatchExport, handleImport
+} = useResourceList({
+  api: {
+    list: (params) => workflowAPI.getWorkflows(params),
+    get: (id) => workflowAPI.getWorkflow(id),
+    remove: (id) => workflowAPI.deleteWorkflow(id)
+  },
+  moduleConfig: MODULE_CONFIG.workflow,
+  listErrorMsg: '获取工作流列表失败'
+})
 
 const handleCreate = () => { selectedWorkflow.value = null; showWorkflowInfoEditor.value = true }
 const handleEdit = (workflow) => { selectedWorkflow.value = workflow; showWorkflowInfoEditor.value = true }
 
 const handleEditorSuccess = (workflow) => {
   showWorkflowInfoEditor.value = false
-  fetchWorkflows(true)
+  refetch()
   if (!selectedWorkflow.value) handleViewWorkflow(workflow)
 }
 
 const handleDelete = (workflow, index) => {
-  Modal.confirm({
-    title: '删除确认', content: `确认删除"${workflow.name}"吗？`, okText: '删除',
-    okButtonProps: { status: 'danger', type: 'primary', style: { width: '160px' } },
-    cancelButtonProps: { style: { width: '160px' } },
-    onOk: async () => { await workflowAPI.deleteWorkflow(workflow.id); workflows.value.splice(index, 1) }
+  confirmDelete(workflow, (w) => w.name, async () => {
+    await workflowAPI.deleteWorkflow(workflow.id)
+    workflows.value.splice(index, 1)
   })
 }
 
-const handleCopy = (workflow) => { copyTarget.value = workflow; showCopyModal.value = true }
-
-const handleCopyConfirm = async (count) => {
-  const workflow = copyTarget.value
-  try {
-    const full = await workflowAPI.getWorkflow(workflow.id)
-    for (let i = 1; i <= count; i++) {
-      const suffix = count > 1 ? ` - 副本${i}` : ' - 副本'
-      await workflowAPI.createWorkflow({ name: `${full.name}${suffix}`, description: full.description, category_id: full.category_id, graph: JSON.parse(full.graph) })
-    }
-    Message.success(`已复制 ${count} 份`); fetchWorkflows(true)
-  } catch (e) { Message.error('复制失败') }
+const copyWorkflow = async (workflow, suffix) => {
+  const full = await workflowAPI.getWorkflow(workflow.id)
+  await workflowAPI.createWorkflow({
+    name: `${full.name}${suffix}`,
+    description: full.description,
+    category_id: full.category_id,
+    graph: JSON.parse(full.graph)
+  })
 }
 
 // 批量移入回收站（跳过执行中的工作流）
@@ -147,26 +133,14 @@ const handleBatchDelete = async (ids) => {
   try {
     await Promise.all(deleteIds.map((id) => workflowAPI.deleteWorkflow(id)))
     if (deleteIds.length) Message.success(`已移入回收站 ${deleteIds.length} 项`)
-  } catch (e) { Message.error('批量删除失败') }
-  selectedIds.value = []
-  fetchWorkflows(true)
+  } catch { Message.error('批量删除失败') }
+  clearSelectionAndRefetch()
 }
 
 const buildWorkflowPayload = (full) => ({ name: full.name, description: full.description, graph: full.graph })
 
-const handleExport = async (workflow) => {
-  const full = await workflowAPI.getWorkflow(workflow.id)
-  await exportToFile(async () => buildWorkflowPayload(full), MODULE_CONFIG.workflow)
-}
-
-const handleBatchExport = async (ids) => {
-  const fulls = await Promise.all(ids.map((id) => workflowAPI.getWorkflow(id)))
-  await batchExportToFile(async () => fulls.map(buildWorkflowPayload), MODULE_CONFIG.workflow)
-}
-
-const handleImport = () => {
-  importFromFile(() => fetchWorkflows(true))
-}
+const exportWorkflow = (workflow) => handleExport(workflow, buildWorkflowPayload)
+const batchExport = (ids) => handleBatchExport(ids, buildWorkflowPayload)
 
 const handleViewWorkflow = (workflow) => {
   if (!openedTabs.value[workflow.id]) openedTabs.value[workflow.id] = { id: workflow.id, type: 'workflow', name: workflow.name, workflow, store: storeToRefs(useFlowStore(workflow.id)) }
@@ -187,9 +161,6 @@ const getStatus = (id) => getFlowStore(id)?.workflowStatus || 'idle'
 const getStatusText = (id) => ({ idle: '未执行', running: '执行中', error: '执行失败', completed: '执行完成', stopping: '停止中', stopped: '已停止' }[getStatus(id)] || '未执行')
 const getStatusColor = (id) => ({ idle: 'gray', running: 'blue', error: 'red', completed: 'green', stopping: 'blue', stopped: 'gray' }[getStatus(id)] || 'gray')
 const getNoticeNum = (id) => getFlowStore(id)?.noticeNum || 0
-
-watch(searchKeyword, debounce(() => { currentPage.value = 1; fetchWorkflows(true) }, 300))
-onActivated(() => fetchWorkflows(true))
 </script>
 
 <style lang="less" scoped>
