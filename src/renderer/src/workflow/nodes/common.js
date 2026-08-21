@@ -466,17 +466,64 @@ export const configFields = {
     paramRef: false,
     default: false
   },
-  remoteMethod: {
-    id: 'remoteMethod',
-    name: '远程方法',
+  remoteRules: {
+    id: 'remoteRules',
+    name: '远程规则',
     show: "${type} === 'select' && ${remote}",
-    type: 'code',
-    prefix: 'function handler(keyWord,formData) {',
-    default: `//keyWord 搜索关键词
-//formData 表单数据
-//返回一个数组[{label:'选项名',value:'选项值'}]
-//使用 fetch 方法请求远程接口获取数据`,
-    suffix: '}',
+    type: 'object',
+    fields: {
+      method: {
+        id: 'method',
+        name: '请求方法',
+        type: 'select',
+        options: ['GET', 'POST', 'PUT', 'DELETE'],
+        default: 'GET'
+      },
+      url: {
+        id: 'url',
+        name: '远程接口',
+        type: 'string',
+        default: '',
+        required: true
+      },
+      headers: {
+        id: 'headers',
+        name: '请求头',
+        type: 'string',
+        default: ''
+      },
+      body: {
+        id: 'body',
+        name: '请求体',
+        type: 'string',
+        show: "${method} === 'POST' || ${method} === 'PUT'",
+        default: ''
+      },
+      data: {
+        id: 'data',
+        name: '数据路径',
+        description: '选项列表路径 如 data.users',
+        required: true,
+        type: 'string',
+        default: ''
+      },
+      label: {
+        id: 'label',
+        name: '标签字段',
+        description: '选项标签字段 如 name',
+        required: true,
+        type: 'string',
+        default: ''
+      },
+      value: {
+        id: 'value',
+        name: '值字段',
+        description: '选项值字段 如 id',
+        required: true,
+        type: 'string',
+        default: ''
+      }
+    },
     paramRef: false,
   },
   options: {

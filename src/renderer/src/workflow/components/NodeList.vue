@@ -126,7 +126,10 @@
                 <a-tooltip :content="`${plg.name}（${plg.identifier}）\n${plg.description || ''}`">
                   <RiPlugLine class="node-icon" size="16" />
                 </a-tooltip>
-                <span class="node-name">{{ plg.isDev ? plg.name + '（开发版）' : plg.name }}<span class="node-ver"> {{ plg.version }}</span></span>
+                <span class="node-name">
+                  {{ plg.name }}
+                  <span class="node-ver">{{ plg.version }}</span>
+                </span>
               </div>
             </div>
           </div>
@@ -252,7 +255,8 @@
    * 插件对应的 plu_<插件id> 节点是否有效（已注册且满足增/插位置规则）
    */
   const pluginNodeValid = (plugin) => {
-    const identifier = plugin.identifier || (plugin.isDev ? `${plugin.pluginId}@dev` : `${plugin.pluginId}@${plugin.version}`)
+    const identifier =
+      plugin.identifier || (plugin.isDev ? `${plugin.pluginId}@dev` : `${plugin.pluginId}@${plugin.version}`);
     const node = allNodes[`plu_${identifier}`];
     return !!node && isValid(node);
   };
@@ -264,7 +268,8 @@
    */
   const createPluginNodeData = (plugin) => {
     // 每版本独立节点：type = plu_pluginId@version
-    const identifier = plugin.identifier || (plugin.isDev ? `${plugin.pluginId}@dev` : `${plugin.pluginId}@${plugin.version}`)
+    const identifier =
+      plugin.identifier || (plugin.isDev ? `${plugin.pluginId}@dev` : `${plugin.pluginId}@${plugin.version}`);
     return getInitNodeData(`plu_${identifier}`, null, false);
   };
 

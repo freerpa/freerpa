@@ -214,7 +214,7 @@ const buildPluginNodeDef = (plugin) => {
 
   return markRaw({
     type: `${PLUGIN_NODE_PREFIX}${identifier}`,
-    name: plugin.isDev ? `${plugin.name || plugin.pluginId}（开发版）` : plugin.name || plugin.pluginId,
+    name: (plugin.name || plugin.pluginId) + '@' + plugin.version,
     icon: RiPlugLine,
     description: plugin.description || '本地插件节点，执行本地安装的插件',
     view: false,

@@ -8,6 +8,7 @@ import fs from 'fs'
 import os from 'os'
 import path from 'path'
 import AdmZip from 'adm-zip'
+import clientPkg from '../../../package.json'
 import { build } from 'esbuild'
 import { createRequire } from 'node:module'
 import { readPluginPackage } from './manifest.js'
@@ -73,7 +74,13 @@ export async function packFrp(srcDir, outPath, onProgress = () => {}) {
     // 2. 组装 .frp（package.json + 编译产物）
     onProgress(70, '组装 .frp 文件')
     const zip = new AdmZip()
-    zip.addLocalFile(path.join(srcDir, 'package.json'), '', 'package.json')
+    // 最低客户端版本：打包时自动填充为「打包方当时的客户端版本」，取代手工维护 freerpa.clientVersion。
+    // 只写入 .frp，不改动插件源码目录的 package.json。
+    const distPkg = {
+      ...pkg.packageJson,
+      freerpa: { ...(pkg.packageJson.freerpa || {}), clientVersion: clientPkg.version }
+    }
+    zip.addFile('package.json', Buffer.from(JSON.stringify(distPkg, null, 2), 'utf-8'))
     // 编译产物相对 srcDir 的路径（如 src/index.js）
     const relOut = pkg.main.split(/[\\/]/).filter(Boolean).join('/')
     if (relOut && relOut !== 'package.json') {
