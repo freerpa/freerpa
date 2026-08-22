@@ -16,6 +16,7 @@ import { register as registerIPC } from '../ipc'
 import { register as cacheRegisterIPC } from '../cache/ipc'
 import { register as dbInfoRegisterIPC } from '../data/dbIpc'
 import { register as pluginRegisterIPC } from '../plugin/ipc'
+import { registerPluginScheme, registerPluginProtocol } from '../plugin/protocol'
 import { register as aiRegisterIPC } from '../ai'
 
 /**
@@ -26,7 +27,13 @@ export const bootstrap = async () => {
   app.commandLine.appendSwitch('disable-renderer-backgrounding')
   app.commandLine.appendSwitch('ignore-certificate-errors')
 
+  // plugin:// 自定义协议特权须在 app ready 前注册（standard+secure 才支持模块相对导入）
+  registerPluginScheme()
+
   await app.whenReady()
+
+  // plugin:// 协议处理（渲染端加载插件入口模块图）
+  registerPluginProtocol()
 
   // 后台保活：防止系统挂起/优化回收（配合 disable-renderer-backgrounding 防渲染进程降频）
   powerSaveBlocker.start('prevent-app-suspension')

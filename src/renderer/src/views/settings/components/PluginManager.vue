@@ -80,7 +80,7 @@
   const plugins = ref([]);
 
   /**
-   * 定位插件对应的已注册节点定义（index.js 的 registerPluginNode 已把 freerpa.io.js 的
+   * 定位插件对应的已注册节点定义（index.js 的 registerPluginNode 已把入口文件导出的
    * config/inputs/outputs 解析到 nodes[type]，原始插件列表里的 config/inputs/outputs 恒为空数组）。
    */
   const nodeDefOf = (plg) => {

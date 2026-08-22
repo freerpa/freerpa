@@ -161,7 +161,7 @@ const PLUGIN_FIELD_TYPE_MAP = {
  * 归一单个插件配置项 → 渲染端字段对象。
  * 采用透传：保留插件声明的全部字段属性（remote/quickConfig/min/max/required 等不再被白名单丢弃），
  * 仅做必要归一——类型映射、名称兜底、显隐表达式字符串化、嵌套子字段递归。
- * onChange/remoteMethod 等函数钩子经透传原样保留（仅来自 freerpa.io.js，运行时表单与内置节点同机制）。
+ * onChange/remoteMethod 等函数钩子经透传原样保留（来自插件入口文件，运行时表单与内置节点同机制）。
  */
 const mapPluginField = (item) => {
   const field = { ...item }
@@ -186,33 +186,39 @@ const normalizePluginIO = (list) => {
 }
 
 /**
- * 在渲染进程执行 freerpa.io.js 源码，解出含函数钩子的 config/inputs/outputs。
- * 沿用 worker 的 data-URL import 手法：函数过不了 IPC / JSON，须在渲染进程运行时求值。
- * 信任边界：config.js 获得渲染进程权限（用户显式安装，UI 描述即 UI 代码）。
+ * 在渲染进程加载插件入口模块，解出含函数钩子的 config/inputs/outputs。
+ * 经主进程 plugin:// 协议加载入口文件（原生 import 可解析相对导入与子模块），
+ * 函数钩子（onChange/remoteMethod）留在模块内原样保留，不跨 IPC。
+ * 信任边界：入口文件获得渲染进程权限（用户显式安装，UI 描述即 UI 代码）。
  */
-/** UTF-8 安全 base64：btoa 直接吃中文（非 Latin-1）会抛异常，需先转字节 */
-const toBase64 = (str) => {
-  const bytes = new TextEncoder().encode(str)
-  let bin = ''
-  const chunk = 0x8000
-  for (let i = 0; i < bytes.length; i += chunk) {
-    bin += String.fromCharCode(...bytes.subarray(i, i + chunk))
+const extractDeclarations = (mod) => {
+  // 新契约：入口文件必须具名导出 config/inputs/outputs（不再兼容旧式 default 导出）
+  const hasConfigHook = (list) => Array.isArray(list) || typeof list === 'function'
+  return {
+    config: hasConfigHook(mod?.config) ? mod.config : [],
+    inputs: hasConfigHook(mod?.inputs) ? mod.inputs : [],
+    outputs: hasConfigHook(mod?.outputs) ? mod.outputs : []
   }
-  return btoa(bin)
 }
 
-const importPluginConfigSource = async (source) => {
+/** 构造插件入口的 plugin:// URL（identifier 须经 encodeURIComponent，避开 @ 等保留字符） */
+const pluginEntryUrl = (plugin) => {
+  const identifier = resolvePluginIdentifier(plugin)
+  const main = String(plugin.main || './src/index.js').replace(/^\.?\//, '')
+  return `plugin://local/${encodeURIComponent(identifier)}/${main}`
+}
+
+/** 入口模块加载序号：与 Date.now 组合保证每次刷新拿到全新模块实例 */
+let entrySeq = 0
+
+const importPluginEntry = async (plugin) => {
+  const url = pluginEntryUrl(plugin)
   try {
-    const mod = await import('data:text/javascript;base64,' + toBase64(source))
-    const def = mod.default || mod
-    const hasConfigHook = (list) => Array.isArray(list) || typeof list === 'function'
-    return {
-      config: hasConfigHook(def.config) ? def.config : [],
-      inputs: hasConfigHook(def.inputs) ? def.inputs : [],
-      outputs: hasConfigHook(def.outputs) ? def.outputs : []
-    }
+    // 带查询串强制每次全新模块实例：开发期改完入口即时生效
+    const mod = await import(`${url}?v=${Date.now()}_${entrySeq++}`)
+    return extractDeclarations(mod)
   } catch (e) {
-    console.error('[plugin] freerpa.io.js 执行失败:', e)
+    console.error('[plugin] 经 plugin:// 加载入口失败:', e)
     return null
   }
 }
@@ -220,7 +226,7 @@ const importPluginConfigSource = async (source) => {
 /** 根据插件条目生成 plu_<identifier> 节点定义（每版本独立节点；config 数组 → 渲染端基础分组字段） */
 const buildPluginNodeDef = (plugin, declared = {}) => {
   const identifier = resolvePluginIdentifier(plugin)
-  // 字段归一统一入口：优先 config 数组（含 variables 的 configSource 执行结果），其次 package JSON
+  // 字段归一统一入口：优先 config 数组（入口文件执行结果），其次 package JSON
   const rawConfig = Array.isArray(declared.config) ? declared.config : (Array.isArray(plugin.config) ? plugin.config : [])
   const fields = []
   rawConfig.forEach((item) => {
@@ -285,11 +291,11 @@ const buildPluginNodeDef = (plugin, declared = {}) => {
   })
 }
 
-/** 存在 freerpa.io.js 时在渲染进程执行解出含函数钩子的声明 */
+/** 存在入口源码时在渲染进程加载入口模块解出含函数钩子的声明 */
 const resolveDeclared = async (plugin) => {
-  if (!plugin.configSource) return { config: plugin.config, inputs: plugin.inputs, outputs: plugin.outputs }
-  const declared = await importPluginConfigSource(plugin.configSource)
-  // 执行失败回退空声明（package 已不再承载 IO），保证节点仍可注册
+  if (!plugin?.pluginId) return { config: plugin.config, inputs: plugin.inputs, outputs: plugin.outputs }
+  const declared = await importPluginEntry(plugin)
+  // 加载失败回退空声明（package 已不再承载 IO），保证节点仍可注册
   if (!declared) return { config: plugin.config, inputs: plugin.inputs, outputs: plugin.outputs }
   return {
     config: declared.config,

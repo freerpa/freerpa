@@ -24,24 +24,6 @@ export function parsePluginDirName(dirName) {
 }
 
 /**
- * 插件根目录下可选的节点契约描述文件（提供 onChange/remoteMethod 等函数钩子）。
- * 声明配置字段/输入/输出（config/inputs/outputs），存在时渲染端 import 执行解出含函数钩子的声明。
- * 主进程只读源码文本（不执行），由渲染端 import 执行（信任边界：渲染进程权限）。
- */
-const CONFIG_FILE = 'freerpa.io.js'
-
-/** 存在 freerpa.io.js 时返回其源码文本，否则返回 null */
-function readConfigSource(dir) {
-  const file = path.join(dir, CONFIG_FILE)
-  if (!fs.existsSync(file)) return null
-  try {
-    return fs.readFileSync(file, 'utf-8')
-  } catch {
-    return null
-  }
-}
-
-/**
  * 读取并解析目录下的 package.json，返回归一插件信息；目录不存在/无 package.json 返回 null，
  * JSON 解析失败或缺少 name 返回含 error 的对象。
  */
@@ -62,8 +44,7 @@ export function readPluginPackage(dir) {
   const clientVersion = typeof pkg.freerpa === 'string' ? pkg.freerpa : ''
   const main = String(pkg.main || './src/index.js')
   const executePath = path.resolve(dir, main)
-  // 节点契约（config/inputs/outputs）统一来自 freerpa.io.js：存在则透传源码文本，由渲染端 import 执行解出（可含函数）
-  const configSource = readConfigSource(dir)
+  // 节点契约（config/inputs/outputs）统一来自入口主文件：渲染端经 plugin:// 协议加载入口模块解出（可含函数钩子）
   return {
     pluginId,
     name: String(pkg.name || pluginId),
@@ -72,7 +53,6 @@ export function readPluginPackage(dir) {
     main,
     executePath,
     hasExecute: fs.existsSync(executePath),
-    configSource,
     config: [],
     inputs: [],
     outputs: [],

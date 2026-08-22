@@ -4,7 +4,6 @@
     "@pageEval": "./worker-common.js",
     "@dataModule": "./data-bridge.js",
     "electron": "./electron-bridge.js",
-    "freerpa": "./freerpa-runtime.js",
     "@renderer/workflow/utils/paramRefer.js": "../../../renderer/src/workflow/utils/paramRefer.js",
     "path": "node:path",
     "fs": "node:fs",

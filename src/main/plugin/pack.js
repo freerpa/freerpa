@@ -1,6 +1,6 @@
 /**
  * @file: 插件打包（.frp）
- *  - esbuild 编译 {main 入口} 为单文件 bundle（依赖最小化，'freerpa' 标记 external 留待运行时注入）
+ *  - esbuild 编译 {main 入口} 为单文件 bundle（依赖最小化）
  *  - 用 adm-zip 将 { package.json, 编译产物 } 打包为 .frp 单个文件（zip 格式）
  *  - .frp 内结构：package.json（main 指向编译产物）+ 编译产物（默认 src/index.js）
  */
@@ -8,10 +8,33 @@ import fs from 'fs'
 import os from 'os'
 import path from 'path'
 import AdmZip from 'adm-zip'
+import { app } from 'electron'
 import clientPkg from '../../../package.json'
-import { build } from 'esbuild'
 import { createRequire } from 'node:module'
 import { readPluginPackage } from './manifest.js'
+
+/**
+ * 打包后（asar 内）环境下，esbuild 内部经 require.resolve 解析的平台二进制路径
+ * 仍是 .asar 内的虚拟路径，child_process.spawn 无法执行（报 spawn ENOTDIR）。
+ * 这里把 ESBUILD_BINARY_PATH 指向 app.asar.unpacked 中已实体化（asarUnpack）的平台二进制。
+ *
+ * 注意：esbuild 在模块加载时（`var ESBUILD_BINARY_PATH = process.env...`）就捕获了该环境变量，
+ * 因此必须在 import('esbuild') 之前设置；本文件对 esbuild 采用 packFrp 内懒加载，
+ * 避免它在应用启动时（顶部静态 require）就固化空值。
+ */
+const ensureEsbuildBinaryPath = () => {
+  if (!app.isPackaged) return
+  const binName = process.platform === 'win32' ? 'esbuild.exe' : 'bin/esbuild'
+  const platformPkg =
+    process.platform === 'win32'
+      ? `@esbuild/win32-${process.arch === 'arm64' ? 'arm64' : 'x64'}`
+      : `@esbuild/${process.platform}-${process.arch}`
+  const asarUnpacked = app.getAppPath().replace(/\.asar$/, '.asar.unpacked')
+  const binPath = path.join(asarUnpacked, 'node_modules', platformPkg, binName)
+  if (fs.existsSync(binPath)) {
+    process.env.ESBUILD_BINARY_PATH = binPath
+  }
+}
 
 /**
  * esbuild 插件：解析 deno 风格 npm: 前缀依赖（如 `npm:js-md5` / `npm:js-md5@0.9.2`）。
@@ -54,6 +77,10 @@ export async function packFrp(srcDir, outPath, onProgress = () => {}) {
   try {
     // 1. esbuild 编译（bundle 依赖，最小化体积）
     onProgress(20, '编译插件（依赖最小化）')
+    // 打包后环境：先把 esbuild 平台二进制指向 app.asar.unpacked 实体文件，再懒加载 esbuild，
+    // 确保其模块加载时能捕获到 ESBUILD_BINARY_PATH（规避 spawn ENOTDIR）
+    ensureEsbuildBinaryPath()
+    const { build } = await import('esbuild')
     const entry = pkg.executePath
     const outFile = path.join(tmpDir, pkg.main)
     fs.mkdirSync(path.dirname(outFile), { recursive: true })
@@ -65,13 +92,12 @@ export async function packFrp(srcDir, outPath, onProgress = () => {}) {
       mainFields: ['module', 'main'], // neutral 平台需显式声明，否则忽略 CJS 依赖的 main 字段
       target: 'esnext',
       outfile: outFile,
-      external: ['freerpa'], // 运行时经 import-map 注入，不进包
       plugins: [npmPrefixPlugin(srcDir)],
       logLevel: 'error',
       minify: true
     })
 
-    // 2. 组装 .frp（package.json + 编译产物 + 可选 ui 配置描述）
+    // 2. 组装 .frp（package.json + 编译产物）
     onProgress(70, '组装 .frp 文件')
     const zip = new AdmZip()
     // 最低客户端版本：freerpa 直接为字符串，打包时自动填充为「打包方当时的客户端版本」，取代手工维护。
@@ -85,11 +111,6 @@ export async function packFrp(srcDir, outPath, onProgress = () => {}) {
     const relOut = pkg.main.split(/[\\/]/).filter(Boolean).join('/')
     if (relOut && relOut !== 'package.json') {
       zip.addLocalFile(outFile, relOut.split('/').slice(0, -1).join('/'), relOut.split('/').pop())
-    }
-    // 节点契约描述（可含函数钩子）：随包分发，渲染端执行（主进程 manifest 在 .frp 内扫描同名文件读取源码）
-    const configFile = path.join(srcDir, 'freerpa.io.js')
-    if (fs.existsSync(configFile)) {
-      zip.addLocalFile(configFile, '', 'freerpa.io.js')
     }
     zip.writeZip(outPath)
     onProgress(100, '打包完成')

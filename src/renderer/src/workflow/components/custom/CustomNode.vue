@@ -244,7 +244,7 @@ const nodeView = computed(() => {
 // ── 开发版插件刷新（画布节点卡片右上角）──────────────────
 const isDev = typeof import.meta !== 'undefined' && import.meta.env ? Boolean(import.meta.env.DEV) : false
 const refreshing = ref(false)
-// 仅「开发版」插件节点展示刷新按钮（type 形如 plu_<id>@dev）：改完 freerpa.io.js 后手动刷新，重读 IO 描述并重建本节点定义；
+// 仅「开发版」插件节点展示刷新按钮（type 形如 plu_<id>@dev）：改完入口文件（config/inputs/outputs/execute）后手动刷新，重读描述并重建本节点定义；
 // 正式版插件（type 形如 plu_<id>@<version>）不提供刷新，安装即固定。
 const refreshable = computed(
   () =>

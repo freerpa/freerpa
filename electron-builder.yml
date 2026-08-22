@@ -12,6 +12,11 @@ files:
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml,deno.lock,yarn.lock}'
   - '!*.zip'
 asar: true
+# esbuild 的平台原生二进制需保留在 asar 外：asar 内无法 spawn 可执行文件，
+# 否则在编译后的客户端里「打包插件」会报 spawn ENOTDIR（开发环境 node_modules 为实体文件故正常）
+asarUnpack:
+  - node_modules/esbuild/**/*
+  - node_modules/@esbuild/**/*
 # deno 二进制与 worker 资源经 extraResources 分发（asar 外），不打包进 asar
 extraResources:
   - from: resources/deno
