@@ -10,5 +10,4 @@ storage
 resources/deno
 resources/worker
 deno.lock
-scripts
 doc
