@@ -11,7 +11,7 @@ import path from 'path'
 import AdmZip from 'adm-zip'
 
 // ═══════════ 版本与平台映射 ═══════════
-const DENO_VERSION = process.env.DENO_VERSION || '2.9.4'
+const DENO_VERSION = process.env.DENO_VERSION || '2.9.5'
 
 // 下载源（依次尝试）：DENO_MIRROR 环境变量可覆盖（如 https://registry.npmmirror.com/-/binary/deno）
 const MIRRORS = (process.env.DENO_MIRROR
@@ -65,15 +65,21 @@ console.log(`下载完成: ${url}`)
 // sha256 校验
 const sumUrl = `${url}.sha256sum`
 try {
-  const sumResp = await fetch(sumUrl, { signal: AbortSignal.timeout(10000) })
-  if (sumResp.ok) {
-    const [expectSum] = (await sumResp.text()).trim().split(/\s+/)
-    const { createHash } = await import('crypto')
-    const actual = createHash('sha256').update(fs.readFileSync(zipPath)).digest('hex')
-    if (actual !== expectSum) throw new Error(`sha256 校验失败: 期望 ${expectSum}，实际 ${actual}`)
-    console.log('sha256 校验通过')
-  }
-} catch (e) {
+    const sumResp = await fetch(sumUrl, { signal: AbortSignal.timeout(10000) })
+    if (sumResp.ok) {
+      const text = (await sumResp.text()).trim()
+      // 兼容两种格式：
+      // 1) "<hash>  <filename>"  2) "Algorithm : SHA256\nHash      : <hash>\n..."
+      const m = text.match(/Hash\s*:\s*([0-9a-fA-F]{64})/i)
+      const expectSum = m ? m[1] : text.split(/\s+/)[0]
+      const { createHash } = await import('crypto')
+      const actual = createHash('sha256').update(fs.readFileSync(zipPath)).digest('hex')
+      if (actual.toLowerCase() !== expectSum.toLowerCase()) {
+        throw new Error(`sha256 校验失败: 期望 ${expectSum}，实际 ${actual}`)
+      }
+      console.log('sha256 校验通过')
+    }
+  } catch (e) {
   if (e.message?.startsWith('sha256 校验失败')) {
     fs.unlinkSync(zipPath)
     throw e
