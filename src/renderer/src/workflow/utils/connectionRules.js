@@ -1,5 +1,6 @@
 import { useFlowStore } from '../store'
 import { v4 as uuidv4 } from 'uuid'
+import { isTypeConnectable } from './typeMatch'
 
 export class ConnectionRules {
   constructor(workflowId) {
@@ -97,23 +98,7 @@ export class ConnectionRules {
     }
 
     // 4. 检查数据类型是否匹配
-    let sourceType = sourceOutput.type || 'string'
-    let targetType = targetInput.type || 'string'
-
-    if (typeof sourceType == 'string') {
-      sourceType = [sourceType]
-    }
-
-    if (typeof targetType == 'string') {
-      targetType = [targetType]
-    }
-
-    return (
-      sourceType.some((type) => targetType.includes(type)) ||
-      targetType.some((type) => sourceType.includes(type)) ||
-      targetType.includes('any') ||
-      sourceType.includes('any')
-    )
+    return isTypeConnectable(sourceOutput.type, targetInput.type)
   }
 
   /**
@@ -122,15 +107,7 @@ export class ConnectionRules {
    * @returns {Object} 连线样式
    */
   getConnectionStyle = (connection) => {
-    if (connection.sourceHandle === 'next' && connection.targetHandle === 'prev') {
-      return {
-        type: 'custom',
-        style: {
-          strokeWidth: 4
-        },
-        animated: true
-      }
-    } else if (connection.sourceHandle === 'next-false' && connection.targetHandle === 'prev') {
+    if (['next', 'next-false'].includes(connection.sourceHandle) && connection.targetHandle === 'prev') {
       return {
         type: 'custom',
         style: {

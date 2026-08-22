@@ -1,23 +1,4 @@
-//判断类型是否互相包含
-const isConnectable = (sourceOutput, targetInput) => {
-  let sourceType = sourceOutput.type || 'string'
-  let targetType = targetInput.type || 'string'
-
-  if (typeof sourceType == 'string') {
-    sourceType = [sourceType]
-  }
-
-  if (typeof targetType == 'string') {
-    targetType = [targetType]
-  }
-
-  return (
-    sourceType.some((type) => targetType.includes(type)) ||
-    targetType.some((type) => sourceType.includes(type)) ||
-    targetType.includes('any') ||
-    sourceType.includes('any')
-  )
-}
+import { isTypeConnectable } from './typeMatch'
 
 //自动连线
 export const autoConnect = async (
@@ -27,7 +8,6 @@ export const autoConnect = async (
   targetNode,
   handleId = 'next'
 ) => {
-
 
   const specialOutputMap = new Map()
   const edges = []
@@ -58,8 +38,6 @@ export const autoConnect = async (
       edges.push(edge)
     }
   }
-  //获取sourceNode的输出和targetNode的输入
-  await new Promise((resolve) => setTimeout(resolve, 1))
   const sourceOutputs = sourceNode ? sourceNode.data.outputs : []
   const targetInputs = targetNode ? targetNode.data.inputs : []
 
@@ -67,7 +45,7 @@ export const autoConnect = async (
   if (
     sourceOutputs.length == 1 &&
     targetInputs.length == 1 &&
-    isConnectable(sourceOutputs[0], targetInputs[0]) &&
+    isTypeConnectable(sourceOutputs[0], targetInputs[0]) &&
     !specialDataTypes.includes(targetInputs[0].type)
   ) {
     const edge = createConnection({
@@ -117,33 +95,21 @@ export const autoConnect = async (
           )
         }
       }
-      // 遍历sourceNode的输出（有可能出现同一个输出同时连接多个输入）所以先不用此规则
-      // sourceOutputs.forEach((output) => {
-      //   // 如果输入和输出类型相同或输入和输出类型为any则连线
-      //   if (input.type == output.type) {
-      //     edges.push(
-      //       createConnection({
-      //         source: sourceNode.id,
-      //         target: targetNode.id,
-      //         sourceHandle: output.id,
-      //         targetHandle: input.id
-      //       })
-      //     )
-      //   }
-      // })
     })
-    // 添加连线
   }
-  //判断是否有相同的连线
-  const isConnected = (edge) => {
-    return vueFlowRef.getEdges.find(
-      (item) =>
-        item.source == edge.source &&
-        item.target == edge.target &&
-        item.sourceHandle == edge.sourceHandle &&
-        item.targetHandle == edge.targetHandle
+  // 把已有边浇铸为组合键 Set，O(1) 判重（原 `edges.filter(!isConnected)` 内嵌 find 为 O(边数²)）
+  const existingKeySet = new Set(
+    vueFlowRef.getEdges.map(
+      (item) => `${item.source}|${item.target}|${item.sourceHandle}|${item.targetHandle}`
     )
-  }
-  //过滤出没有相同连线的连线
-  vueFlowRef.addEdges(edges.filter((edge) => !isConnected(edge)))
+  )
+  vueFlowRef.addEdges(
+    edges.filter((edge) => {
+      if (!edge || !edge.source || !edge.target) return false
+      const key = `${edge.source}|${edge.target}|${edge.sourceHandle}|${edge.targetHandle}`
+      if (existingKeySet.has(key)) return false
+      existingKeySet.add(key) // 多个候选同 key 时只保留第一个
+      return true
+    })
+  )
 }

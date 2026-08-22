@@ -2,6 +2,13 @@
  * 拦截输入字段中的键盘事件，防止画布快捷键意外触发
  * 规则：所有 Ctrl/Meta 组合键 + Delete/Backspace/+/-/功能键 在输入字段中阻止传播
  */
+// 模块级常量：避免每次按键事件都新建 Set（热路径 GC 开销）
+const BLOCKED_KEYS = new Set([
+  'delete', 'backspace', '=', '-',
+  'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7',
+  'f8', 'f9', 'f10', 'f11', 'f12', 'escape'
+])
+
 export const unDoReDoInterceptor = (e) => {
   const key = e.key.toLowerCase()
   const isModifierKey = e.ctrlKey || e.metaKey || e.altKey
@@ -13,8 +20,7 @@ export const unDoReDoInterceptor = (e) => {
   }
 
   // 特殊键
-  const blockedKeys = new Set(['delete', 'backspace', '=', '-', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12', 'escape'])
-  if (blockedKeys.has(key)) {
+  if (BLOCKED_KEYS.has(key)) {
     e.stopPropagation()
   }
 }

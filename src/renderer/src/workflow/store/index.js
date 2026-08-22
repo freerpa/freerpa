@@ -128,12 +128,12 @@ export const useFlowStore = (id) =>
       if (historyId) {
         nowHistoryId.value = historyId
       }
-    }, 300)
+    }, 100)
 
     //解除历史中状态
     const historyIngDebounce = debounce(() => {
       isHistorying.value = false
-    }, 300)
+    }, 100)
     // 撤销
     const undo = () => {
       isHistorying.value = true

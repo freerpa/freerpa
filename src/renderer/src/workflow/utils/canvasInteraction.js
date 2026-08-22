@@ -71,16 +71,26 @@ export const isScrollableElement = (element) => {
 }
 
 // 检查事件目标或其祖先是否为可滚动元素
+// 同目标 + 短时间窗口缓存：wheel 高频触发，避免每次向上遍历 + getComputedStyle（强 reflow）
+let lastScrollCheck = { el: null, result: false, stamp: 0 }
 export const isInScrollableElement = (e) => {
+  const now = Date.now()
+  // 50ms 内同一目标直接复用上次判定（结果不会过期，DOM 布局已稳定）
+  if (lastScrollCheck.el === e.target && lastScrollCheck.stamp > now - 50) {
+    return lastScrollCheck.result
+  }
   let currentElement = e.target
+  let isScrollable = false
   // 向上遍历至 body，检查是否有可滚动元素
   while (currentElement && currentElement !== document.body) {
     if (isScrollableElement(currentElement)) {
-      return true
+      isScrollable = true
+      break
     }
     currentElement = currentElement.parentElement
   }
-  return false
+  lastScrollCheck = { el: e.target, result: isScrollable, stamp: now }
+  return isScrollable
 }
 
 // 点击处理：向文档发送 mousedown 事件，触发 select 的 popup

@@ -16,25 +16,24 @@ export const handleNodeCopy = (vueFlowRef, clipboard, selectedNodes) => {
   //去除结束节点
   // activeNodes = activeNodes.filter((node) => node.data.type !== 'endNode')
 
-  //查找所有子孙节点
-  activeNodes.forEach((node) => {
-    const allChildNodes = findAllDescendantNodes(node, vueFlowRef.getNodes)
-    activeNodes.push(...allChildNodes)
+  // 查找所有子孙节点
+  for (const node of activeNodes) {
+    activeNodes.push(...findAllDescendantNodes(node, vueFlowRef.getNodes))
+  }
+
+  // 去除重复节点（O(1) 判重，替代 findIndex 双重遍历的 O(n²)）
+  const seenIds = new Set()
+  activeNodes = activeNodes.filter((node) => {
+    if (seenIds.has(node.id)) return false
+    seenIds.add(node.id)
+    return true
   })
 
-  //去除重复节点
-  activeNodes = activeNodes.filter(
-    (node, index, self) => index === self.findIndex((t) => t.id === node.id)
+  const activeNodeIdSet = new Set(activeNodes.map((node) => node.id))
+  // 查找所有边（用 Set 归属判定，避免 includes 的 O(n·m)）
+  activeEdges = vueFlowRef.getEdges.filter(
+    (edge) => activeNodeIdSet.has(edge.source) && activeNodeIdSet.has(edge.target)
   )
-
-  const activeNodeIds = activeNodes.map((node) => node.id)
-  //查找所有边
-  vueFlowRef.getEdges.forEach((edge) => {
-    //判断当前边是否前后都在activeNodes中
-    if (activeNodeIds.includes(edge.source) && activeNodeIds.includes(edge.target)) {
-      activeEdges.push(edge)
-    }
-  })
 
   if (activeNodes.length > 0) {
     clipboard.value = {

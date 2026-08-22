@@ -4,6 +4,7 @@
 import { computed, ref } from 'vue'
 import { adjustParentSize } from './adjustParentSize'
 import { ConnectionRules } from './connectionRules'
+import { deepClone } from './deepClone'
 import nodes from '@nodes-path'
 import { v4 as uuidv4 } from 'uuid'
 import * as jsondiffpatch from 'jsondiffpatch';
@@ -122,27 +123,14 @@ class History {
     return diff
   }
 
-  // 应用差异
+  // 应用差异（isUndo 决定方向，undo/redo 对称逻辑用子过程参数化合一）
   applyDiff(flowRef, diff, isUndo = false) {
-    if (isUndo) {
-      // 撤销时反向应用差异
-      // 1. 删除添加的节点和边
-      const removedNodes = diff.added.filter((element) => element.id.startsWith('node-'))
-      const removedEdges = diff.added.filter((element) => element.id.startsWith('edge-'))
-      removedNodes.length &&
-        flowRef.removeNodes(
-          removedNodes.map((node) => node.id),
-          true,
-          true
-        )
-      removedEdges.length &&
-        flowRef.removeEdges(removedEdges.filter((edge) => !edge.parentNode).map((edge) => edge.id))
-
-      // 2. 恢复删除的节点和边
-      const addedNodes = diff.removed.filter((element) => element.id.startsWith('node-'))
-      addedNodes.length && flowRef.addNodes(addedNodes)
-      const addedEdges = diff.removed
-        .filter((element) => element.id.startsWith('edge-'))
+    // 公共子过程：新增节点与边（含连线合法性校验）
+    const addElements = (elements) => {
+      const nodeList = elements.filter((el) => el.id.startsWith('node-'))
+      nodeList.length && flowRef.addNodes(nodeList)
+      const edgeList = elements
+        .filter((el) => el.id.startsWith('edge-'))
         .filter(
           (edge) =>
             this.validateConnection(
@@ -156,86 +144,63 @@ class History {
               true
             ) || edge.targetHandle === 'subFlow'
         )
-      addedEdges.length && flowRef.addEdges(addedEdges)
-
-      // 3. 修改节点位置大小
-      const modifiedNodes = diff.modified.map(({ id, before }) => ({
-        id,
-        ...before
-      }))
-
-      modifiedNodes.forEach((node) => {
-        flowRef.updateNode(node.id, node)
-      })
-      adjustParentSize([...addedNodes, ...modifiedNodes, ...removedNodes], flowRef)
-      // flowRef.updateNodePositions(modifiedNodes, true)
-
-      //4.恢复数据变动
-      diff.dataChanged.forEach(({ id, diff: dataDiff }) => {
-        flowRef.updateNodeData(id, (node) => {
-          // 恢复数据变动时，需要反向应用差异
-          jsondiffpatch.unpatch(node.data, dataDiff)
-        })
-      })
-    } else {
-      // 重做时正向应用差异
-      // 1. 添加新节点和边
-      const addedNodes = diff.added.filter((element) => element.id.startsWith('node-'))
-      addedNodes.length && flowRef.addNodes(addedNodes)
-      const addedEdges = diff.added
-        .filter((element) => element.id.startsWith('edge-'))
-        .filter(
-          (edge) =>
-            this.validateConnection(
-              {
-                source: edge.source,
-                target: edge.target,
-                sourceHandle: edge.sourceHandle,
-                targetHandle: edge.targetHandle
-              },
-              false,
-              true
-            ) || edge.targetHandle === 'subFlow'
-        )
-      addedEdges.length && flowRef.addEdges(addedEdges)
-
-      // 2. 删除需要删除的节点和边
-      const removedNodes = diff.removed.filter((element) => element.id.startsWith('node-'))
-      const removedEdges = diff.removed.filter((element) => element.id.startsWith('edge-'))
-      removedNodes.length &&
+      edgeList.length && flowRef.addEdges(edgeList)
+    }
+    // 公共子过程：移除节点与边
+    const removeElements = (elements) => {
+      const nodeList = elements.filter((el) => el.id.startsWith('node-'))
+      nodeList.length &&
         flowRef.removeNodes(
-          removedNodes.map((node) => node.id),
+          nodeList.map((node) => node.id),
           true,
           true
         )
-      removedEdges.length &&
-        flowRef.removeEdges(removedEdges.filter((edge) => !edge.parentNode).map((edge) => edge.id))
-
-      // 3. 修改节点位置大小
-      const modifiedNodes = diff.modified.map(({ id, after }) => ({
-        id,
-        ...after
+      const edgeList = elements.filter((el) => el.id.startsWith('edge-'))
+      edgeList.length &&
+        flowRef.removeEdges(edgeList.filter((edge) => !edge.parentNode).map((edge) => edge.id))
+    }
+    // 应用节点位置/尺寸改动（撤销用 before，重做用 after）
+    const applyModified = () => {
+      const modifiedNodes = diff.modified.map((node) => ({
+        id: node.id,
+        ...node[isUndo ? 'before' : 'after']
       }))
-      modifiedNodes.forEach((node) => {
-        flowRef.updateNode(node.id, node)
-      })
-      adjustParentSize([...addedNodes, ...modifiedNodes, ...removedNodes], flowRef)
-      // flowRef.updateNodePositions(modifiedNodes, true)
-
-      //4.恢复数据变动
+      modifiedNodes.forEach((node) => flowRef.updateNode(node.id, node))
+      return modifiedNodes
+    }
+    // 应用节点数据变动（撤销=unpatch 反向，重做=patch 正向）
+    const applyDataChanged = () => {
       diff.dataChanged.forEach(({ id, diff: dataDiff }) => {
         flowRef.updateNodeData(id, (node) => {
-          // 重做时正向应用差异
-          jsondiffpatch.patch(node.data, dataDiff)
+          if (isUndo) {
+            jsondiffpatch.unpatch(node.data, dataDiff)
+          } else {
+            jsondiffpatch.patch(node.data, dataDiff)
+          }
         })
       })
     }
+
+    if (isUndo) {
+      // 撤销：先删除已添加的 added，再恢复已移除的 removed
+      removeElements(diff.added)
+      addElements(diff.removed)
+    } else {
+      // 重做：先添加 added，再删除 removed
+      addElements(diff.added)
+      removeElements(diff.removed)
+    }
+
+    const modifiedNodes = applyModified()
+    applyDataChanged()
+    // 父节点尺寸统一重算（Set 去重，顺序无关）
+    adjustParentSize([...diff.added, ...diff.removed, ...modifiedNodes], flowRef)
   }
 
   // 添加新状态
   push(state, flowRef) {
     if (this.currentState === null) {
-      this.currentState = JSON.parse(JSON.stringify(state))
+      this.currentState = deepClone(state)
       return null
     }
     const diff = this.calculateDiff(this.currentState, state)
@@ -248,7 +213,7 @@ class History {
     ) {
       this.undoStack.value.push(diff)
       this.redoStack.value = [] // 清空重做栈
-      this.currentState = JSON.parse(JSON.stringify(state))
+      this.currentState = deepClone(state)
       // 限制栈大小
       if (this.undoStack.value.length > this.maxSize) {
         this.undoStack.value.shift()
@@ -269,7 +234,7 @@ class History {
     const diff = this.undoStack.value.pop()
     this.redoStack.value.push(diff)
     this.applyDiff(flowRef, diff, true)
-    this.currentState = JSON.parse(JSON.stringify(flowRef.getElements))
+    this.currentState = deepClone(flowRef.getElements)
     if (this.undoStack.value.length) {
       return this.undoStack.value[this.undoStack.value.length - 1].id
     }
@@ -284,7 +249,7 @@ class History {
     const diff = this.redoStack.value.pop()
     this.undoStack.value.push(diff)
     this.applyDiff(flowRef, diff, false)
-    this.currentState = JSON.parse(JSON.stringify(flowRef.getElements))
+    this.currentState = deepClone(flowRef.getElements)
     return diff.id
   }
 

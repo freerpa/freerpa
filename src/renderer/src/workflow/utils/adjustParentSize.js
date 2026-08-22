@@ -13,8 +13,8 @@ export const calculateBoundingBox = (childNodes) => {
   childNodes.forEach((node) => {
     minX = Math.min(minX, node.position.x)
     minY = Math.min(minY, node.position.y)
-    maxX = Math.max(maxX, node.position.x + node.dimensions.width || 300)
-    maxY = Math.max(maxY, node.position.y + node.dimensions.height || 300)
+    maxX = Math.max(maxX, node.position.x + (node.dimensions?.width ?? 300))
+    maxY = Math.max(maxY, node.position.y + (node.dimensions?.height ?? 300))
   })
 
   // 添加内边距
@@ -33,7 +33,9 @@ export const adjustParentSize = (nodes, vueFlowRef, padding = [44, 44]) => {
     return
   }
   nodeIds = [...new Set(nodeIds)]
-  padding[1] += 30
+  // 副本处理，避免修改调用方传入的 padding 数组（原实现 `padding[1] += 30` 会累积污染）
+  const pX = padding[0]
+  const pY = padding[1] + 30
   // 子流程节点集合
   let subFlowNodeIds = nodeIds
     .map((id) => {
@@ -51,23 +53,28 @@ export const adjustParentSize = (nodes, vueFlowRef, padding = [44, 44]) => {
     if (childNodes.length > 0) {
       //计算所有子节点外框的矩形信息
       const boundingBox = calculateBoundingBox(childNodes)
-      const offsetX = padding[0] - boundingBox.x
-      const offsetY = padding[1] - boundingBox.y
+      const offsetX = pX - boundingBox.x
+      const offsetY = pY - boundingBox.y
       // 如果子节点包围盒超出父节点包围盒，则调整子节点位置
-      if (boundingBox.x !== padding[0] || boundingBox.y !== padding[1]) {
-        childNodes.forEach((node) => {
-          node.position = {
-            x: node.position.x + offsetX,
-            y: node.position.y + offsetY
-          }
+      if (boundingBox.x !== pX || boundingBox.y !== pY) {
+        // 经 updateNode 走响应式更新，避免原地改写 node.position 不触发 vue-flow 重渲染
+        childNodes.forEach((child) => {
+          vueFlowRef.updateNode(child.id, () => ({
+            position: {
+              x: child.position.x + offsetX,
+              y: child.position.y + offsetY
+            }
+          }))
         })
-        parentNode.position = {
-          x: parentNode.position.x - offsetX,
-          y: parentNode.position.y - offsetY
-        }
+        vueFlowRef.updateNode(parentNode.id, () => ({
+          position: {
+            x: parentNode.position.x - offsetX,
+            y: parentNode.position.y - offsetY
+          }
+        }))
       }
-      const targetWidth = boundingBox.width + 2 * padding[0]
-      const targetHeight = boundingBox.height + 2 * padding[1] - 30
+      const targetWidth = boundingBox.width + 2 * pX
+      const targetHeight = boundingBox.height + 2 * pY - 30
 
       // 设置最小尺寸限制（避免过度缩小）
       const minWidth = 100
@@ -79,12 +86,10 @@ export const adjustParentSize = (nodes, vueFlowRef, padding = [44, 44]) => {
 
       // 如果需要调整，更新父节点
       if (newWidth !== parentNode.dimensions.width || newHeight !== parentNode.dimensions.height) {
-        vueFlowRef.updateNode(parentNodeId, (node) => {
-          return {
-            width: newWidth,
-            height: newHeight
-          }
-        })
+        vueFlowRef.updateNode(parentNodeId, () => ({
+          width: newWidth,
+          height: newHeight
+        }))
       }
     }
   })

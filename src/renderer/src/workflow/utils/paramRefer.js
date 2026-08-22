@@ -1,14 +1,25 @@
 const separator = '--!@#$%freerpa-refer%$#@!--'
 
+// 公共解析：一次拆出 refer 与 oldValue，供 is/getRefer/getOldValue 复用（替代各自的重复 split）
+export const parseParamRefer = (value) => {
+  if (typeof value !== 'string') return null
+  const idx = value.indexOf(separator)
+  if (idx === -1) return null
+  const refer = value.slice(0, idx)
+  if (!/^\{\{[^\{\}]+\.[^\{\}]+\}\}$/.test(refer)) return null
+  let oldValue = value.slice(refer.length + separator.length)
+  if (oldValue) {
+    try {
+      oldValue = JSON.parse(oldValue)
+    } catch {
+      oldValue = value.slice(refer.length + separator.length)
+    }
+  }
+  return { refer, oldValue }
+}
+
 export const isParamRefer = (value) => {
-  if (typeof value !== 'string') {
-    return false
-  }
-  if(value.indexOf(separator) === -1) {
-    return false
-  }
-  const refer = value.split(separator)[0]
-  return /^\{\{[^\{\}]+\.[^\{\}]+\}\}$/.test(refer)
+  return parseParamRefer(value) !== null
 }
 
 export const makeParamReferValue = (value, refer) => {
@@ -17,20 +28,13 @@ export const makeParamReferValue = (value, refer) => {
 }
 
 export const getRefer = (value) => {
-  if (isParamRefer(value)) {
-    return value.split(separator)[0]
-  }
-  return ''
+  return parseParamRefer(value)?.refer || ''
 }
 
 export const getOldValue = (value) => {
-  if (isParamRefer(value)) {
-    const refer = value.split(separator)[0]
-    let oldValue = value.slice(refer.length + separator.length)
-    if (oldValue) {
-      oldValue = JSON.parse(oldValue)
-    }
-    return oldValue
+  const parsed = parseParamRefer(value)
+  if (parsed) {
+    return parsed.oldValue
   }
   return value
 }

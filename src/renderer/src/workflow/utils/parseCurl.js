@@ -15,6 +15,17 @@ function resolveEscapes(str) {
   return str.replace(/\\(["'\\])/g, '$1')
 }
 
+// 辅助函数：UTF-8 安全 base64（btoa 仅 Latin-1，中文 Basic 认证会抛错）
+function toBase64(str) {
+  const bytes = new TextEncoder().encode(str)
+  let bin = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  return btoa(bin)
+}
+
 // 辅助函数：解析Cookie字符串为键值对
 function parseCookies(cookieStr) {
   const cookies = {}
@@ -160,7 +171,7 @@ export function parseCurl(curlCommand) {
           // 自动添加Authorization头（Base64编码）
           const [user, pass] = userStr.split(':')
           if (user) {
-            result.headers['authorization'] = `Basic ${btoa(`${user}:${pass || ''}`)}`
+            result.headers['authorization'] = `Basic ${toBase64(`${user}:${pass || ''}`)}`
           }
           break
         }
@@ -209,7 +220,7 @@ export function parseCurl(curlCommand) {
           if (token === '--data-urlencode') {
             data = decodeURIComponent(data)
           }
-          result.body = result.body ? `${result.body}${data}` : data
+          result.body = result.body ? `${result.body}&${data}` : data
           break
         }
 

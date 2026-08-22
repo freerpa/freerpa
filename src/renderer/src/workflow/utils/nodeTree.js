@@ -3,15 +3,18 @@ export const getNodeParamsTreeData = (
   nodes,
   types = ['string', 'number', 'boolean', 'array', 'object']
 ) => {
-  types.push('any')
+  // 副本追加 'any'，避免污染调用方传入的 types 数组
+  const typeSet = new Set([...types, 'any'])
   const parmsData = []
   nodes.map((node) => {
     const item = {
       id: `${node.id}`,
       name: node.data.name || node.id,
       children: (node.data.outputs || [])
-        .map((output) =>
-          types.some((type) => output.type.includes(type))
+        .map((output) => {
+          // 兼容 output.type 为字符串或数组两种形态
+          const types = typeof output.type === 'string' ? [output.type] : (output.type || [])
+          return types.some((t) => typeSet.has(t))
             ? {
               id: `${node.id}.${output.id}`,
               name: `${output.name}`,
@@ -19,7 +22,7 @@ export const getNodeParamsTreeData = (
               fullName: `${node.data.name}.${output.name}`
             }
             : null
-        )
+        })
         .filter(Boolean)
     }
     if (item.children.length > 0) {
