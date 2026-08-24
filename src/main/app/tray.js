@@ -12,11 +12,13 @@ import path from 'path'
 
 let tray = null
 
-/** 托盘图标路径（dev 源码 / 打包分发两态） */
-const getTrayIconPath = () =>
-  app.isPackaged
-    ? path.join(process.resourcesPath, 'tray.png')
-    : path.join(__dirname, '../../build/tray.png')
+/** 托盘图标路径（dev 源码 / 打包分发两态）。macOS 使用 mac 版图标，其余系统使用常规版 */
+const getTrayIconPath = () => {
+  const fileName = process.platform === 'darwin' ? 'tray-mac.png' : 'tray.png'
+  return app.isPackaged
+    ? path.join(process.resourcesPath, fileName)
+    : path.join(__dirname, '../../build', fileName)
+}
 
 /** 恢复并聚焦主窗口（隐藏/最小化状态下均有效） */
 const showMainWindow = () => {

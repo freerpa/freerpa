@@ -35,6 +35,9 @@ extraResources:
   # 托盘图标（build/ 是 buildResources，electron-builder 会排除出 asar，故经 extraResources 分发）
   - from: build/tray.png
     to: tray.png
+  # macOS 专属托盘图标
+  - from: build/tray-mac.png
+    to: tray-mac.png
 win:
   executableName: FreeRPA
 nsis:
