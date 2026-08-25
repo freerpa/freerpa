@@ -6,7 +6,7 @@
 
 All data stays **local-first** — your workflows, data and browser environments never leave your machine unless you choose to.
 
-[官网入口](https://freerpa.cn)　·　[插件市场](https://freerpa.cn/plugins)　·　[更新日志](https://freerpa.cn/changelog)
+[官网入口](https://freerpa.cn)　·　[插件市场](https://freerpa.cn/plugins)　·　[更新日志](https://freerpa.cn/updates)
 
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
 
