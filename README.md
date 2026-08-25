@@ -9,10 +9,6 @@ All data stays **local-first** — your workflows, data and browser environments
 [官网入口](https://freerpa.cn)　·　[插件市场](https://freerpa.cn/plugins)　·　[更新日志](https://freerpa.cn/changelog)
 
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
-![Electron](https://img.shields.io/badge/Electron-43-47848f)
-![Vue](https://img.shields.io/badge/Vue-3-42b883)
-![Deno](https://img.shields.io/badge/Deno-2.9-000000)
-![Node](https://img.shields.io/badge/Node-%3E%3D20-339933)
 
 </div>
 
@@ -20,177 +16,16 @@ All data stays **local-first** — your workflows, data and browser environments
 
 ## 项目简介
 
-FreeRPA 是一款基于 Electron 的桌面端自动化工具，将 **可视化流程编排**、**AI 自然语言搭建**、**指纹浏览器环境**、**Deno 安全沙箱** 与 **可安装插件系统** 融为一体，覆盖网页、桌面、数据、文件、Excel、数据库与网络等全场景。
+FreeRPA（风影RPA） 是一款基于 Electron 的桌面端自动化工具，将 **可视化流程编排**、**AI 自然语言搭建**、**指纹浏览器环境**、**Deno 安全沙箱** 与 **可安装插件系统** 融为一体，覆盖网页、桌面、手机、数据、文件、Excel、数据库与网络等全场景。
 
 - 官方网址：**https://freerpa.cn**
 - 数据默认保存在本地（SQLite），离线可用、隐私可控
 
 ---
 
-## 核心特性
+## 仓库说明
 
-| 能力 | 说明 |
-| --- | --- |
-| 可视化流程编排 | 基于 Vue Flow 的画布，拖拽即可搭建自动化流程，支持子流程与自定义节点 |
-| AI 自然语言搭建 | 接入多供应商大模型，对话即可由 AI 自动生成并编排流程，支持工具调用与上下文理解 |
-| 指纹浏览器 | 基于 fingerprint-chromium 内核，相互隔离的浏览器环境，轻松多开多账号 |
-| 安全沙箱 | 流程在独立 Deno Worker 中执行，配合细粒度权限模型，默认最安全 |
-| 可安装插件 | 通过 `plugin://` 协议加载第三方插件，为每个插件动态注册节点，能力无限扩展 |
-| 本地优先 | 工作流、数据、浏览器环境均存本地，离线可用、隐私可控 |
-| 跨平台 | Windows / macOS / Linux 全平台运行 |
-
----
-
-## 快速开始
-
-### 环境要求
-
-- Node.js ≥ 20（建议 22）
-- 网络可访问 GitHub Releases / Deno 发布源（用于下载运行时）
-
-### 安装 & 启动
-
-```bash
-npm install          # postinstall 自动 ensure-electron / ensure-native / install-app-deps
-npm run dev          # 启动开发模式（electron-vite dev）
-```
-
-> 首次启动前可能需按需下载 Deno 运行时与浏览器内核，相关命令见「常用脚本」。
-
----
-
-## 内置节点
-
-内置 **82+ 节点**，覆盖 **10 大分类**：
-
-| 分类 | 节点示例 |
-| --- | --- |
-| 流程控制 | 条件判断、循环、结束、异常、通知、子流程、自定义节点 |
-| 全局变量 | 变量设置、变量读取 |
-| 时间计数 | 定时器、计数器、延迟、计划任务、获取/处理时间 |
-| 网页控制 | 打开网页、输入、鼠标、滚动、抓取、截图、监听、PDF 保存 |
-| 数据存储 | 数据读写/删除/更新、临时数据、数据库连接/执行 |
-| 网络操作 | HTTP 请求、HTTP 服务、WebSocket 连接/发送 |
-| 文件操作 | 创建/遍历/移动/复制/删除/读写文件、打开目录、状态 |
-| 数据处理 | 字符串/数字/对象/数组处理、解析、提取、过滤、剪贴板 |
-| Excel | 创建、保存、单元格读写/合并、行列插入/删除 |
-| 文件预览 | 图片 / 视频 / 音频预览 |
-
-所有节点均支持**版本化**（`V{num}` 目录），新版本自动生效，旧版本兼容保留。
-
----
-
-## 安全沙箱
-
-工作流默认在独立 **Deno Worker** 中执行，与主应用隔离。权限模型包括：
-
-| 权限 | 说明 |
-| --- | --- |
-| `io` | 文件系统可访问根目录（预置 `FREERPA-DATA` 目录） |
-| `network` | 网络访问模式（allow-all / allow-list / disabled）与域名规则 |
-| `process` | 子进程启动白名单 |
-| `env` | 环境变量读取白名单 |
-| `sys` | 系统信息读取白名单 |
-| `ffi` | Native FFI 开关与路径白名单 |
-
-首次启动写入最安全默认权限；可在「设置 - 权限管理」中按需放行，兼顾易用性与安全边界。
-
----
-
-## 技术栈
-
-| 层 | 技术 |
-| --- | --- |
-| 桌面框架 | Electron 43 + electron-vite 5 |
-| 前端 | Vue 3 + Pinia + Vue Router + Arco Design Vue |
-| 画布 | Vue Flow（自定义节点 / 连接线 / 子流程） |
-| 代码编辑 | CodeMirror |
-| 执行沙箱 | Deno Worker（独立进程，默认 2.9.x） |
-| 浏览器内核 | fingerprint-chromium + puppeteer-core（CDP 控制） |
-| AI SDK | Vercel AI SDK + @ai-sdk/* 多供应商 |
-| 本地存储 | SQLite（sqlite3 驱动）+ 文件目录 |
-| 打包 | electron-builder（Windows NSIS / macOS DMG / Linux AppImage·snap·deb） |
-
----
-
-## 目录结构
-
-```
-freerpa/
-├── src/
-│   ├── main/                # 主进程
-│   │   ├── app/             # 应用引导、托盘、窗口
-│   │   ├── ai/              # AI 供应商管理、聊天 IPC
-│   │   ├── browser/         # 指纹浏览器内核下载、启动与管理
-│   │   ├── data/            # 本地数据层（浏览器/分类/元素集/模型/工作流）
-│   │   ├── plugin/          # 插件安装、打包、plugin:// 协议、商店
-│   │   ├── stats/           # 日活/使用统计上报（可关闭）
-│   │   ├── store/           # 全局配置存储与迁移
-│   │   └── workflow/        # 工作流宿主、权限体系、Worker 管理
-│   ├── preload/             # 预加载脚本（IPC 桥）
-│   └── renderer/            # 渲染进程
-│       └── src/
-│           ├── workflow/    # 节点生态（nodes/）、画布、字段渲染器
-│           ├── ai/          # AI 对话与工具调用
-│           ├── views/       # 浏览器 / 数据 / 元素集 / 设置 / 市场等页面
-│           └── components/  # 通用组件
-├── scripts/                 # deno 下载、worker 构建、原生依赖、冒烟测试
-├── build/                   # 应用图标、托盘图标、macOS entitlements
-└── resources/               # 运行时资源（deno / worker，打包产物）
-```
-
----
-
-## 开发与打包
-
-### 常用脚本
-
-| 命令 | 说明 |
-| --- | --- |
-| `npm run dev` | 开发模式（启动 Electron） |
-| `npm run build` | 仅构建（electron-vite build） |
-| `npm run fetch:deno` | 下载 Deno 运行时二进制到 `resources/deno` |
-| `npm run build:worker` | 构建工作流 Worker 资源 |
-| `npm run ensure:native` | 校验 / 修复原生依赖（sharp、sqlite3 等） |
-| `npm run test:worker` | Deno Worker 冒烟测试 |
-| `npm run lint` | ESLint 检查 |
-| `npm run format` | Prettier 格式化 |
-
-### 平台打包
-
-```bash
-npm run build:win      # Windows（NSIS）
-npm run build:mac      # macOS（DMG）
-npm run build:linux    # Linux（AppImage / snap / deb）
-npm run build:unpack   # 仅打目录（本地调试产物）
-```
-
----
-
-## 环境变量
-
-复制 `.env` 并按需修改：
-
-| 变量 | 说明 |
-| --- | --- |
-| `VITE_DEV_URL` | 开发环境 API 地址 |
-| `VITE_PROD_URL` | 生产环境 API 地址 |
-| `VITE_MARKET_URL` | 扩展市场嵌入地址 |
-| `VITE_DOWNLOAD_URL` | 更新下载跳转地址 |
-
----
-
-## 相关项目
-
-- **官网 & 后端（freerpa-website）**：官网首页、插件市场（扩展商店）、用户中心与服务端 API。
-  前往：[https://freerpa.cn](https://freerpa.cn)
-
----
-
-<div align="center">
-
-**FreeRPA（风影RPA）** · 用最省心的方式批量处理你的重复工作
-
-[官网](https://freerpa.cn)　·　[插件市场](https://freerpa.cn/plugins)　·　[更新日志](https://freerpa.cn/changelog)
+该仓库仅作为版本源码发布使用，不接受PR，如果想要成为开发者请联系作者
+service@freerpa.cn
 
 </div>

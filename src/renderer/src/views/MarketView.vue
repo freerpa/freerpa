@@ -15,11 +15,42 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { RiApps2Line } from '@remixicon/vue'
 
 // 扩展市场地址（.env 的 VITE_MARKET_URL；dev/prod 由 electron-vite 注入）
 const marketUrl = ref(import.meta.env.VITE_MARKET_URL || '')
+
+// 允许的嵌入来源（仅处理来自扩展市场源的消息，防止跨站伪造）
+let expectedOrigin = ''
+if (marketUrl.value) {
+  try {
+    expectedOrigin = new URL(marketUrl.value).origin
+  } catch {
+    expectedOrigin = ''
+  }
+}
+
+function openExternal(url) {
+  if (!url) return
+  if (window.electronAPI?.shell?.openExternal) {
+    window.electronAPI.shell.openExternal(url)
+  } else {
+    window.open(url, '_blank')
+  }
+}
+
+function onMessage(event) {
+  // 校验消息来源，仅接受扩展市场 iframe 发起的调用
+  if (expectedOrigin && event.origin !== expectedOrigin) return
+  const msg = event.data
+  if (msg && msg.type === 'frp:openExternal') {
+    openExternal(String(msg.url || ''))
+  }
+}
+
+onMounted(() => window.addEventListener('message', onMessage))
+onUnmounted(() => window.removeEventListener('message', onMessage))
 </script>
 
 <style scoped>
