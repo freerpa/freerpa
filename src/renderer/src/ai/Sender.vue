@@ -349,7 +349,7 @@
     .resource-picker {
       position: absolute;
       bottom: calc(100% + 8px);
-      left: 0;
+      right: 0;
       width: 240px;
       z-index: 100;
     }

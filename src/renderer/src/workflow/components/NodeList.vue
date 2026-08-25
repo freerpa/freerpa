@@ -103,7 +103,7 @@
     </div>
     <div v-if="activeTab === 'plugin'">
       <div v-if="filteredPlugins.length === 0" class="node-list">
-        <a-empty style="margin-top: 100px" description="暂无数据" />
+        <a-empty style="margin-top: 100px" description="暂无插件，【设置】-【插件管理】" />
       </div>
       <div v-else class="node-list">
         <a-scrollbar style="width: 100%; height: 400px; overflow: auto">
@@ -167,7 +167,6 @@
               <a-typography-text ellipsis style="margin: 0px">
                 {{ item.name }}
               </a-typography-text>
-              <a-tag size="small">{{ item.nodes_count }}个节点</a-tag>
             </div>
           </div>
           <a-typography-text class="workflow-item-description" :ellipsis="{ rows: 3 }" style="margin: 0px">

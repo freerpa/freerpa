@@ -9,7 +9,7 @@
           </a-button>
           <a-button @click="handleImportDev">
             <template #icon><icon-folder-add /></template>
-            导入开发插件
+            导入开发版插件
           </a-button>
           <a-button @click="refresh" :loading="loading">
             <template #icon><icon-refresh /></template>
@@ -31,7 +31,7 @@
 
       <!-- 已安装插件列表 -->
       <a-spin :loading="loading" style="width: 100%">
-        <div v-if="plugins.length === 0" class="empty-hint">暂无已安装插件，请点击「安装插件」或「导入开发插件」</div>
+        <div v-if="plugins.length === 0" class="empty-hint">暂无已安装插件，请点击「安装插件」或「导入开发版插件」</div>
         <div v-for="plg in plugins" :key="plg.identifier || plg.pluginId" class="plugin-card">
           <a-card size="small" :bordered="true">
             <template #title>

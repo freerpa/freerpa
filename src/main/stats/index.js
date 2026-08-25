@@ -72,6 +72,8 @@ async function reportUsage() {
   try {
     await postStats('/stats/usage', {
       device_id: deviceId,
+      platform: getPlatform(),
+      app_version: app.getVersion(),
       duration_seconds: duration,
       end_time: new Date().toISOString(),
     })
