@@ -13,7 +13,6 @@ import { register as dataRegisterIPC } from '../data'
 import { register as envRegisterIPC } from '../browser/ipc'
 import { register as storeRegisterIPC } from '../store/ipc'
 import { register as registerIPC } from '../ipc'
-import { register as cacheRegisterIPC } from '../cache/ipc'
 import { register as dbInfoRegisterIPC } from '../data/dbIpc'
 import { register as pluginRegisterIPC } from '../plugin/ipc'
 import { registerPluginScheme, registerPluginProtocol } from '../plugin/protocol'
@@ -104,7 +103,6 @@ export const bootstrap = async () => {
   dataRegisterIPC()
   envRegisterIPC()
   storeRegisterIPC()
-  cacheRegisterIPC()
   dbInfoRegisterIPC()
   pluginRegisterIPC()
   aiRegisterIPC()

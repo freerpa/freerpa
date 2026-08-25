@@ -2,10 +2,6 @@
   <div class="settings-center">
     <div class="nav-menu">
       <a-menu :selected-keys="[activeTab]" @menu-item-click="handleMenuClick">
-        <a-menu-item key="cache">
-          <template #icon><RiArchiveStackLine /></template>
-          缓存管理
-        </a-menu-item>
         <a-menu-item key="plugin">
           <template #icon><RiPlugLine /></template>
           插件管理
@@ -37,7 +33,6 @@
       </a-menu>
     </div>
     <div class="content">
-      <CacheManager v-if="activeTab === 'cache'" />
       <PluginManager v-if="activeTab === 'plugin'" />
       <PermissionManager v-if="activeTab === 'security'" />
       <DataManager v-if="activeTab === 'data'" />
@@ -55,7 +50,6 @@
 
   import { ref } from 'vue';
   import {
-    RiArchiveStackLine,
     RiPlugLine,
     RiShieldKeyholeLine,
     RiDatabase2Line,
@@ -64,7 +58,6 @@
     RiServerLine,
     RiInformationLine,
   } from '@remixicon/vue';
-  import CacheManager from './components/CacheManager.vue';
   import PluginManager from './components/PluginManager.vue';
   import PermissionManager from './components/PermissionManager.vue';
   import DataManager from './components/DataManager.vue';
@@ -81,7 +74,11 @@
     },
   });
 
-  const activeTab = ref(props.initialTab || 'cache');
+  const activeTab = ref(
+    ['plugin', 'ai', 'security', 'network', 'data', 'shortcut', 'version'].includes(props.initialTab)
+      ? props.initialTab
+      : 'plugin'
+  );
 
   const handleMenuClick = (key) => {
     activeTab.value = key;

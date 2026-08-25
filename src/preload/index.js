@@ -231,10 +231,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => ipcRenderer.removeListener('ai:chatError', listener)
     }
   },
-  cache: {
-    getSize: () => ipcRenderer.invoke('cache:getSize'),
-    clear: () => ipcRenderer.invoke('cache:clear')
-  },
   permissions: {
     getDefaults: () => ipcRenderer.invoke('permissions:getDefaults')
   },

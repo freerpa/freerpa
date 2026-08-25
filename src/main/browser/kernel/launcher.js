@@ -152,14 +152,44 @@ export const launchKernel = async (options = {}) => {
 }
 
 /**
- * 从后端获取可用内核列表
+ * 完整版本号数值比较；返回负值表示 a 比 b 新
+ * 例：'116.10.2' > '116.9.1'
+ */
+const compareVersions = (a, b) => {
+  const pa = String(a ?? '').split('.').map((n) => parseInt(n, 10) || 0)
+  const pb = String(b ?? '').split('.').map((n) => parseInt(n, 10) || 0)
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = pa[i] || 0
+    const nb = pb[i] || 0
+    if (na !== nb) return nb - na
+  }
+  return 0
+}
+
+/**
+ * 同一大版本只保留最新的一个：每次取到版本号字段更「新」的那条
+ */
+const keepLatestPerMajor = (list) => {
+  if (!Array.isArray(list) || list.length === 0) return list
+  const latest = new Map()
+  for (const k of list) {
+    const major = k.major_version || String(k.version || '').split('.')[0]
+    if (!latest.has(major) || compareVersions(k.version, latest.get(major).version) < 0) {
+      latest.set(major, k)
+    }
+  }
+  return Array.from(latest.values())
+}
+
+/**
+ * 从后端获取可用内核列表（同一大版本只保留最新一个）
  */
 export const fetchKernelList = async (baseUrl) => {
   try {
     const response = await fetch(`${baseUrl}/kernel/list?platform=${getPlatform()}`)
     const data = await response.json()
     if (data.code === 200) {
-      return data.data
+      return keepLatestPerMajor(data.data)
     }
     return []
   } catch (e) {
