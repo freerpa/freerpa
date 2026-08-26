@@ -45,7 +45,7 @@ export const autoConnect = async (
   if (
     sourceOutputs.length == 1 &&
     targetInputs.length == 1 &&
-    isTypeConnectable(sourceOutputs[0], targetInputs[0]) &&
+    isTypeConnectable(sourceOutputs[0].type, targetInputs[0].type) &&
     !specialDataTypes.includes(targetInputs[0].type)
   ) {
     const edge = createConnection({
