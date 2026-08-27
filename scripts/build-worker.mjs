@@ -231,11 +231,18 @@ try {
 
 /**
  * 实体化 node_modules：deno 布局顶层为符号链接（pkg -> .deno/pkg@ver/...），
- * 打包工具复制时会跳过符号链接导致依赖缺失；解引用为真实目录（含内部链接）
+ * 打包工具复制时会跳过符号链接导致依赖缺失；解引用为真实目录（含内部链接）。
+ *
+ * 注意：deno 节点的传递依赖是「同级目录」存放（.deno/<pkg>@<ver>/node_modules/<dep>），
+ * 仅解引用顶层符号链接会在实体化后丢失这些同级依赖（如 puppeteer-core → @puppeteer/browsers），
+ * 导致运行时 "Could not find package ..." 。这里把 .deno 里所有传递依赖也展开到顶层 node_modules，
+ * 使其可被 Node/deno 的逐级向上解析命中（近似 npm 扁平布局；缺失时优先取第一个版本）。
  */
 function materializeNodeModules(dir) {
   if (!fs.existsSync(dir)) return
+  // ① 顶层直接依赖符号链接 → 解引用为真实目录
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === '.deno') continue
     if (!entry.isSymbolicLink()) continue
     const link = path.join(dir, entry.name)
     const target = path.resolve(dir, fs.readlinkSync(link))
@@ -243,7 +250,47 @@ function materializeNodeModules(dir) {
     fs.rmSync(link, { force: true })
     fs.cpSync(target, link, { recursive: true, dereference: true })
   }
+
+  // ② 把 .deno 各缓存包里的传递依赖展开到顶层 node_modules
+  const denoDir = path.join(dir, '.deno')
+  if (fs.existsSync(denoDir)) {
+    let surfaced = 0
+    for (const host of fs.readdirSync(denoDir, { withFileTypes: true })) {
+      if (!host.isDirectory()) continue
+      const nm = path.join(denoDir, host.name, 'node_modules')
+      if (!fs.existsSync(nm)) continue
+      surfacePackages(nm, dir, (n) => { surfaced += n })
+    }
+    console.log(`✓ 展开 ${surfaced} 个传递依赖到 node_modules 顶层`)
+  }
+
   console.log('✓ node_modules 顶层符号链接已实体化')
+}
+
+/** 把 node_modules 目录下所有包（含 scoped 包）逐一补齐到顶层 rootNm（已存在则跳过） */
+function surfacePackages(nm, rootNm, onCount) {
+  for (const seg of fs.readdirSync(nm, { withFileTypes: true })) {
+    if (!seg.isDirectory() && !seg.isSymbolicLink()) continue
+    if (seg.name.startsWith('@')) {
+      // scoped 包：@scope/name
+      const scopeDir = path.join(nm, seg.name)
+      for (const sub of fs.readdirSync(scopeDir, { withFileTypes: true })) {
+        if (!sub.isDirectory() && !sub.isSymbolicLink()) continue
+        const rel = `${seg.name}/${sub.name}`
+        if (maybeSurface(path.join(scopeDir, sub.name), rootNm, rel)) onCount(1)
+      }
+    } else {
+      if (maybeSurface(path.join(nm, seg.name), rootNm, seg.name)) onCount(1)
+    }
+  }
+}
+
+/** 若根节点下不存在 rel 路径，则拷贝实体化；返回是否新增 */
+function maybeSurface(from, rootNm, rel) {
+  const dest = path.join(rootNm, rel)
+  if (fs.existsSync(dest)) return false
+  fs.cpSync(from, dest, { recursive: true, dereference: true })
+  return true
 }
 
 /** 查找 deno：resources/deno → PATH → 项目 node_modules/.bin */
