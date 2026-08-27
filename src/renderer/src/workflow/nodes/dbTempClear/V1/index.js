@@ -4,7 +4,7 @@
 import { IconEmpty } from '@arco-design/web-vue/es/icon'
 
 export default {
-  type: 'dataTempClear',
+  type: 'dbTempClear',
   name: '清空暂存',
   icon: IconEmpty,
   description: '清空暂存',

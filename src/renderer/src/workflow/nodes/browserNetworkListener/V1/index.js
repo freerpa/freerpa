@@ -30,7 +30,7 @@ const rules = {
     {
       id: 'type',
       name: '匹配方式',
-      type: 'radio',
+      type: 'select',
       options: [
         { label: '存在', value: 'exists' },
         { label: '等于', value: 'eq' },

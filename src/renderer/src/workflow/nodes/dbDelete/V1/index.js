@@ -4,7 +4,7 @@
 import { IconDelete } from '@arco-design/web-vue/es/icon'
 
 export default {
-  type: 'dataDelete',
+  type: 'dbDelete',
   name: '数据删除',
   icon: IconDelete,
   description: '删除数据表中的数据',

@@ -17,6 +17,7 @@
         >
           <div class="drawer-content scrollbar">
             <FieldRenderer
+              layout="vertical"
               :model-value="nodeConfig"
               @update:model-value="onConfigChange"
               :fields="group.fields"
@@ -72,7 +73,7 @@ const onConfigChange = (value) => {
   top: 30px;
   left: 20px;
   bottom: 80px;
-  width: 360px;
+  width: 400px;
   background: var(--color-bg-2);
   border-radius: var(--border-radius-small);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);

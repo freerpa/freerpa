@@ -4,7 +4,7 @@
 import { IconEdit } from '@arco-design/web-vue/es/icon'
 
 export default {
-  type: 'dataUpdate',
+  type: 'dbUpdate',
   name: '数据修改',
   icon: IconEdit,
   description: '修改数据表中的数据',

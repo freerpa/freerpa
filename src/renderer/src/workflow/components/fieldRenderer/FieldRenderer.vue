@@ -4,10 +4,10 @@
     :model="formData"
     :rules="formRules"
     @submit="handleSubmit"
-    layout="horizontal"
+    :layout="layout"
     auto-label-width
     :disabled="isExecuting && !allowExecutingEdit"
-    size="mini"
+    :size="layout === 'horizontal' ? 'mini' : 'small'"
   >
     <template
       v-for="field in expFields.filter((f) => (f.onlyQuick && isQuickConfig) || !f.onlyQuick)"
@@ -108,6 +108,10 @@ const props = defineProps({
   isQuickConfig: {
     type: Boolean,
     default: false
+  },
+  layout: {
+    type: String,
+    default: 'horizontal'
   }
 })
 
@@ -240,9 +244,9 @@ defineExpose({
   &:last-child {
     margin-bottom: 0;
   }
-  .label {
-    height: 24px;
-  }
+  // .label {
+  //   height: 24px;
+  // }
   .param-ref {
     cursor: pointer;
     // position: absolute;
@@ -278,5 +282,13 @@ defineExpose({
 }
 :deep(.arco-form-item-label-col) {
   padding-right: 2px;
+}
+:deep(.arco-form-item-layout-vertical>.arco-form-item-label-col){
+  margin-bottom: 0px;
+  // margin-top: 8px;
+  // font-weight: bold;
+}
+.arco-form-layout-vertical > .arco-form-item{
+  margin-bottom: 8px;
 }
 </style>

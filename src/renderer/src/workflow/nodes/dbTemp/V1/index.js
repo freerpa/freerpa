@@ -4,7 +4,7 @@
 import { IconStorage } from '@arco-design/web-vue/es/icon'
 
 export default {
-  type: 'dataTemp',
+  type: 'dbTemp',
   name: '数据暂存',
   icon: IconStorage,
   description: '将数据暂存到暂存器中，以数组形式输出，如果需要清空暂存器，请使用清空暂存节点',

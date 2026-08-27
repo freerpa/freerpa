@@ -4,7 +4,7 @@
 import { IconSave } from '@arco-design/web-vue/es/icon'
 
 export default {
-  type: 'dataSave',
+  type: 'dbSave',
   name: '数据保存',
   icon: IconSave,
   description: '保存数据到数据表',

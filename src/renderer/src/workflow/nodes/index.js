@@ -81,7 +81,7 @@ export const categories = {
   },
   data: {
     name: '数据存储',
-    nodes: resolveNodes('dataSave', 'dataRead', 'dataDelete', 'dataUpdate', 'dataTemp', 'dataTempClear', 'dbConnect', 'dbExecute')
+    nodes: resolveNodes('dbSave', 'dbRead', 'dbDelete', 'dbUpdate', 'dbTemp', 'dbTempClear', 'dbConnect', 'dbExecute')
   },
   network: {
     name: '网络操作',

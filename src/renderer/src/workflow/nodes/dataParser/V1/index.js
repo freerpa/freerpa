@@ -6,7 +6,7 @@ import { format } from '../../common'
 
 export default {
   type: 'dataParser',
-  name: '数据解析',
+  name: '解析数据',
   icon: IconSwap,
   description: '数据解析节点，根据规则按数据路径提取并转换数据字段，支持格式化输出',
   view: false,

@@ -254,6 +254,7 @@ function handleSelect(paramText) {
       border-bottom-left-radius: 0px;
     }
   }
+  
   :deep(.arco-textarea) {
     resize: none;
     font-size: 12px;

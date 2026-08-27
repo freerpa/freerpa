@@ -8,7 +8,7 @@ const execute = async (node, context) => {
 
   
   if (typeof inputs.tempStore !== 'function') {
-    throw new Error('请先连接数据暂存节点（dataTemp）')
+    throw new Error('请先连接数据暂存节点（dbTemp）')
   }
   inputs.tempStore()
   complete()

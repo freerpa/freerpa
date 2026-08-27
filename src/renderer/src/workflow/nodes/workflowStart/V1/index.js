@@ -21,7 +21,6 @@ export default {
         {
           id: 'params',
           name: '输入项',
-          nolabel: true,
           type: 'array',
           description: '设置开始时的参数',
           default: [],
@@ -36,7 +35,6 @@ export default {
         {
           id: 'config',
           name: '配置项',
-          nolabel: true,
           type: 'array',
           description: '设置配置项',
           default: [],
