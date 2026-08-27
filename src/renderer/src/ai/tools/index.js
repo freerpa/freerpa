@@ -45,10 +45,6 @@ const TOOL_LABELS = {
   openBrowser: '打开浏览器',
   closeBrowser: '关闭浏览器',
   getAllBrowserStatus: '查看浏览器状态',
-  getKernelList: '查看内核列表',
-  getMajorVersionList: '查看内核版本',
-  checkKernel: '检查内核',
-  downloadKernel: '下载内核',
   // 数据表
   listTables: '查看数据表列表',
   getTable: '查看数据表',

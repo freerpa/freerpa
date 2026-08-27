@@ -2,15 +2,14 @@
  * @file: fingerprint-chromium 内核启动器
  * @author: FreeRPA
  *
- * 负责：启动 fingerprint-chromium 进程，CDP 连接
+ * 负责：启动随包内置的 fingerprint-chromium 进程，CDP 连接
  */
 
 import { app, dialog } from 'electron'
 import { spawn } from 'child_process'
 import path from 'path'
-import fs from 'fs-extra'
 import { v4 as uuidv4 } from 'uuid'
-import { getKernelBinaryPath, getPlatform, stripKernelQuarantine } from './downloader'
+import { getBundledKernelBinaryPath, getPlatform, stripKernelQuarantine } from './paths'
 
 // CDP 端口范围
 const CDP_PORT_START = 19222
@@ -79,12 +78,11 @@ const showMacAuthorizeDialog = (kernelDir) => {
 }
 
 /**
- * 启动 fingerprint-chromium 内核
+ * 启动随包内置的 fingerprint-chromium 内核
  */
 export const launchKernel = async (options = {}) => {
   const {
     platform = getPlatform(),
-    version,
     proxy = '',
     fingerprintSeed = Math.floor(Math.random() * 100000),
     headless = false,
@@ -94,12 +92,13 @@ export const launchKernel = async (options = {}) => {
     timezone = '',
   } = options
 
-  if (!version) throw new Error('必须指定内核版本')
+  // 内核随包分发，直接定位内置二进制
+  const binaryPath = getBundledKernelBinaryPath()
+  if (!binaryPath) {
+    throw new Error(`未找到随包内置内核（${platform}），请确认客户端安装完整`)
+  }
 
-  const binaryPath = getKernelBinaryPath(platform, version)
-  if (!fs.existsSync(binaryPath)) throw new Error(`内核不存在: ${platform}/${version}，请先下载`)
-
-  // macOS：启动前再次移除隔离属性，避免 Gatekeeper 拦截未签名内核
+  // macOS：启动前移除隔离属性，避免 Gatekeeper 拦截未签名内核
   if (platform === 'macos') {
     try { await stripKernelQuarantine(path.dirname(binaryPath)) } catch (e) { console.error('移除内核隔离属性失败:', e?.message || e) }
   }
@@ -149,68 +148,4 @@ export const launchKernel = async (options = {}) => {
   const wsEndpoint = await waitForCdpReady(cdpPort, 30000)
 
   return { process: childProcess, port: cdpPort, wsEndpoint, id, userDataDir }
-}
-
-/**
- * 完整版本号数值比较；返回负值表示 a 比 b 新
- * 例：'116.10.2' > '116.9.1'
- */
-const compareVersions = (a, b) => {
-  const pa = String(a ?? '').split('.').map((n) => parseInt(n, 10) || 0)
-  const pb = String(b ?? '').split('.').map((n) => parseInt(n, 10) || 0)
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const na = pa[i] || 0
-    const nb = pb[i] || 0
-    if (na !== nb) return nb - na
-  }
-  return 0
-}
-
-/**
- * 同一大版本只保留最新的一个：每次取到版本号字段更「新」的那条
- */
-const keepLatestPerMajor = (list) => {
-  if (!Array.isArray(list) || list.length === 0) return list
-  const latest = new Map()
-  for (const k of list) {
-    const major = k.major_version || String(k.version || '').split('.')[0]
-    if (!latest.has(major) || compareVersions(k.version, latest.get(major).version) < 0) {
-      latest.set(major, k)
-    }
-  }
-  return Array.from(latest.values())
-}
-
-/**
- * 从后端获取可用内核列表（同一大版本只保留最新一个）
- */
-export const fetchKernelList = async (baseUrl) => {
-  try {
-    const response = await fetch(`${baseUrl}/kernel/list?platform=${getPlatform()}`)
-    const data = await response.json()
-    if (data.code === 200) {
-      return keepLatestPerMajor(data.data)
-    }
-    return []
-  } catch (e) {
-    console.error('获取内核列表失败:', e)
-    return []
-  }
-}
-
-/**
- * 通过主版本号解析完整内核版本
- */
-export const resolveKernelVersion = async (baseUrl, majorVersion, platform) => {
-  try {
-    const response = await fetch(`${baseUrl}/kernel/resolveVersion?major_version=${majorVersion}&platform=${platform}`)
-    const data = await response.json()
-    if (data.code === 200 && data.data) {
-      return data.data  // { platform, version, download_url }
-    }
-    return null
-  } catch (e) {
-    console.error('解析内核版本失败:', e)
-    return null
-  }
 }

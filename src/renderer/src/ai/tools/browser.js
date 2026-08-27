@@ -26,7 +26,7 @@ export const createBrowserTools = () => [
     function: {
       name: 'createBrowser',
       description:
-        '创建浏览器环境（浏览器管理中的实例，搭建工作流需要浏览器时先创建再 openBrowser）。kernel_id 为本机可用内核大版本（不填自动取首个可用）。',
+        '创建浏览器环境（浏览器管理中的实例，搭建工作流需要浏览器时先创建再 openBrowser）。浏览器内核已随客户端内置分发，无需指定内核版本。',
       strict: true,
       parameters: {
         type: 'object',
@@ -34,7 +34,6 @@ export const createBrowserTools = () => [
           name: { type: 'string', description: '浏览器环境名称' },
           description: { type: 'string', description: '描述', default: '' },
           category_id: { type: 'string', description: '所属分类ID（可选，默认不分类）', default: '' },
-          kernel_id: { type: 'string', description: '内核大版本号（如 "130"，用 getMajorVersionList 查询），可选' },
           proxy_url: { type: 'string', description: '代理地址，可选' }
         },
         required: ['name'],
@@ -46,21 +45,12 @@ export const createBrowserTools = () => [
     type: 'function',
     function: {
       name: 'openBrowser',
-      description:
-        '打开一个浏览器环境（复用已存在环境或创建新会话）。kernel 必填：{platform: windows/macos/linux, version: 完整版本号}，先用 getKernelList 查询已安装内核后原样传入。',
+      description: '打开一个浏览器环境（复用已存在环境或创建新会话）。',
       strict: true,
       parameters: {
         type: 'object',
         properties: {
           envId: { type: 'string', description: '浏览器环境ID（复用已有环境会话目录）' },
-          kernel: {
-            type: 'object',
-            description: '浏览器内核信息（必填；platform 为 windows/macos/linux，version 为完整版本号，如 130.0.6723.118，先用 getKernelList 查询）',
-            properties: {
-              platform: { type: 'string', description: '系统平台：windows/macos/linux' },
-              version: { type: 'string', description: '内核完整版本号' }
-            }
-          },
           proxy: { type: 'string', description: '代理地址，可选' },
           fingerprint: {
             type: 'object',
@@ -68,7 +58,7 @@ export const createBrowserTools = () => [
             properties: { seed: { type: 'string' } }
           }
         },
-        required: ['envId', 'kernel'],
+        required: ['envId'],
         additionalProperties: false
       }
     }
@@ -95,101 +85,20 @@ export const createBrowserTools = () => [
       strict: true,
       parameters: { type: 'object', properties: {}, additionalProperties: false }
     }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'getKernelList',
-      description: '获取已安装的浏览器内核列表（platform 为 windows/macos/linux，version 为完整版本号）。',
-      strict: true,
-      parameters: { type: 'object', properties: {}, additionalProperties: false }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'getMajorVersionList',
-      description: '获取本机可用的浏览器内核大版本列表（如 ["130","131"]），创建浏览器环境填 kernel_id 时用。',
-      strict: true,
-      parameters: { type: 'object', properties: {}, additionalProperties: false }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'checkKernel',
-      description: '检查指定浏览器内核是否已安装。',
-      strict: true,
-      parameters: {
-        type: 'object',
-        properties: {
-          platform: { type: 'string', description: '系统平台：windows/macos/linux（与内核下载平台一致）' },
-          version: { type: 'string', description: '内核大版本号，如 130' }
-        },
-        required: ['platform', 'version'],
-        additionalProperties: false
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'downloadKernel',
-      description: '下载指定浏览器内核（下载进度会通知到界面）。',
-      strict: true,
-      parameters: {
-        type: 'object',
-        properties: {
-          platform: { type: 'string', description: '系统平台：windows/macos/linux（与内核下载平台一致）' },
-          version: { type: 'string', description: '内核大版本号，如 130' }
-        },
-        required: ['platform', 'version'],
-        additionalProperties: false
-      }
-    }
   }
 ]
 
 export const createBrowserExecutors = () => ({
   createBrowser: async (args) => {
-    const { name, description = '', kernel_id = '', category_id = '', proxy_url = '' } = args || {}
+    const { name, description = '', category_id = '', proxy_url = '' } = args || {}
     assertArgs(args, ['name'])
     const browserLocal = window.electronAPI.browserLocal
-    // 内核版本：缺省自动取本机可用大版本首个（防止空值走默认）；显式指定时校验有效性（防止臆造版本号）
-    let kernelId = kernel_id
-    try {
-      const raw = await env().getMajorVersionList()
-      // majorList 返回对象数组（{ major_version, label }），提取版本号；兼容纯字符串数组
-      const list = (Array.isArray(raw?.data) ? raw.data : Array.isArray(raw) ? raw : [])
-        .map((item) => (typeof item === 'string' ? item : String(item?.major_version ?? '')))
-        .filter(Boolean)
-      if (list.length > 0) {
-        if (!kernelId) {
-          kernelId = list[0]
-        } else if (!list.includes(String(kernelId))) {
-          throw new Error(`内核版本 ${kernelId} 不可用，本机可用大版本：${list.join('、')}，请选择其一`)
-        }
-      }
-    } catch (error) {
-      if (error?.message?.includes('不可用')) throw error // 校验失败明确抛出（含可用列表）
-      // 拉取列表失败（IPC 异常）静默，交给主进程默认处理
-    }
-    return toText(await browserLocal.createBrowser({ name, description, kernel_id: kernelId, category_id, proxy_url }))
+    return toText(await browserLocal.createBrowser({ name, description, category_id, proxy_url }))
   },
   openBrowser: async (args) => toText(await env().openBrowser(args || {})),
   closeBrowser: async (args) => {
     assertArgs(args, ['envId'])
     return toText(await env().closeBrowser({ envId: args.envId }))
   },
-  getAllBrowserStatus: async () => toText(await env().getAllBrowserStatus()),
-  getKernelList: async () => toText(await env().getKernelList()),
-  getMajorVersionList: async () => toText(await env().getMajorVersionList()),
-  checkKernel: async (args) => {
-    assertArgs(args, ['platform', 'version'])
-    return toText(await env().checkKernel({ platform: args.platform, version: args.version }))
-  },
-  downloadKernel: async (args) => {
-    assertArgs(args, ['platform', 'version'])
-    return toText(await env().downloadKernel({ platform: args.platform, version: args.version }))
-  }
+  getAllBrowserStatus: async () => toText(await env().getAllBrowserStatus())
 })

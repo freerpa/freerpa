@@ -83,21 +83,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 浏览器管理模块API
   env: {
-    // 内核管理
-    getKernelList: () => ipcRenderer.invoke('env:getKernelList'),
-    getMajorVersionList: () => ipcRenderer.invoke('env:getMajorVersionList'),
-    checkKernel: (params) => ipcRenderer.invoke('env:checkKernel', params),
-    downloadKernel: (kernel) => ipcRenderer.invoke('env:downloadKernel', kernel),
     openBrowser: (params) => ipcRenderer.invoke('env:openBrowser', params),
     closeBrowser: (params) => ipcRenderer.invoke('env:closeBrowser', params),
     getAllBrowserStatus: () => ipcRenderer.invoke('env:getAllBrowserStatus'),
-    resolveKernelVersion: (params) => ipcRenderer.invoke('env:resolveKernelVersion', params),
     // 事件监听
-    onDownloadKernelProgress: (callback) => {
-      const listener = (event, params) => callback(params)
-      ipcRenderer.on('env:downloadKernelProgress', listener)
-      return () => ipcRenderer.removeListener('env:downloadKernelProgress', listener)
-    },
     onBrowserOpened: (callback) => {
       const listener = (event, params) => callback(params)
       ipcRenderer.on('env:browserOpened', listener)

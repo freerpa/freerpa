@@ -33,22 +33,6 @@
           show-word-limit
         />
       </a-form-item>
-      <!-- 内核（大版本） -->
-      <a-form-item field="major_version" label="内核">
-        <a-select
-          v-model="form.major_version"
-          placeholder="请选择内核版本"
-          allow-clear
-          :loading="kernelLoading"
-        >
-          <a-option
-            v-for="k in kernelList"
-            :key="k.major_version"
-            :value="k.major_version"
-            :label="k.label"
-          />
-        </a-select>
-      </a-form-item>
       <!-- 代理地址 -->
       <a-form-item field="proxy_url" label="代理">
         <template #extra>
@@ -139,51 +123,13 @@ const form = ref({
   name: '',
   description: '',
   category: '',
-  major_version: '',
   proxy_protocol: 'direct',
   proxy_url: ''
 })
 
-// 内核列表
-const kernelList = ref([])
-const kernelLoading = ref(false)
-
 // 代理检测
 const proxyChecking = ref(false)
 const proxyResult = ref(null)
-
-// 获取大版本列表
-const fetchKernelList = async () => {
-  kernelLoading.value = true
-  try {
-    const envAPI = window.electronAPI.env
-    const res = await envAPI.getMajorVersionList()
-    if (res.code === 200 && res.data && res.data.length > 0) {
-      kernelList.value = res.data
-      return
-    }
-    // 降级：从 flat 列表中提取大版本
-    console.warn('majorList 为空，尝试从 flat list 提取')
-    const flatRes = await envAPI.getKernelList()
-    if (flatRes.code === 200 && flatRes.data) {
-      const seen = {}
-      flatRes.data.forEach((k) => {
-        const mv = k.major_version || (k.version || '').split('.')[0]
-        if (mv && !seen[mv]) {
-          seen[mv] = true
-          kernelList.value.push({ major_version: mv, label: 'Chrome ' + mv })
-        }
-      })
-      kernelList.value.sort((a, b) =>
-        b.major_version.localeCompare(a.major_version, undefined, { numeric: true })
-      )
-    }
-  } catch (e) {
-    console.warn('获取内核版本列表失败:', e)
-  } finally {
-    kernelLoading.value = false
-  }
-}
 
 // 协议切换时清理 proxy_url 中的旧协议前缀，直连时清空地址
 const handleProtocolChange = () => {
@@ -268,7 +214,7 @@ const handleSubmit = async () => {
       name: form.value.name,
       description: form.value.description,
       category_id: form.value.category,
-      kernel_id: form.value.major_version,
+      kernel_id: '',
       proxy_url: proxyUrl,
       config: { proxy_direct: isDirect.value }
     }
@@ -293,7 +239,6 @@ const handleCancel = () => {
     name: '',
     description: '',
     category: '',
-    major_version: '',
     proxy_protocol: 'http://',
     proxy_url: ''
   }
@@ -317,7 +262,6 @@ const fetchBrowserDetail = async (id) => {
           name: result.name,
           description: result.description || '',
           category: result.category_id || '',
-          major_version: result.kernel_id || '',
           proxy_protocol: 'direct',
           proxy_url: ''
         }
@@ -336,7 +280,6 @@ const fetchBrowserDetail = async (id) => {
           name: result.name,
           description: result.description || '',
           category: result.category_id || '',
-          major_version: result.kernel_id || '',
           proxy_protocol: proxyProtocol,
           proxy_url: proxyUrl
         }
@@ -349,7 +292,6 @@ const fetchBrowserDetail = async (id) => {
 
 onMounted(async () => {
   await nextTick()
-  await fetchKernelList()
   if (props.envId) {
     await fetchBrowserDetail(props.envId)
   }

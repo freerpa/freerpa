@@ -73,14 +73,12 @@ async function doLaunch(env, options) {
 
   return launchEnvBrowser({
     envId: env?.id,
-    majorVersion: env?.kernel_id,
     proxy,
     fingerprintSeed: env?.fingerprint?.seed,
     headless,
     timezone: env?.timezone || '',
     lang: 'en-US',
-    extraArgs,
-    autoDownload: true
+    extraArgs
   })
 }
 
