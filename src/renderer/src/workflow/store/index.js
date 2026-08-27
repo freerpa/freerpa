@@ -192,10 +192,11 @@ export const useFlowStore = (id) =>
           second: '2-digit'
         }),
       })
-      // 显示系统通知
+      // 显示系统通知（用跨平台 body 承载正文；subtitle 仅 macOS 次标题，保留作为补充）
       window.electronAPI.system.showNotification({
         id: id,
-        title: '工作流通知',
+        title: (data.title && data.title !== '工作流通知') ? data.title : '工作流通知',
+        body: data.content,
         subtitle: data.content,
         silent: playAudio.value ? false : true,
         sound: 'system',

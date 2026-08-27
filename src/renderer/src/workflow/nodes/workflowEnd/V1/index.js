@@ -28,7 +28,6 @@ export default {
         {
           id: 'params',
           name: '输出项',
-          nolabel: true,
           type: 'array',
           description: '设置结束时的输出',
           fields: createDynamicFields()

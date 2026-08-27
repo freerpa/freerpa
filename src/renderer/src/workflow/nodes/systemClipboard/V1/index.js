@@ -5,7 +5,7 @@ import { IO_FIELD_MAP_STANDARD } from '../../../io-conventions.js'
 import { IconPaste } from '@arco-design/web-vue/es/icon'
 
 export default {
-  type: 'dataClipboard',
+  type: 'systemClipboard',
   name: '系统剪贴板',
   icon: IconPaste,
   description: '读取或设置系统剪贴板内容',

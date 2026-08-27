@@ -6,10 +6,11 @@ const execute = async (node, context) => {
   const { complete, sendToRenderer } = context
 
   
-  const { content, type } = config
+  const { content, type, title } = config
   sendToRenderer(`flowEventBus:onNotice:${context.flowId}`, {
     nodeId: node.id,
     type,
+    title,
     content,
   })
   complete()
