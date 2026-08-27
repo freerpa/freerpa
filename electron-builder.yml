@@ -38,9 +38,9 @@ extraResources:
   # macOS 专属托盘图标
   - from: build/tray-mac.png
     to: tray-mac.png
-  # 内置浏览器内核（随包分发，启动时直接使用，无需下载）
+  # 内置浏览器内核（随包分发至 resources/browser，启动时直接使用，无需下载）
   - from: browser
-    to: kernel
+    to: browser
     filter:
       - '!**/.DS_Store'
 win:

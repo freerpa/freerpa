@@ -11,4 +11,4 @@ resources/deno
 resources/worker
 deno.lock
 doc
-browser
+browser/
