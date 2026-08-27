@@ -29,7 +29,7 @@ export const getPlatform = () => {
  * 获取内置内核的可执行文件相对路径（平台相关）
  */
 export const getKernelBinaryRelative = (platform) => {
-  if (platform === 'windows') return 'chrome.exe'
+  if (platform === 'windows') return 'Chromium/chrome.exe'
   if (platform === 'macos') return 'Chromium.app/Contents/MacOS/Chromium'
   return 'chrome'
 }
