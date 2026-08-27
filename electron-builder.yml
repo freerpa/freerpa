@@ -38,13 +38,14 @@ extraResources:
   # macOS 专属托盘图标
   - from: build/tray-mac.png
     to: tray-mac.png
-  # 内置浏览器内核（随包分发至 resources/browser，启动时直接使用，无需下载）
-  - from: browser
-    to: browser
-    filter:
-      - '!**/.DS_Store'
 win:
   executableName: FreeRPA
+  # 内置浏览器内核：仅打包当前平台（resources/browser/win），随包分发无需下载
+  extraResources:
+    - from: browser/win32
+      to: browser/win32
+      filter:
+        - '!**/.DS_Store'
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
@@ -54,6 +55,12 @@ nsis:
   createDesktopShortcut: always
 mac:
   entitlementsInherit: build/entitlements.mac.plist
+  # 内置浏览器内核：仅打包当前平台（resources/browser/darwin），随包分发无需下载
+  extraResources:
+    - from: browser/darwin
+      to: browser/darwin
+      filter:
+        - '!**/.DS_Store'
   extendInfo:
     - NSCameraUsageDescription: Application requests access to the device's camera.
     - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
@@ -69,6 +76,12 @@ linux:
     - deb
   maintainer: electronjs.org
   category: Utility
+  # 内置浏览器内核：仅打包当前平台（resources/browser/linux），随包分发无需下载
+  extraResources:
+    - from: browser/linux
+      to: browser/linux
+      filter:
+        - '!**/.DS_Store'
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
