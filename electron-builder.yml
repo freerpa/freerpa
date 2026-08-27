@@ -7,6 +7,11 @@ files:
   - '!src/*'
   - '!scripts/**'
   - '!resources/**'
+  # 浏览器内核只经 extraResources 按平台单独分发，避免重复打进 asar 导致包体膨胀
+  - '!browser/**'
+  - '!doc/**'
+  - '!.trae/**'
+  - '!.reasonix/**'
   - '!electron.*{js,ts,mjs,cjs}'
   - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md,README.en.md,eslint.config.mjs,reasonix.toml,.editorconfig,.DS_Store}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml,deno.lock,yarn.lock}'

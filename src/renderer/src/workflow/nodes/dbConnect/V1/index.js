@@ -7,7 +7,7 @@ export default {
   type: 'dbConnect',
   name: '连接数据库',
   icon: RiDatabase2Line,
-  description: '连接外部数据库，支持 MySQL、PostgreSQL、SQL Server、SQLite',
+  description: '连接外部数据库，支持 MySQL、PostgreSQL、SQLite',
   view: false,
   config: [
     {
@@ -22,14 +22,13 @@ export default {
           options: [
             { label: 'MySQL / MariaDB', value: 'mysql' },
             { label: 'PostgreSQL', value: 'postgres' },
-            { label: 'SQL Server', value: 'mssql' },
             { label: 'SQLite', value: 'sqlite' }
           ],
           default: 'mysql',
           description: '要连接的数据库类型',
           onChange: (value, formData) => {
             // 切换类型时按默认端口回填（仅当端口未手动填写）
-            const defaults = { mysql: 3306, postgres: 5432, mssql: 1433, sqlite: null }
+            const defaults = { mysql: 3306, postgres: 5432, sqlite: null }
             if (!formData.port && defaults[value]) {
               formData.port = defaults[value]
             }
@@ -51,7 +50,7 @@ export default {
           name: '端口',
           type: 'number',
           show: '${dbType} !== "sqlite"',
-          description: '数据库端口（MySQL 默认 3306，PostgreSQL 5432，SQL Server 1433），留空使用默认端口',
+          description: '数据库端口（MySQL 默认 3306，PostgreSQL 5432），留空使用默认端口',
           quickConfig: true
         },
         {

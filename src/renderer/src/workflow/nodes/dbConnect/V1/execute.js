@@ -1,6 +1,6 @@
 /**
  * @file: 连接数据库节点执行器
- * @description: 经主进程 RPC 建立外部数据库连接（MySQL/PostgreSQL/SQL Server/SQLite）。
+ * @description: 经主进程 RPC 建立外部数据库连接（MySQL/PostgreSQL/SQLite）。
  * 连接由主进程 knex 管理并按工作流归属，终态自动关闭；worker 仅透传配置。
  */
 import { dbConnect } from '@dataModule'
