@@ -1,4 +1,2 @@
-import { cloneDeep } from 'lodash-es'
-export const deepClone = (obj) => {
-  return cloneDeep(obj)
-}
+// 深拷贝：直接复用 lodash cloneDeep（避免自定义包装层）
+export { cloneDeep as deepClone } from 'lodash-es'

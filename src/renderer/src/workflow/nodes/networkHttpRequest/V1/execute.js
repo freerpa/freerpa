@@ -143,12 +143,6 @@ const execute = async ({ config }, context) => {
     }
   }
 
-  // 处理json类型的body
-  // if (finalHeaders['Content-Type'].includes('json') && typeof finalBody === 'string') {
-  //   console.error('finalBody',finalBody);
-  //   finalBody = JSON.stringify(JSON.parse(finalBody))
-  // }
-
   // 处理不同请求方法的body
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(finalMethod) && finalBody) {
     axiosConfig.data = finalBody

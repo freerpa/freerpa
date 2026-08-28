@@ -175,7 +175,7 @@ const {
 const { validateConnection, createConnection } = new ConnectionRules(workflowId)
 
 // ── 节点增删改查与剪贴板（提取至 useNodeCrud） ───────
-const { addStartNode, addNode, handleNodeAction, handleNodeDelete, isOverNodeLimit } = useNodeCrud({
+const { addStartNode, addNode, handleNodeAction, handleNodeDelete } = useNodeCrud({
   vueFlowRef,
   isExecuting,
   clipboard,
@@ -329,8 +329,7 @@ defineExpose({
   addNode,
   handleNodeCopy,
   handleNodePaste,
-  handleNodeDelete,
-  isOverNodeLimit
+  handleNodeDelete
 })
 
 // 组件卸载时清理

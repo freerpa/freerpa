@@ -1,24 +1,10 @@
 /**
- * @file: 权限数据共享工具（渲染端）— 默认值与规范化，与主进程 workflow/permissions.js 保持一致
+ * @file: 权限数据共享工具（渲染端）— 默认值与规范化，与主进程共享常量（src/shared/permissions-constants.js）
  */
+import { INFRA_ENV, PERMISSIONS_DEFAULTS } from '../../../shared/permissions-constants.js'
 
-// 基础设施环境变量白名单（node 兼容层模块加载期必需；主进程 buildDenoPermissions 强制附加，UI 展示为禁删项）
-export const INFRA_ENV = [
-  'GRACEFUL_FS_PLATFORM', 'TEST_GRACEFUL_FS_GLOBAL_PATCH', 'READABLE_STREAM',
-  'BLUEBIRD_DEBUG', 'BLUEBIRD_LONG_STACK_TRACES', 'BLUEBIRD_WARNINGS', 'BLUEBIRD_W_FORGOTTEN_RETURN',
-  'WS_NO_BUFFER_UTIL', 'WS_NO_UTF_8_VALIDATE',
-  'NODE_ENV', 'NODE_DEBUG', 'HOME', 'USERPROFILE', 'TMPDIR', 'TEMP', 'TMP', 'PATH', 'LANG'
-]
-
-export const DEFAULTS = () => ({
-  io: { roots: [] },
-  network: { mode: 'allow-all', rules: [] },
-  process: { enabled: false, commands: [] },
-  env: { allow: [...INFRA_ENV] },
-  sys: { allow: ['umask'] },
-  ffi: { enabled: false, paths: [] },
-  import: { enabled: true, hosts: [] }
-})
+export const DEFAULTS = PERMISSIONS_DEFAULTS
+export { INFRA_ENV }
 
 /** 将任意存储值规范化为完整权限结构（缺失/损坏字段补默认） */
 export const normalizePermissions = (saved) => {

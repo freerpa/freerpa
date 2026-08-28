@@ -98,6 +98,38 @@ const getColumnType = (field) => {
   }
 }
 
+// ═══════════ 模型字段解析缓存 ═══════════
+// 消除 createModelData/updateModelData/deleteModelData/clearModelData/batchCreateModelData 的重复样板
+// （每处都是 db.get('SELECT * FROM models') + JSON.parse(model.fields)）。
+// 缓存以 db 实例为键（db 为应用共享单例，Map 不会随连接重建而泄漏——重建时 initDatabase 返回新实例即可自然隔离），
+// 模型结构变更（update/permanentDelete）时按 modelId 失效。
+const fieldsCache = new Map()
+
+/** 读取并解析模型字段（带缓存）；模型不存在抛错 */
+const getModelFields = async (db, modelId) => {
+  const cache = fieldsCache.get(db)
+  if (cache?.has(modelId)) return cache.get(modelId)
+  const model = await db.get('SELECT * FROM models WHERE id = ?', modelId)
+  if (!model) throw new Error('模型不存在')
+  const fields = JSON.parse(model.fields)
+  let entry = fieldsCache.get(db)
+  if (!entry) {
+    entry = new Map()
+    fieldsCache.set(db, entry)
+  }
+  entry.set(modelId, fields)
+  return fields
+}
+
+/** 模型结构变更后失效对应缓存 */
+const invalidateModelFields = (modelId) => {
+  for (const cache of fieldsCache.values()) cache.delete(modelId)
+}
+
+/** 字段数组 → { name: field } 索引（消除 batchCreate/update 内层线性 find） */
+const indexFieldsByName = (fields) => new Map(fields.map((f) => [f.name, f]))
+
+
 // 创建模型
 export const createModel = ({ name, description, category_id, fields }) =>
   withDb('models', ensureModelsTable, async (db) => {
@@ -164,6 +196,8 @@ export const updateModel = ({ id, name, description, category_id, fields }) =>
       await db.run('ROLLBACK')
       throw error
     }
+    // 字段结构已更新：失效该模型的字段解析缓存
+    invalidateModelFields(id)
   })
 
 // 删除模型（软删除/回收站/恢复：通用八件套，复用 crudFactory）
@@ -176,6 +210,7 @@ export const permanentDeleteModel = (id) =>
   withDb('models', ensureModelsTable, async (db) => {
     await db.run(`DROP TABLE IF EXISTS model_data_${id}`)
     await db.run('DELETE FROM models WHERE id = ?', id)
+    invalidateModelFields(id)
   })
 
 // 复制模型
@@ -318,8 +353,8 @@ export const getModelData = async ({ modelId, page = 1, pageSize = 10, filters =
       `SELECT ${readFields.join(', ') || '*'} FROM ${tableName} ${whereClause} ${orderClause} LIMIT ? OFFSET ?`,
       [...params, pageSize, offset]
     )
-    const model = await db.get('SELECT * FROM models WHERE id = ?', [modelId])
-    const fields = JSON.parse(model.fields).sort((a, b) => a.sort - b.sort)
+    // sort 在副本上进行，不污染缓存（缓存保持模型定义原序）
+    const fields = (await getModelFields(db, modelId)).slice().sort((a, b) => a.sort - b.sort)
 
     return { total: countResult.total, data, fields, page, pageSize }
   } catch (error) {
@@ -329,16 +364,12 @@ export const getModelData = async ({ modelId, page = 1, pageSize = 10, filters =
 
 export const createModelData = async ({ modelId, data }) => {
   const db = await initDatabase()
-  const model = await db.get('SELECT * FROM models WHERE id = ?', modelId)
-  if (!model) throw new Error('模型不存在')
-  const fields = JSON.parse(model.fields)
+  const fields = await getModelFields(db, modelId)
   const tableName = `model_data_${modelId}`
+  const fieldMap = indexFieldsByName(fields)
   const fieldNames = fields.map((f) => f.name)
   const placeholders = fieldNames.map(() => '?')
-  const values = fieldNames.map((name) => {
-    const field = fields.find((f) => f.name === name)
-    return convertDataType(data[name], field.type)
-  })
+  const values = fieldNames.map((name) => convertDataType(data[name], fieldMap.get(name).type))
   const result = await db.run(
     `INSERT INTO ${tableName} (${fieldNames.join(', ')}) VALUES (${placeholders.join(', ')})`,
     values
@@ -348,15 +379,14 @@ export const createModelData = async ({ modelId, data }) => {
 
 export const updateModelData = async ({ modelId, ids, data }) => {
   const db = await initDatabase()
-  const model = await db.get('SELECT * FROM models WHERE id = ?', modelId)
-  if (!model) throw new Error('模型不存在')
-  const fields = JSON.parse(model.fields)
+  const fields = await getModelFields(db, modelId)
   const tableName = `model_data_${modelId}`
+  const fieldMap = indexFieldsByName(fields)
   const updates = []
   const values = []
   for (const [key, value] of Object.entries(data)) {
     if (key === 'color') { updates.push('color = ?'); values.push(value); continue }
-    const field = fields.find((f) => f.name === key)
+    const field = fieldMap.get(key)
     if (field) { updates.push(`${key} = ?`); values.push(convertDataType(value, field.type)) }
   }
   if (updates.length === 0) return
@@ -369,8 +399,7 @@ export const updateModelData = async ({ modelId, ids, data }) => {
 
 export const deleteModelData = async ({ modelId, ids }) => {
   const db = await initDatabase()
-  const model = await db.get('SELECT * FROM models WHERE id = ?', modelId)
-  if (!model) throw new Error('模型不存在')
+  await getModelFields(db, modelId)
   const tableName = `model_data_${modelId}`
   await db.run(
     `DELETE FROM ${tableName} WHERE id IN (${ids.map(() => '?').join(',')})`,
@@ -380,18 +409,16 @@ export const deleteModelData = async ({ modelId, ids }) => {
 
 export const clearModelData = async ({ modelId }) => {
   const db = await initDatabase()
-  const model = await db.get('SELECT * FROM models WHERE id = ?', modelId)
-  if (!model) throw new Error('模型不存在')
+  await getModelFields(db, modelId)
   const tableName = `model_data_${modelId}`
   await db.run(`DELETE FROM ${tableName}`)
 }
 
 export const batchCreateModelData = async ({ modelId, data, batchSize = 1000 }) => {
   const db = await initDatabase()
-  const model = await db.get('SELECT * FROM models WHERE id = ?', modelId)
-  if (!model) throw new Error('模型不存在')
-  const fields = JSON.parse(model.fields)
+  const fields = await getModelFields(db, modelId)
   const tableName = `model_data_${modelId}`
+  const fieldMap = indexFieldsByName(fields)
   const fieldNames = fields.map((f) => f.name)
   const placeholders = `(${fieldNames.map(() => '?').join(',')})`
   const results = []
@@ -401,8 +428,7 @@ export const batchCreateModelData = async ({ modelId, data, batchSize = 1000 }) 
     const allPlaceholders = []
     batch.forEach((item) => {
       fieldNames.forEach((name) => {
-        const field = fields.find((f) => f.name === name)
-        valuesList.push(convertDataType(item[name], field.type))
+        valuesList.push(convertDataType(item[name], fieldMap.get(name).type))
       })
       allPlaceholders.push(placeholders)
     })

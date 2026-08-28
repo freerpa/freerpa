@@ -11,19 +11,5 @@ export const getAppVersion = () => {
   return pkg.version
 }
 
-// 版本比较
-export const compareVersion = (version1, version2) => {
-  const v1 = version1.split('.')
-  const v2 = version2.split('.')
-  const len = Math.max(v1.length, v2.length)
-  for (let i = 0; i < len; i++) {
-    const num1 = parseInt(v1[i] || '0', 10)
-    const num2 = parseInt(v2[i] || '0', 10)
-    if (num1 < num2) {
-      return -1
-    } else if (num1 > num2) {
-      return 1
-    }
-  }
-  return 0
-}
+// 版本比较（唯一实现位于 src/shared/semver.js，两端共用）
+export { compareSemver as compareVersion } from '../../../shared/semver.js'

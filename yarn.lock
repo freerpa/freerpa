@@ -3695,14 +3695,6 @@ graceful-fs@^4.1.2, graceful-fs@^4.1.6, graceful-fs@^4.2.0, graceful-fs@^4.2.11,
   resolved "https://registry.npmmirror.com/graceful-fs/-/graceful-fs-4.2.11.tgz#4183e4e8bf08bb6e05bbb2f7d2e0c8f712ca40e3"
   integrity sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==
 
-h3@^2.0.1-rc.26:
-  version "2.0.1-rc.26"
-  resolved "https://registry.npmmirror.com/h3/-/h3-2.0.1-rc.26.tgz#68d0ee1455db954a5156ffc950e31128684fe2e2"
-  integrity sha512-GDxlvDsKxgjRvG5UBRJYyGJTMWLV30CJ4cV+e7QCTgftDHihrvio1fVPbNembhEr6J4WNm8IWy3fookgyTweLw==
-  dependencies:
-    rou3 "^0.9.1"
-    srvx "^0.12.4"
-
 has-flag@^4.0.0:
   version "4.0.0"
   resolved "https://registry.npmmirror.com/has-flag/-/has-flag-4.0.0.tgz#944771fd9c81c81265c4d6941860da06bb59479b"
@@ -5189,11 +5181,6 @@ rollup@^4.43.0:
     "@rollup/rollup-win32-x64-msvc" "4.62.4"
     fsevents "~2.3.2"
 
-rou3@^0.9.1:
-  version "0.9.1"
-  resolved "https://registry.npmmirror.com/rou3/-/rou3-0.9.1.tgz#12e9a0d00aa513443e7fa4d171dfd38db0324ea8"
-  integrity sha512-z/sSmzvtwMDDnxsPVhfWMuG6F6mbmhFDXoVqLmMfbpDD9qfV3GDmSQpf0+W296/ZDIpW2wcMmBfpVFzcnOi/nA==
-
 safe-buffer@^5.0.1, safe-buffer@~5.2.0:
   version "5.2.1"
   resolved "https://registry.npmmirror.com/safe-buffer/-/safe-buffer-5.2.1.tgz#1eaf9fa9bdb1fdd4ec75f58f9cdb4e6b7827eec6"
@@ -5433,11 +5420,6 @@ sqlite@^5.1.1:
   version "5.1.1"
   resolved "https://registry.npmmirror.com/sqlite/-/sqlite-5.1.1.tgz#26a6a200fdac490643880af2b6cb3940ada59274"
   integrity sha512-oBkezXa2hnkfuJwUo44Hl9hS3er+YFtueifoajrgidvqsJRQFpc5fKoAkAor1O5ZnLoa28GBScfHXs8j0K358Q==
-
-srvx@^0.12.4:
-  version "0.12.5"
-  resolved "https://registry.npmmirror.com/srvx/-/srvx-0.12.5.tgz#917280d1d52b7f9e841e3252f733935a7522e0f6"
-  integrity sha512-IuvtDNQg5EIwv3c6dleyau7u8hCyGQ7D6+V/QM799Aud07z0wCUcurKLTRfyG33C8oUY+UWcVBFkfHMcbtmRLA==
 
 stat-mode@^1.0.0:
   version "1.0.0"
@@ -5807,11 +5789,6 @@ vue-codemirror@^6.1.1:
     "@codemirror/state" "6.x"
     "@codemirror/view" "6.x"
 
-vue-cropper@^1.1.4:
-  version "1.1.4"
-  resolved "https://registry.npmmirror.com/vue-cropper/-/vue-cropper-1.1.4.tgz#8c00104f42587514a48f043e5854b43ab99daf18"
-  integrity sha512-5m98vBsCEI9rbS4JxELxXidtAui3qNyTHLHg67Qbn7g8cg+E6LcnC+hh3SM/p94x6mFh6KRxT1ttnta+wCYqWA==
-
 vue-demi@>=0.14.8:
   version "0.14.10"
   resolved "https://registry.npmmirror.com/vue-demi/-/vue-demi-0.14.10.tgz#afc78de3d6f9e11bf78c55e8510ee12814522f04"
@@ -6077,8 +6054,3 @@ zod@^3.24.1:
   version "3.25.76"
   resolved "https://registry.npmmirror.com/zod/-/zod-3.25.76.tgz#26841c3f6fd22a6a2760e7ccb719179768471e34"
   integrity sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==
-
-zod@^4.4.3:
-  version "4.4.3"
-  resolved "https://registry.npmmirror.com/zod/-/zod-4.4.3.tgz#b680f172885d18bbebf21a834ea25e55a1bbf356"
-  integrity sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==

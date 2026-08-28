@@ -244,42 +244,14 @@
       </template>
     </a-table>
 
-    <!-- 编辑弹窗 -->
-    <a-modal
+    <!-- 编辑/新增弹窗（子组件） -->
+    <DataEditorModal
       v-model:visible="showEditor"
-      :title="editingRecord ? '编辑数据' : '新增数据'"
-      @before-ok="handleBeforeOk"
-      @cancel="resetForm"
-      :mask-closable="false"
-      :body-style="{ maxHeight: 'calc(90vh - 200px)' }"
-      width="800px"
-    >
-      <a-form ref="formRef" :model="form" @submit="handleSubmit" auto-label-width>
-        <template v-for="field in fields" :key="field.name">
-          <a-form-item :field="field.name" :label="field.description" :rules="getFieldRules(field)">
-            <!-- 根据字段类型渲染不同的表单控件 -->
-            <template v-if="field.type === 'date'">
-              <a-date-picker v-model="form[field.name]" style="width: 100%" />
-            </template>
-            <template v-else-if="field.type === 'number'">
-              <a-input-number
-                v-model="form[field.name]"
-                :placeholder="`请输入${field.description}`"
-                allow-clear
-              />
-            </template>
-            <template v-else>
-              <a-textarea
-                v-model="form[field.name]"
-                :placeholder="`请输入${field.description}`"
-                :auto-size="{ minRows: 1, maxRows: 5 }"
-                allow-clear
-              />
-            </template>
-          </a-form-item>
-        </template>
-      </a-form>
-    </a-modal>
+      :editing-record="editingRecord"
+      :fields="fields"
+      :model="props.model"
+      @saved="onSaved"
+    />
 
     <!-- 打开URL -->
     <a-modal
@@ -298,209 +270,13 @@
     <a-modal v-model:visible="showJsonModal" title="JSON数据" :footer="false" :mask-closable="true">
       <pre class="json-viewer">{{ jsonData }}</pre>
     </a-modal>
-    <a-modal
+    <!-- 条件查询弹窗（子组件） -->
+    <DataFilterModal
       v-model:visible="filterModalVisible"
-      width="674px"
-      :body-style="{ maxHeight: 'calc(90vh - 200px)' }"
-      unmount-on-close
-    >
-      <template #title> 条件查询 </template>
-      <a-empty v-if="conditions.length === 0" class="empty-message">请添加条件组</a-empty>
-      <div class="filter-group">
-        <a-card v-for="(group, index) in conditions" :key="index" size="mini">
-          <template #title>
-            <a-dropdown @select="(value) => (group.logic = value.value)">
-              <a-button type="secondary" size="mini">
-                {{ group.logic === 'and' ? '全部满足' : '任一满足' }}
-              </a-button>
-              <template #content>
-                <a-doption :value="{ value: 'and' }">全部满足</a-doption>
-                <a-doption :value="{ value: 'or' }">任一满足</a-doption>
-              </template>
-            </a-dropdown>
-          </template>
-          <template #extra>
-            <a-button-group>
-              <a-button
-                type="secondary"
-                size="mini"
-                @click="group.conditions.push({ field: '', operator: '', value: '' })"
-              >
-                添加条件
-              </a-button>
-              <a-button
-                type="secondary"
-                size="mini"
-                status="danger"
-                @click="conditions.splice(index, 1)"
-              >
-                <IconDelete />
-              </a-button>
-            </a-button-group>
-          </template>
-          <a-config-provider size="mini">
-            <div class="filter-group">
-              <div v-for="(item, index) in group.conditions" :key="index" class="filter-item">
-                <a-link
-                  :disabled="index === 0"
-                  type="secondary"
-                  status="danger"
-                  @click="group.conditions.splice(index, 1)"
-                >
-                  <icon-minus-circle-fill />
-                </a-link>
-                <a-select
-                  :options="filterFields.map((f) => ({ label: f.description, value: f.name }))"
-                  :style="{ width: '160px' }"
-                  v-model="item.field"
-                  placeholder="选择字段"
-                  default-active-first-option
-                />
-                <div v-if="item.field === 'color'" class="color-picker">
-                  <div
-                    v-for="(color, label) in colorOptions"
-                    :key="label"
-                    class="color-option color-marker"
-                    :class="{
-                      active: item.value?.includes(label)
-                    }"
-                    :style="{ backgroundColor: color }"
-                    @click="
-                      () => {
-                        const values = item.value ? item.value?.split(',') || [] : []
-                        const index = values.findIndex((item) => item === label)
-                        if (index > -1) {
-                          values.splice(index, 1)
-                        } else {
-                          values.push(label)
-                        }
-                        item.operator = values.length == 0 ? '' : 'in'
-                        item.value = values.join(',')
-                      }
-                    "
-                  >
-                    {{ label }}
-                  </div>
-                </div>
-
-                <template v-else>
-                  <div class="filter-input">
-                    <!-- 操作符选择 -->
-                    <a-select
-                      :options="
-                        operatorOptions.filter((o) => o.types.includes(getFiledType(item.field)))
-                      "
-                      :style="{ width: '160px' }"
-                      v-model="item.operator"
-                      placeholder="选择操作符"
-                      default-active-first-option
-                      :fallback-option="false"
-                    />
-
-                    <!-- 日期选择 -->
-                    <template
-                      v-if="
-                        getFiledType(item.field) === 'date' &&
-                        !['isNull', 'isNotNull'].includes(item.operator)
-                      "
-                    >
-                      <template v-if="['in', 'notIn'].includes(item.operator)">
-                        <a-range-picker
-                          :model-value="item.value?.split(',')"
-                          show-time
-                          style="flex: 1"
-                          @change="
-                            (val) => {
-                              item.value = val?.join(',')
-                            }
-                          "
-                        />
-                      </template>
-                      <template v-else>
-                        <a-date-picker
-                          :model-value="item.value"
-                          show-time
-                          style="flex: 1"
-                          @change="
-                            (val) => {
-                              item.value = val
-                            }
-                          "
-                        />
-                      </template>
-                    </template>
-                    <!-- 值输入 -->
-                    <template
-                      v-else-if="
-                        getFiledType(item.field) === 'number' &&
-                        !['isNull', 'isNotNull'].includes(item.operator)
-                      "
-                    >
-                      <!-- 范围值输入 -->
-                      <template v-if="['in', 'notIn'].includes(item.operator)">
-                        <a-space style="flex: 1">
-                          <a-input-number
-                            :model-value="Number(item.value?.toString().split(',')[0] || undefined)"
-                            placeholder="最小值"
-                            style="width: 100%"
-                            @change="
-                              (val) => {
-                                const values = item.value?.toString().split(',') || []
-                                values[0] = val
-                                item.value = values.join(',') || ''
-                              }
-                            "
-                          />
-                          <a-input-number
-                            :model-value="Number(item.value?.toString().split(',')[1] || undefined)"
-                            placeholder="最大值"
-                            style="width: 100%"
-                            @change="
-                              (val) => {
-                                const values = item.value?.toString().split(',') || []
-                                values[1] = val
-                                item.value = values.join(',') || ''
-                              }
-                            "
-                          />
-                        </a-space>
-                      </template>
-                      <template v-else>
-                        <a-input-number
-                          placeholder="输入值"
-                          style="width: 100%"
-                          v-model="item.value"
-                        />
-                      </template>
-                    </template>
-                    <!-- 默认文本输入 -->
-                    <template
-                      v-else-if="
-                        getFiledType(item.field) === 'string' &&
-                        !['isNull', 'isNotNull'].includes(item.operator)
-                      "
-                    >
-                      <a-input
-                        v-model="item.value"
-                        placeholder="输入值"
-                        allow-clear
-                        style="flex: 1"
-                      />
-                    </template>
-                  </div>
-                </template>
-              </div>
-            </div>
-          </a-config-provider>
-        </a-card>
-      </div>
-      <template #footer>
-        <a-space>
-          <a-button type="secondary" @click="addConditionGroup">添加条件组</a-button>
-          <a-button type="primary" @click="search">查询</a-button>
-        </a-space>
-      </template>
-    </a-modal>
+      :conditions="conditions"
+      :fields="filterFields"
+      @search="search"
+    />
   </a-spin>
 </template>
 
@@ -510,16 +286,16 @@ import { Message } from '@arco-design/web-vue'
 import {
   IconPlus,
   IconEdit,
-  IconDelete,
   IconSearch,
   IconClose,
   IconRefresh,
   IconImport,
   IconExport,
-  IconLink,
-  IconMinusCircleFill
+  IconLink
 } from '@arco-design/web-vue/es/icon'
 import { deepClone } from '@/workflow/utils'
+import DataEditorModal from './DataEditorModal.vue'
+import DataFilterModal from './DataFilterModal.vue'
 
 const props = defineProps({
   model: {
@@ -541,8 +317,6 @@ const sortOrder = ref('')
 // 编辑器状态
 const showEditor = ref(false)
 const editingRecord = ref(null)
-const formRef = ref(null)
-const form = ref({})
 
 // JSON查看器状态
 const showJsonModal = ref(false)
@@ -573,22 +347,6 @@ const colorOptions = {
   紫: '#722ED1'
 }
 
-// 统一的操作符选项
-const operatorOptions = [
-  { label: '等于', value: 'eq', types: ['date', 'number', 'string'] },
-  { label: '不等于', value: 'ne', types: ['date', 'number', 'string'] },
-  { label: '大于', value: 'gt', types: ['date', 'number'] },
-  { label: '大于等于', value: 'gte', types: ['date', 'number'] },
-  { label: '小于', value: 'lt', types: ['date', 'number'] },
-  { label: '小于等于', value: 'lte', types: ['date', 'number'] },
-  { label: '包含', value: 'like', types: ['string'] },
-  { label: '不包含', value: 'notLike', types: ['string'] },
-  { label: '在范围内', value: 'in', types: ['date', 'number'] },
-  { label: '不在范围内', value: 'notIn', types: ['date', 'number'] },
-  { label: '为空', value: 'isNull', types: ['date', 'number', 'string'] },
-  { label: '不为空', value: 'isNotNull', types: ['date', 'number', 'string'] }
-]
-
 // 筛选条件状态
 const filterModalVisible = ref(false)
 const filterFields = computed(() => {
@@ -613,28 +371,7 @@ const filterFields = computed(() => {
   return filterableFields
 })
 
-const getFiledType = (field) => {
-  if (!field) return ''
-  return fieldTypeMap.value.get(field)
-}
-const fieldTypeMap = computed(() => {
-  const map = new Map()
-  filterFields.value.forEach((f) => map.set(f.name, f.type))
-  return map
-})
 const conditions = ref([])
-const addConditionGroup = () => {
-  conditions.value.push({
-    conditions: [
-      {
-        field: '',
-        operator: '',
-        value: ''
-      }
-    ],
-    logic: 'and'
-  })
-}
 const handleFilter = () => {
   filterModalVisible.value = true
 }
@@ -674,27 +411,22 @@ const onPageChange = (page) => {
   fetchData()
 }
 
-// 获取字段验证规则
-const getFieldRules = (field) => {
-  const rules = []
-  if (field.required) {
-    rules.push({ required: true, message: `请输入${field.description}` })
-  }
-  return rules
-}
-
 // 处理新增
 const handleAdd = () => {
   editingRecord.value = null
-  form.value = {}
   showEditor.value = true
 }
 
 // 处理编辑
 const handleEdit = (record) => {
   editingRecord.value = record
-  form.value = { ...record }
   showEditor.value = true
+}
+
+// 保存成功回调（子组件 DataEditorModal 提交后触发）
+const onSaved = () => {
+  showEditor.value = false
+  fetchData()
 }
 
 // 处理删除
@@ -706,57 +438,9 @@ const handleDelete = async (record) => {
     })
     Message.success('删除成功')
     fetchData()
-  } catch (error) {
+  } catch {
     Message.error('删除失败')
   }
-}
-
-// 处理确认前的验证
-const handleBeforeOk = async (done) => {
-  try {
-    const res = await formRef.value.validate()
-    if (res) {
-      done(false)
-    } else {
-      await handleSubmit()
-      done()
-    }
-  } catch (error) {
-    done(false)
-  }
-}
-
-// 提交表单
-const handleSubmit = async () => {
-  try {
-    if (editingRecord.value) {
-      await dataAPI.updateModelData({
-        modelId: props.model.id,
-        ids: [editingRecord.value.id],
-        data: deepClone(form.value)
-      })
-      Message.success('更新成功')
-    } else {
-      await dataAPI.createModelData({
-        modelId: props.model.id,
-        data: deepClone(form.value)
-      })
-      Message.success('创建成功')
-    }
-    resetForm()
-    fetchData()
-  } catch (error) {
-    Message.error(error.message || '操作失败')
-    throw error
-  }
-}
-
-// 重置表单
-const resetForm = () => {
-  formRef.value?.resetFields()
-  editingRecord.value = null
-  form.value = {}
-  showEditor.value = false
 }
 
 // 显示JSON查看器
@@ -764,7 +448,7 @@ const showJsonViewer = (data) => {
   try {
     jsonData.value = typeof data === 'string' ? JSON.parse(data) : data
     showJsonModal.value = true
-  } catch (error) {
+  } catch {
     Message.error('JSON数据格式错误')
   }
 }
@@ -803,7 +487,7 @@ const handleBatchDelete = async () => {
     Message.success('删除成功')
     selectedKeys.value = []
     fetchData()
-  } catch (error) {
+  } catch {
     Message.error('删除失败')
   }
 }
@@ -817,7 +501,7 @@ const handleClearAll = async () => {
     Message.success('清空成功')
     selectedKeys.value = []
     fetchData()
-  } catch (error) {
+  } catch {
     Message.error('清空失败')
   }
 }
@@ -843,7 +527,7 @@ const handleColorChange = async (record, color) => {
       data.value[index].color = color
     }
     Message.success('更新成功')
-  } catch (error) {
+  } catch {
     Message.error('更新失败')
   }
 }
@@ -853,7 +537,7 @@ const progress = ref({
   total: 0
 })
 // 处理导出数据
-const handleExport = async (type) => {
+const handleExport = async () => {
   try {
     const pathResult = await window.electronAPI.dialog.savePath({
       title: '选择保存目录',

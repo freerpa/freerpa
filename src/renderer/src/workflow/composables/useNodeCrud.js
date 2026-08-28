@@ -38,9 +38,6 @@ export function useNodeCrud({ vueFlowRef, isExecuting, clipboard, createConnecti
     })
   }
 
-  // 判断节点数量限制（节点数量不再限制）
-  const isOverNodeLimit = (_addNodeCount = 1) => false
-
   // 添加节点
   const addNode = async (nodeData, position) => {
     if (isExecuting.value) {
@@ -64,24 +61,17 @@ export function useNodeCrud({ vueFlowRef, isExecuting, clipboard, createConnecti
     if (nodeData.workflow) {
       const localWf = await workflowAPI.getWorkflow(nodeData.workflow.id)
       if (localWf) {
-        let graph = {}
-        try { graph = typeof localWf.graph === 'string' ? JSON.parse(localWf.graph) : (localWf.graph || {}) } catch (e) {}
         workflow = {
           id: localWf.id,
           name: localWf.name,
           description: localWf.description,
           cover: '',
           only_node: false,
-          elements: typeof localWf.graph === 'string' ? localWf.graph : JSON.stringify(localWf.graph || {}),
-          nodes_count: (graph.nodes || []).length
+          elements: typeof localWf.graph === 'string' ? localWf.graph : JSON.stringify(localWf.graph || {})
         }
       }
     }
 
-    const nodes_count = workflow ? workflow.nodes_count : 0
-    if (isOverNodeLimit(nodes_count)) {
-      return
-    }
     const newNode = {
       id: `node-${uuidv4()}`,
       type: 'custom',
@@ -246,7 +236,7 @@ export function useNodeCrud({ vueFlowRef, isExecuting, clipboard, createConnecti
       handleNodeDelete(node)
     } else if (action === 'copy') {
       handleNodeCopy(vueFlowRef.value, clipboard, [node])
-      handleNodePaste(vueFlowRef.value, clipboard.value, isOverNodeLimit)
+      handleNodePaste(vueFlowRef.value, clipboard.value)
       clipboard.value = null
     }
   }
@@ -292,7 +282,6 @@ export function useNodeCrud({ vueFlowRef, isExecuting, clipboard, createConnecti
     addStartNode,
     addNode,
     handleNodeAction,
-    handleNodeDelete,
-    isOverNodeLimit
+    handleNodeDelete
   }
 }

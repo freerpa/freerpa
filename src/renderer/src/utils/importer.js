@@ -137,6 +137,29 @@ const showImportSummary = (summary) => {
 
 // ─── 公开 API ─────────────────────────────────────────
 
+// ─── 导出公共流程（exportToFile / batchExportToFile 复用） ─────────────────
+
+/** 组装导出文件数据：deflate 压缩 + 魔数头 + Blob */
+async function buildExportBlob(exportData, config) {
+  const { deflate } = await import('pako')
+  const compressed = deflate(new TextEncoder().encode(JSON.stringify(exportData)))
+  const header = new Uint8Array(config.header)
+  const fileData = new Uint8Array(header.length + compressed.length)
+  fileData.set(header)
+  fileData.set(compressed, header.length)
+  return new Blob([fileData])
+}
+
+/** 触发浏览器下载并释放对象 URL */
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 /**
  * 导出数据为文件
  * @param {Function} getDataFn - 异步函数，返回要导出的数据对象（不含 app_version/exportTime）
@@ -154,19 +177,8 @@ export async function exportToFile(getDataFn, config, extraFields = {}) {
       [config.moduleKey]: data,
       ...extraFields
     }
-    const { deflate } = await import('pako')
-    const compressed = deflate(new TextEncoder().encode(JSON.stringify(exportData)))
-    const header = new Uint8Array(config.header)
-    const fileData = new Uint8Array(header.length + compressed.length)
-    fileData.set(header)
-    fileData.set(compressed, header.length)
-    const blob = new Blob([fileData])
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${getDisplayName(data)} - ${config.label}${config.ext}`
-    a.click()
-    URL.revokeObjectURL(url)
+    const blob = await buildExportBlob(exportData, config)
+    downloadBlob(blob, `${getDisplayName(data)} - ${config.label}${config.ext}`)
     loadingMsg.close()
     Message.success('导出成功')
   } catch (e) {
@@ -196,19 +208,8 @@ export async function batchExportToFile(getItemsFn, config) {
       exportTime: new Date().toISOString(),
       [config.moduleKey]: items
     }
-    const { deflate } = await import('pako')
-    const compressed = deflate(new TextEncoder().encode(JSON.stringify(exportData)))
-    const header = new Uint8Array(config.header)
-    const fileData = new Uint8Array(header.length + compressed.length)
-    fileData.set(header)
-    fileData.set(compressed, header.length)
-    const blob = new Blob([fileData])
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${config.label} - 批量导出(${items.length})${config.ext}`
-    a.click()
-    URL.revokeObjectURL(url)
+    const blob = await buildExportBlob(exportData, config)
+    downloadBlob(blob, `${config.label} - 批量导出(${items.length})${config.ext}`)
     loadingMsg.close()
     Message.success(`导出成功 ${items.length} 个${config.label}`)
   } catch (e) {

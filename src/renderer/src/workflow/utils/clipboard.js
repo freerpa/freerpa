@@ -1,8 +1,6 @@
-import { Message } from '@arco-design/web-vue'
 import {
   findAllDescendantNodes,
   rebuildElementIds,
-  getValidNodesCount,
   calculateBoundingBox
 } from './index'
 // 处理节点复制
@@ -53,7 +51,7 @@ export const handleNodeCopy = (vueFlowRef, clipboard, selectedNodes) => {
 }
 
 // 处理节点粘贴
-export const handleNodePaste = (vueFlowRef, clipboard, isOverNodeLimit) => {
+export const handleNodePaste = (vueFlowRef, clipboard) => {
   if (clipboard) {
     //查找顶级节点（没有父节点或者父节点不在clipboard.nodes中）
     const topNodes = clipboard.nodes.filter((node) => !node.parentNode || !clipboard.nodes.some((n) => n.id === node.parentNode))
@@ -90,13 +88,6 @@ export const handleNodePaste = (vueFlowRef, clipboard, isOverNodeLimit) => {
     }
 
     // 粘贴节点
-    if (isOverNodeLimit(getValidNodesCount(clipboard.nodes))) {
-      Message.warning({
-        id: 'workflow-node-limit',
-        content: `当前工作流节点数量超过限制`
-      })
-      return
-    }
     //重建元素ID
     const newElements = rebuildElementIds(vueFlowRef, clipboard)
     //去除当前所有的选中

@@ -113,7 +113,7 @@ const handleKeyDownOnce = async (event) => {
       event.preventDefault()
       break
     case 'canvas.paste':
-      flowRef.value?.handleNodePaste(vueFlowRef.value, clipboard.value, flowRef.value?.isOverNodeLimit)
+      flowRef.value?.handleNodePaste(vueFlowRef.value, clipboard.value)
       event.preventDefault()
       break
     case 'canvas.autoLayout':

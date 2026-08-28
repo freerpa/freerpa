@@ -12,7 +12,9 @@ import { app } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import { get as storeGet, set as storeSet } from '../store'
+import { INFRA_ENV, PERMISSIONS_DEFAULTS_STRICT } from '../../shared/permissions-constants.js'
 
+export { INFRA_ENV }
 export const PERMISSIONS_KEY = 'permissions'
 
 /** 首次启动写入最安全默认权限（含预置 FREERPA-DATA 目录）；幂等，返回是否本次写入 */
@@ -35,6 +37,12 @@ const SYS_KINDS = new Set([
 
 /** 生成最安全（非最小化）默认权限：预置 FREERPA-DATA 目录、基础设施 env/sys 默认开放（可取消）、远程导入默认打开、网络保持 allow-all、进程/FFI 默认禁 */
 export const getDefaultPermissions = () => {
+  const defaults = {
+    ...PERMISSIONS_DEFAULTS_STRICT(),
+    env: { allow: [...INFRA_ENV] },
+    sys: { allow: ['umask'] },
+    import: { enabled: true, hosts: [] }
+  }
   let dataRoot = ''
   try {
     dataRoot = path.join(app.getPath('documents'), DATA_DIR_NAME)
@@ -43,33 +51,20 @@ export const getDefaultPermissions = () => {
     // 获取/创建失败时保持空目录列表（不阻塞启动）
   }
   return {
-    io: { roots: dataRoot ? [dataRoot] : [] },
-    network: { mode: 'allow-all', rules: [] },
-    process: { enabled: false, commands: [] },
-    env: { allow: [...INFRA_ENV] },
-    sys: { allow: ['umask'] },
-    ffi: { enabled: false, paths: [] },
-    import: { enabled: true, hosts: [] }
+    ...defaults,
+    io: { roots: dataRoot ? [dataRoot] : [] }
   }
 }
 
-const DEFAULTS = {
-  io: { roots: [] },
-  network: { mode: 'allow-all', rules: [] },
-  process: { enabled: false, commands: [] },
-  env: { allow: [] },
-  sys: { allow: [] },
-  ffi: { enabled: false, paths: [] },
-  import: { enabled: false, hosts: [] }
-}
+const DEFAULTS = PERMISSIONS_DEFAULTS_STRICT
 
 const normalize = (p) => {
-  const out = structuredClone(DEFAULTS)
+  const out = structuredClone(DEFAULTS())
   if (!p || typeof p !== 'object') return out
   out.io = { roots: Array.isArray(p.io?.roots) ? p.io.roots : [] }
   const mode = p.network?.mode
   out.network = {
-    mode: ['allow-all', 'allow-list', 'disabled'].includes(mode) ? mode : DEFAULTS.network.mode,
+    mode: ['allow-all', 'allow-list', 'disabled'].includes(mode) ? mode : DEFAULTS().network.mode,
     rules: Array.isArray(p.network?.rules) ? p.network.rules : []
   }
   out.process = { enabled: !!p.process?.enabled, commands: Array.isArray(p.process?.commands) ? p.process.commands : [] }
@@ -97,12 +92,7 @@ export const getPermissions = () => {
 
 // node 兼容层（process.env）模块加载期必需的非敏感环境变量（用户配置 env 白名单时自动附加）
 // 覆盖 exceljs→graceful-fs/readable-stream/bluebird 等依赖链加载期读取的变量（deno 对未授权 env 读取抛错而非返回 undefined）
-const INFRA_ENV = [
-  'GRACEFUL_FS_PLATFORM', 'TEST_GRACEFUL_FS_GLOBAL_PATCH', 'READABLE_STREAM',
-  'BLUEBIRD_DEBUG', 'BLUEBIRD_LONG_STACK_TRACES', 'BLUEBIRD_WARNINGS', 'BLUEBIRD_W_FORGOTTEN_RETURN',
-  'WS_NO_BUFFER_UTIL', 'WS_NO_UTF_8_VALIDATE',
-  'NODE_ENV', 'NODE_DEBUG', 'HOME', 'USERPROFILE', 'TMPDIR', 'TEMP', 'TMP', 'PATH', 'LANG'
-]
+// INFRA_ENV 定义见 src/shared/permissions-constants.js（两端共用）
 
 /**
  * 生成 deno Worker 权限描述符（最小权限原则）
