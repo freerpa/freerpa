@@ -11,6 +11,6 @@ resources/deno
 resources/worker
 deno.lock
 doc
-browser/darwin
-browser/linux
-browser/win32
+browser/darwin/*
+browser/linux/*
+browser/win32/*
