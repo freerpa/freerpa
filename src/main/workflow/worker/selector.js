@@ -7,10 +7,13 @@ import { bridge } from './bridge.js'
 /**
  * 可见性排序：在匹配到的结果中优先返回可见元素，但不可见元素不剔除（保留原顺序兜底）。
  * 避免 waitForSelector(visible:true) 因元素隐藏（如 input[type=file]、透明/零尺寸按钮）而误判为不存在。
+ * 关键：可见性检查失败的 handle（已 detached / 句柄失效）必须从结果剔除——
+ * 否则残留的失效 handle 会在后续节点操作时报 "Node is detached from document"。
  */
 async function preferVisible(page, handles) {
   if (!handles.length) return handles
   const vis = new Set()
+  const dead = new Set()
   await Promise.all(handles.map(async (h, i) => {
     try {
       const ok = await page.evaluate((el) => {
@@ -21,13 +24,21 @@ async function preferVisible(page, handles) {
       }, h)
       if (ok) vis.add(i)
     } catch {
-      // 句柄已失效等异常按不可见处理
+      // 句柄已失效（detached）：标记并从结果剔除，避免后续操作报错
+      dead.add(i)
     }
   }))
-  if (!vis.size) return handles // 全部不可见：不因不可见而剔除，保留原顺序
+  if (!vis.size) {
+    // 无可判定可见的元素：剔除已失效的 handle，其余（可能不可见但有效）保留
+    const alive = handles.filter((_, i) => !dead.has(i))
+    return alive.length ? alive : handles
+  }
   const visible = []
   const invisible = []
-  handles.forEach((h, i) => (vis.has(i) ? visible : invisible).push(h))
+  handles.forEach((h, i) => {
+    if (dead.has(i)) return // 失效 handle 直接丢弃
+    ;(vis.has(i) ? visible : invisible).push(h)
+  })
   return [...visible, ...invisible]
 }
 

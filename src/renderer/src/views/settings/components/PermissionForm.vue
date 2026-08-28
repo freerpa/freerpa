@@ -3,7 +3,8 @@
     <!-- 文件系统（IO 目录） -->
     <a-form-item label="允许文件目录" extra="工作流可读写的目录">
       <div class="tag-list">
-        <a-tag size="large" v-for="(r, i) in value.io.roots" :key="i" closable color="arcoblue" @close="removeRoot(i)">
+        <!-- 用目录路径作 key（目录唯一）：避免删除首个 tag 时索引 key 导致 DOM 复用错乱（两个都消失） -->
+        <a-tag size="large" v-for="r in value.io.roots" :key="r" closable color="arcoblue" @close="removeRoot(r)">
           {{ r }}
         </a-tag>
         <a-button @click="addRoot">
@@ -119,7 +120,10 @@
     if (result.canceled || !result.filePaths?.length) return;
     if (!value.value.io.roots.includes(result.filePaths[0])) value.value.io.roots.push(result.filePaths[0]);
   };
-  const removeRoot = (i) => value.value.io.roots.splice(i, 1);
+  const removeRoot = (path) => {
+    const idx = value.value.io.roots.indexOf(path);
+    if (idx > -1) value.value.io.roots.splice(idx, 1);
+  };
 </script>
 
 <style lang="less" scoped>

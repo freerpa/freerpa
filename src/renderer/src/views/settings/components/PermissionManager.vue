@@ -27,7 +27,11 @@ let loaded = false
 let saveTimer = null
 
 const loadGlobal = async () => {
-  globalPermissions.value = await loadGlobalPermissions()
+  try {
+    globalPermissions.value = await loadGlobalPermissions()
+  } catch {
+    // 加载失败：保持 DEFAULTS() 兜底，仍允许用户改动并保存（loaded 下方置 true）
+  }
   // watch 回调经微任务异步 flush：先 nextTick 让首轮（loaded=false）回调执行完，再放行后续写回
   await nextTick()
   loaded = true

@@ -8,15 +8,13 @@
  *   env:     { allow: string[] }            环境变量白名单（空=全部禁止）
  *   sys:     { allow: string[] }            系统信息权限（空=全部禁止）
  */
-import { app } from 'electron'
-import fs from 'fs'
 import { get as storeGet, set as storeSet } from '../store'
 import { INFRA_ENV, PERMISSIONS_DEFAULTS_STRICT } from '../../shared/permissions-constants.js'
 
 export { INFRA_ENV }
 export const PERMISSIONS_KEY = 'permissions'
 
-/** 首次启动写入最安全默认权限（含预置 FREERPA-DATA 目录）；幂等，返回是否本次写入 */
+/** 首次启动写入最安全默认权限（默认无文件授权）；幂等，返回是否本次写入 */
 export const ensureDefaultPermissions = () => {
   if (!storeGet(PERMISSIONS_KEY)) {
     storeSet(PERMISSIONS_KEY, getDefaultPermissions())
@@ -25,40 +23,20 @@ export const ensureDefaultPermissions = () => {
   return false
 }
 
-/** 默认放宽容许根：文档、下载等无风险用户公开目录（IO 读+写），保证文件类节点开箱即用；不含系统/隐藏目录 */
-const DEFAULT_IO_NODES = ['documents', 'downloads']
-
 /** deno 2.x sys 权限合法 kind 集合（buildDenoPermissions 预校验用；umask 为 node 兼容层写文件硬约束） */
 const SYS_KINDS = new Set([
   'hostname', 'osRelease', 'osUptime', 'loadavg', 'networkInterfaces', 'systemMemoryInfo',
   'uid', 'gid', 'username', 'cpus', 'homedir', 'umask'
 ])
 
-/** 生成最安全（非最小化）默认权限：预置 FREERPA-DATA 目录、基础设施 env/sys 默认开放（可取消）、远程导入默认打开、网络保持 allow-all、进程/FFI 默认禁 */
+/** 生成最安全默认权限：默认无文件授权（io.roots 为空）、基础设施 env/sys 默认开放（可取消）、远程导入默认打开、网络保持 allow-all、进程/FFI 默认禁 */
 export const getDefaultPermissions = () => {
-  const defaults = {
+  return {
     ...PERMISSIONS_DEFAULTS_STRICT(),
     env: { allow: [...INFRA_ENV] },
     sys: { allow: ['umask'] },
-    import: { enabled: true, hosts: [] }
-  }
-  // 默认放宽容许根：文档、下载等无风险公开目录
-  const ioRoots = [
-    ...DEFAULT_IO_NODES
-      .map((node) => {
-        try {
-          const p = app.getPath(node)
-          fs.mkdirSync(p, { recursive: true })
-          return p
-        } catch {
-          return null
-        }
-      })
-      .filter(Boolean)
-  ]
-  return {
-    ...defaults,
-    io: { roots: ioRoots }
+    import: { enabled: true, hosts: [] },
+    io: { roots: [] }
   }
 }
 
@@ -81,7 +59,7 @@ const normalize = (p) => {
   return out
 }
 
-/** 读取全局权限；从未配置过时返回最安全默认（含预置 FREERPA-DATA 目录），并兼容旧安全目录 allowedRoot 迁移 */
+/** 读取全局权限；从未配置过时返回最安全默认（默认无文件授权），并兼容旧安全目录 allowedRoot 迁移 */
 export const getPermissions = () => {
   const stored = storeGet(PERMISSIONS_KEY)
   if (!stored) {

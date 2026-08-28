@@ -132,7 +132,7 @@
 <script setup>
   import { ref, computed, watch } from 'vue';
   import { Message } from '@arco-design/web-vue';
-  import { IconFolder, IconFile, IconPlus, IconFolderAdd, IconMenu, IconApps } from '@arco-design/web-vue/es/icon';
+  import { IconFolder, IconFile, IconPlus, IconMenu, IconApps } from '@arco-design/web-vue/es/icon';
   import { loadGlobalPermissions, toPlain } from '@/utils/permissions';
 
   const props = defineProps({
@@ -295,10 +295,8 @@
       await window.electronAPI.store.set('permissions', toPlain(perms));
       authRoots.value = roots;
       Message.success(`已授权 ${result.filePaths.length} 个目录`);
-      // 若当前浏览未指向任何授权目录，则跳转到新授权的第一个
-      if (!currentPath.value || !inAnyRoot(currentPath.value)) {
-        await loadList(result.filePaths[0]);
-      }
+      // 授权后立即导航到新授权的第一个目录：让文件列表实时展示新授权目录内容
+      await loadList(result.filePaths[0]);
     } catch (e) {
       Message.error('授权保存失败: ' + (e?.message || e));
     }
