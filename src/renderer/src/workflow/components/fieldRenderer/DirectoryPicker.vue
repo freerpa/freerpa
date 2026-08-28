@@ -1,7 +1,7 @@
 <template>
   <a-modal
     :visible="visible"
-    :title="multiLabel ? '选择多个文件夹或文件' : '选择文件夹或文件'"
+    title="文件选择器"
     :width="880"
     :footer="false"
     :mask-closable="false"
@@ -29,7 +29,7 @@
             @click="navigate(root)"
           >
             <icon-folder class="dp-side-icon" />
-            <span class="dp-side-name">{{ basename(root) }}</span>
+            <span class="dp-side-name">{{ root }}</span>
           </div>
         </div>
 
@@ -215,13 +215,6 @@
     }
     return !!selected.value && inAnyRoot(selected.value);
   });
-
-  /** 取路径最后一级（Windows/macOS 分隔符都兼容） */
-  const basename = (p) => {
-    const s = p.includes('\\') ? '\\' : '/';
-    const idx = p.lastIndexOf(s);
-    return idx >= 0 ? p.slice(idx + 1) : p;
-  };
 
   /** 读取目录内容；成功返回 true。toast: false 时静默处理（初始化探测用，避免对失效老授权根误报） */
   const listDir = async (dirPath, { toast = true } = {}) => {
