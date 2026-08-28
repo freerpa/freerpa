@@ -64,6 +64,77 @@ export const register = () => {
     shell.openPath(path)
   })
 
+  // 目录浏览（自定义文件选择器用）：列出指定目录下的一级文件项（目录+文件，目录在前），供渲染端渲染 Windows 风格列表
+  ipcMain.handle('fs:listDirectory', async (event, dirPath) => {
+    const requested = typeof dirPath === 'string' ? dirPath : ''
+    let resolved = requested
+      ? path.resolve(requested)
+      : app.getPath('homedir')
+    try {
+      const st = fs.statSync(resolved)
+      if (!st.isDirectory()) return { ok: false, error: `不是有效目录: ${resolved}` }
+    } catch {
+      return { ok: false, error: `目录不存在: ${resolved}` }
+    }
+    try {
+      const entries = fs.readdirSync(resolved, { withFileTypes: true })
+        .map((e) => ({
+          name: e.name,
+          path: path.join(resolved, e.name),
+          type: e.isDirectory() ? 'dir' : 'file'
+        }))
+        .sort((a, b) => {
+          if (a.type !== b.type) return a.type === 'dir' ? -1 : 1
+          return a.name.localeCompare(b.name)
+        })
+      return { ok: true, current: resolved, parent: path.dirname(resolved), entries }
+    } catch (e) {
+      return { ok: false, error: e.message || String(e) }
+    }
+  })
+
+  // 图片缩略（自定义文件选择器用）：返回图片 dataURL 缩小传输，避开地址栏 file:// 的安全限制
+  ipcMain.handle('fs:readThumb', async (event, filePath) => {
+    try {
+      const resolved = typeof filePath === 'string' ? path.resolve(filePath) : ''
+      const st = fs.statSync(resolved)
+      if (!st.isFile()) return { ok: false, error: '不是有效文件' }
+      if (st.size > 12 * 1024 * 1024) return { ok: false, error: '文件过大，不生成预览' }
+      const ext = path.extname(resolved).slice(1).toLowerCase()
+      const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
+        : ext === 'png' ? 'image/png'
+        : ext === 'gif' ? 'image/gif'
+        : ext === 'webp' ? 'image/webp'
+        : ext === 'svg' ? 'image/svg+xml'
+        : ext === 'bmp' ? 'image/bmp'
+        : ext === 'avif' ? 'image/avif'
+        : ext === 'ico' ? 'image/vnd.microsoft.icon'
+        : 'application/octet-stream'
+      const buf = fs.readFileSync(resolved)
+      return { ok: true, dataUrl: `data:${mime};base64,${buf.toString('base64')}` }
+    } catch (e) {
+      return { ok: false, error: e.message || String(e) }
+    }
+  })
+
+  // 默认起始目录（主目录），供自定义目录选择器初始化导航位置
+  ipcMain.handle('fs:getHome', () => app.getPath('homedir'))
+
+  // 常见用户目录（文档/下载/桌面/主目录），供自定义目录选择器侧栏快速访问
+  ipcMain.handle('fs:getUserDirs', async () => {
+    const names = ['home', 'documents', 'downloads', 'desktop']
+    const result = {}
+    for (const n of names) {
+      try {
+        result[n] = app.getPath(n)
+      } catch {
+        result[n] = null
+      }
+    }
+    result.root = path.parse(result.home || path.resolve('/')).root
+    return result
+  })
+
   ipcMain.handle('shell:openExternal', async (event, url) => {
     await shell.openExternal(url)
   })

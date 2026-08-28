@@ -159,6 +159,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     openPath: (path) => ipcRenderer.invoke('shell:openPath', path),
     openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url)
   },
+  // 目录浏览（自定义目录选择器用）
+  fs: {
+    listDirectory: (dirPath) => ipcRenderer.invoke('fs:listDirectory', dirPath),
+    readThumb: (filePath) => ipcRenderer.invoke('fs:readThumb', filePath),
+    getHome: () => ipcRenderer.invoke('fs:getHome'),
+    getUserDirs: () => ipcRenderer.invoke('fs:getUserDirs')
+  },
   // 获取鼠标位置API
   app: {
     getMousePos: () => ipcRenderer.invoke('app:getMousePos'),

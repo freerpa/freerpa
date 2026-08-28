@@ -58,8 +58,8 @@ export const categories = {
       'workflowEnd',
       'workflowRestart',
       'workflowThrowException',
-      'workflowCustomNode',
-      'workflowSubWorkflow'
+      'workflowSubWorkflow',
+      'workflowCustomNode'
     ),
   },
   globalVariable: {

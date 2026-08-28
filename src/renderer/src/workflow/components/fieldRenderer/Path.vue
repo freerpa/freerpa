@@ -19,13 +19,23 @@
         </a-button>
       </template>
     </refInput>
+
+    <!-- 自定义 Windows 风格目录选择器（仅可选定文件夹，未授权目录可在面板快速授权；文件路径字段同样复用） -->
+    <directoryPicker
+      :visible="pickerVisible"
+      :model-value="modelValue"
+      :multiple="field.multiple"
+      @update:visible="pickerVisible = $event"
+      @select="onPick"
+    />
   </div>
 </template>
 
 <script setup>
-import { watch } from 'vue'
+import { watch, ref } from 'vue'
 import refInput from './Text.vue'
 import { IconFolder } from '@arco-design/web-vue/es/icon'
+import directoryPicker from './DirectoryPicker.vue'
 // 定义属性
 const props = defineProps({
   field: {
@@ -39,30 +49,16 @@ const modelValue = defineModel({
   default: ''
 })
 
-// 处理选择路径（使用绝对路径，不做安全目录限制）
-const handleSelect = async () => {
-  const properties = props.field.pathType === 'file' ? ['openFile'] : ['openDirectory']
-  if (props.field.multiple) properties.push('multiSelections')
-  const options = {
-    title: props.field.name || '选择路径',
-    properties,
-    defaultPath: props.field.multiple ? '' : (modelValue.value || '')
-  }
+const pickerVisible = ref(false)
 
-  // 如果有文件类型限制
-  if (props.field.extensions) {
-    options.filters = [{ name: '允许的文件类型', extensions: props.field.extensions }]
-  }
+// 处理选择路径：统一使用自定义目录选择器（仅可选定已授权文件夹，未授权可快速授权）
+const handleSelect = () => {
+  pickerVisible.value = true
+}
 
-  try {
-    const result = await window.electronAPI.dialog.openPath(options)
-
-    if (!result.canceled && result.filePaths.length > 0) {
-      modelValue.value = props.field.multiple ? result.filePaths : result.filePaths[0]
-    }
-  } catch (error) {
-    console.error('选择路径失败:', error)
-  }
+// 自定义目录选择器确定回调
+const onPick = (val) => {
+  modelValue.value = val
 }
 
 watch(

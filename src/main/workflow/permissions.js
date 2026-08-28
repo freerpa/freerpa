@@ -10,7 +10,6 @@
  */
 import { app } from 'electron'
 import fs from 'fs'
-import path from 'path'
 import { get as storeGet, set as storeSet } from '../store'
 import { INFRA_ENV, PERMISSIONS_DEFAULTS_STRICT } from '../../shared/permissions-constants.js'
 
@@ -26,8 +25,8 @@ export const ensureDefaultPermissions = () => {
   return false
 }
 
-/** 默认数据目录名（用户文稿下，工作流文件类节点默认可读写，开箱即用） */
-const DATA_DIR_NAME = 'FREERPA-DATA'
+/** 默认放宽容许根：文档、下载等无风险用户公开目录（IO 读+写），保证文件类节点开箱即用；不含系统/隐藏目录 */
+const DEFAULT_IO_NODES = ['documents', 'downloads']
 
 /** deno 2.x sys 权限合法 kind 集合（buildDenoPermissions 预校验用；umask 为 node 兼容层写文件硬约束） */
 const SYS_KINDS = new Set([
@@ -43,16 +42,23 @@ export const getDefaultPermissions = () => {
     sys: { allow: ['umask'] },
     import: { enabled: true, hosts: [] }
   }
-  let dataRoot = ''
-  try {
-    dataRoot = path.join(app.getPath('documents'), DATA_DIR_NAME)
-    fs.mkdirSync(dataRoot, { recursive: true }) // 首次运行创建
-  } catch {
-    // 获取/创建失败时保持空目录列表（不阻塞启动）
-  }
+  // 默认放宽容许根：文档、下载等无风险公开目录
+  const ioRoots = [
+    ...DEFAULT_IO_NODES
+      .map((node) => {
+        try {
+          const p = app.getPath(node)
+          fs.mkdirSync(p, { recursive: true })
+          return p
+        } catch {
+          return null
+        }
+      })
+      .filter(Boolean)
+  ]
   return {
     ...defaults,
-    io: { roots: dataRoot ? [dataRoot] : [] }
+    io: { roots: ioRoots }
   }
 }
 
