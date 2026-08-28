@@ -152,7 +152,7 @@ const flowStoreCache = new Map()
 const getFlowStore = (id) => {
   let s = flowStoreCache.get(id)
   if (!s) {
-    try { s = useFlowStore(id)() } catch { s = null }
+    try { s = useFlowStore(id) } catch { s = null }
     if (s) flowStoreCache.set(id, s)
   }
   return s

@@ -1,6 +1,7 @@
 import { ipcMain, screen, dialog, shell, app, Notification } from 'electron'
 import { sendToRenderer } from './workflow/host/rendererUtils.js'
 import { manager as workflowManager } from './workflow/index.js'
+import { killAllBrowsers } from './browser/manager.js'
 import { get, flush as flushStore } from './store/index.js'
 import { destroyTray } from './app/tray.js'
 import { compareSemver } from './utils.js'
@@ -28,17 +29,35 @@ export const register = () => {
     }
   })
   ipcMain.on('window-close', () => {
-    // 确认退出：立即真正退出（app.exit 不触发 before-quit，不会与确认框拦截死循环）。
-    // 清理全部尽力而为且不阻塞：destroyAll 可能因 worker 卡住而挂起、destroyTray 可能抛错，
-    // 都不能影响退出 —— 之前 await 清理导致确认后"没反应"
-    try {
-      destroyTray()
-    } catch {
-      /* 托盘清理失败不影响退出 */
-    }
-    workflowManager.cleanup().catch(() => {})
-    // 等待配置写入落库后退出，防丢最近一次 set
-    flushStore().finally(() => app.exit(0))
+    // 确认退出：先逐个清理（停工作流 → 关浏览器 → 落库），完成后再真正退出。
+    // 每步带超时兜底：worker/浏览器进程卡住时不会无限挂起（此前 await 清理导致确认后"没反应"）。
+    ;(async () => {
+      try {
+        destroyTray()
+      } catch {
+        /* 托盘清理失败不影响退出 */
+      }
+      const withTimeout = (promise, ms, label) =>
+        Promise.race([
+          promise,
+          new Promise((resolve) =>
+            setTimeout(() => {
+              console.warn(`[exit] ${label} 清理超时，继续退出`)
+              resolve()
+            }, ms)
+          )
+        ])
+      try {
+        // 1. 停止全部正在执行的工作流（销毁对应 Worker）
+        await withTimeout(workflowManager.cleanup(), 8000, '工作流')
+        // 2. 关闭全部打开的浏览器进程
+        await withTimeout(killAllBrowsers(), 8000, '浏览器')
+      } catch {
+        /* 清理异常不阻塞退出 */
+      }
+      // 3. 等待配置写入落库后退出，防丢最近一次 set
+      flushStore().finally(() => app.exit(0))
+    })()
   })
   /** 归一对话框默认目录：请求目录不存在时回退安全目录（allowedRoot） */
   const resolveDialogDefaultPath = (requestedPath) => {

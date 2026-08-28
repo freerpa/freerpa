@@ -144,3 +144,13 @@ export const getAllBrowserStatus = () => {
   for (const [envId] of openBrowserInstances) status[envId] = true
   return status
 }
+
+/**
+ * 关闭全部已打开的浏览器（应用退出前逐个清理）。
+ * 每个进程经 killBrowserProcess 关闭（含 3s SIGKILL 兜底）；引用计数一并清空。
+ */
+export const killAllBrowsers = async () => {
+  const envIds = [...openBrowserInstances.keys()]
+  refCounts.clear()
+  await Promise.all(envIds.map((envId) => killBrowserProcess(envId)))
+}
