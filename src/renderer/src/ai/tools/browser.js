@@ -6,6 +6,7 @@ const env = () => window.electronAPI.env
 
 // 工具结果注入 LLM 上下文的大小上限（head/tail 截断，见 guard.js）
 import { limitText, assertArgs } from './guard.js'
+import { defineTool } from './defineTool.js'
 
 // 工具结果转文本：兼容两种返回形态——
 // 1) env:* 统一 {code:200,data} / {code:400,message} 包装；
@@ -21,71 +22,46 @@ const toText = (res) => {
 }
 
 export const createBrowserTools = () => [
-  {
-    type: 'function',
-    function: {
-      name: 'createBrowser',
-      description:
-        '创建浏览器环境（浏览器管理中的实例，搭建工作流需要浏览器时先创建再 openBrowser）。浏览器内核已随客户端内置分发，无需指定内核版本。',
-      strict: true,
-      parameters: {
+  defineTool(
+    'createBrowser',
+    '创建浏览器环境（浏览器管理中的实例，搭建工作流需要浏览器时先创建再 openBrowser）。浏览器内核已随客户端内置分发，无需指定内核版本。',
+    {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: '浏览器环境名称' },
+        description: { type: 'string', description: '描述', default: '' },
+        category_id: { type: 'string', description: '所属分类ID（可选，默认不分类）', default: '' },
+        proxy_url: { type: 'string', description: '代理地址，可选' }
+      },
+      required: ['name'],
+      additionalProperties: false
+    }
+  ),
+  defineTool('openBrowser', '打开一个浏览器环境（复用已存在环境或创建新会话）。', {
+    type: 'object',
+    properties: {
+      envId: { type: 'string', description: '浏览器环境ID（复用已有环境会话目录）' },
+      proxy: { type: 'string', description: '代理地址，可选' },
+      fingerprint: {
         type: 'object',
-        properties: {
-          name: { type: 'string', description: '浏览器环境名称' },
-          description: { type: 'string', description: '描述', default: '' },
-          category_id: { type: 'string', description: '所属分类ID（可选，默认不分类）', default: '' },
-          proxy_url: { type: 'string', description: '代理地址，可选' }
-        },
-        required: ['name'],
-        additionalProperties: false
+        description: '浏览器指纹配置',
+        properties: { seed: { type: 'string' } }
       }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'openBrowser',
-      description: '打开一个浏览器环境（复用已存在环境或创建新会话）。',
-      strict: true,
-      parameters: {
-        type: 'object',
-        properties: {
-          envId: { type: 'string', description: '浏览器环境ID（复用已有环境会话目录）' },
-          proxy: { type: 'string', description: '代理地址，可选' },
-          fingerprint: {
-            type: 'object',
-            description: '浏览器指纹配置',
-            properties: { seed: { type: 'string' } }
-          }
-        },
-        required: ['envId'],
-        additionalProperties: false
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'closeBrowser',
-      description: '关闭一个浏览器环境（引用计数归零后释放进程）。',
-      strict: true,
-      parameters: {
-        type: 'object',
-        properties: { envId: { type: 'string', description: '浏览器环境ID' } },
-        required: ['envId'],
-        additionalProperties: false
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'getAllBrowserStatus',
-      description: '查询所有浏览器环境的运行状态（哪些已打开）。',
-      strict: true,
-      parameters: { type: 'object', properties: {}, additionalProperties: false }
-    }
-  }
+    },
+    required: ['envId'],
+    additionalProperties: false
+  }),
+  defineTool('closeBrowser', '关闭一个浏览器环境（引用计数归零后释放进程）。', {
+    type: 'object',
+    properties: { envId: { type: 'string', description: '浏览器环境ID' } },
+    required: ['envId'],
+    additionalProperties: false
+  }),
+  defineTool('getAllBrowserStatus', '查询所有浏览器环境的运行状态（哪些已打开）。', {
+    type: 'object',
+    properties: {},
+    additionalProperties: false
+  })
 ]
 
 export const createBrowserExecutors = () => ({

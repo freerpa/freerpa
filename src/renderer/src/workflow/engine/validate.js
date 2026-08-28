@@ -8,6 +8,7 @@
  */
 import nodes from '@nodes-path'
 import { getNodeGroupBySubFlow, getLeafPathMap, paramReferRegex } from '../utils'
+import { toPlain } from '../../utils/deepCopy.js'
 
 /** 构建工作流执行数据（深拷贝 config/inputs/outputs，排除 comment/subFlow 容器与停用节点）。id 为工作流 ID（engine 传入；检测场景可省略） */
 export const getFlowData = (store, id) => {
@@ -44,7 +45,7 @@ export const getFlowData = (store, id) => {
       source: edge.source,
       target: edge.target,
       logic: edge.data.logic || 'and',
-      condition: JSON.parse(JSON.stringify(edge.data.condition || [])),
+      condition: toPlain(edge.data.condition || []),
       sourceHandle: edge.sourceHandle,
       targetHandle: edge.targetHandle
     }))

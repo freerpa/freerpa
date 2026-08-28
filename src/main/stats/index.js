@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto'
 import { app } from 'electron'
 import { API_CONFIG } from '@/api/config'
 import { getSetting, upsertSetting } from '../data/settings'
+import { getPlatformKey } from '../../shared/platform.js'
 
 let db = null
 let deviceId = ''
@@ -26,16 +27,6 @@ async function getDeviceId() {
     await upsertSetting(db, STATS_KEY, deviceId)
   }
   return deviceId
-}
-
-/** 获取平台标识（与内核下载一致） */
-function getPlatform() {
-  switch (process.platform) {
-    case 'win32': return 'windows'
-    case 'darwin': return 'macos'
-    case 'linux': return 'linux'
-    default: return process.platform
-  }
 }
 
 /** 上报接口（静默失败） */
@@ -58,7 +49,7 @@ async function reportStartup() {
     const id = await getDeviceId()
     await postStats('/stats/startup', {
       device_id: id,
-      platform: getPlatform(),
+      platform: getPlatformKey(),
       app_version: app.getVersion(),
     })
   } catch {
@@ -72,7 +63,7 @@ async function reportUsage() {
   try {
     await postStats('/stats/usage', {
       device_id: deviceId,
-      platform: getPlatform(),
+      platform: getPlatformKey(),
       app_version: app.getVersion(),
       duration_seconds: duration,
       end_time: new Date().toISOString(),

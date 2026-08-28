@@ -291,7 +291,8 @@ import {
   IconRefresh,
   IconImport,
   IconExport,
-  IconLink
+  IconLink,
+  IconDelete
 } from '@arco-design/web-vue/es/icon'
 import { deepClone } from '@/workflow/utils'
 import DataEditorModal from './DataEditorModal.vue'

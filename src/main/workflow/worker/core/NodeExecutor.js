@@ -106,9 +106,10 @@ class NodeExecutor extends EventEmitter {
     this.state = state
     this.sendDebugInfo(state, error)
     // 状态非 running 且队列非空 → 继续执行队列
+    // （execute 内部已 try/catch 处理错误，这里 catch 仅为防 fire-and-forget 的 unhandled rejection）
     if (this.state !== 'running' && this.queue.length > 0 && !force) {
       this.inputs = this.queue.pop()
-      this.execute()
+      this.execute().catch(() => {})
     }
     this.emit('stateChange', {
       nodeId: this.node.id,

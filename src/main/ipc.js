@@ -8,6 +8,7 @@ import fs from 'fs'
 import path from 'path'
 import pkg from '../../package.json'
 import { API_CONFIG } from './api/config.js'
+import { getPlatformKey } from '../shared/platform.js'
 export const register = () => {
   // 窗口控制
   ipcMain.on('window-min', () => global.mainWindow.minimize())
@@ -88,13 +89,6 @@ export const register = () => {
     return pkg.version
   })
 
-  /** 版本接口的平台参数（与网站 fr_app_versions 平台字段一致） */
-  const updatePlatformKey = () => {
-    if (process.platform === 'darwin') return 'macos'
-    if (process.platform === 'win32') return 'windows'
-    return 'linux'
-  }
-
   /**
    * 检查更新：请求网站 GET /api/version/latest?platform=xxx
    * 返回 { hasUpdate, version, updateLog, downloadUrl, currentVersion, error }
@@ -102,7 +96,7 @@ export const register = () => {
    */
   ipcMain.handle('app:checkUpdate', async () => {
     try {
-      const url = `${API_CONFIG.BASE_URL}/version/latest?platform=${updatePlatformKey()}`
+      const url = `${API_CONFIG.BASE_URL}/version/latest?platform=${getPlatformKey()}`
       const controller = new AbortController()
       const timer = setTimeout(() => controller.abort(), 10000)
       let res

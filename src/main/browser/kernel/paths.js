@@ -10,20 +10,14 @@ import { execFile } from 'child_process'
 import { promisify } from 'util'
 import path from 'path'
 import fs from 'fs-extra'
+import { getPlatformKey } from '../../../shared/platform.js'
 
 const execFileAsync = promisify(execFile)
 
 /**
- * 获取平台标识
+ * 获取平台标识（唯一实现见 src/shared/platform.js）
  */
-export const getPlatform = () => {
-  switch (process.platform) {
-    case 'win32': return 'windows'
-    case 'darwin': return 'macos'
-    case 'linux': return 'linux'
-    default: return process.platform
-  }
-}
+export const getPlatform = getPlatformKey
 
 /**
  * 获取内置内核的可执行文件相对路径（平台相关）

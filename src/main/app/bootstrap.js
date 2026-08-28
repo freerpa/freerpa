@@ -17,6 +17,7 @@ import { register as dbInfoRegisterIPC } from '../data/dbIpc'
 import { register as pluginRegisterIPC } from '../plugin/ipc'
 import { registerPluginScheme, registerPluginProtocol } from '../plugin/protocol'
 import { register as aiRegisterIPC } from '../ai'
+import { stopStats } from '../stats/index.js'
 
 /**
  * 应用启动引导
@@ -96,6 +97,11 @@ export const bootstrap = async () => {
       // 渲染进程不可用时直接退出
       app.exit(0)
     }
+  })
+
+  // 任何退出路径（app.exit / 正常退出）都会触发 will-quit：清理统计上报定时器
+  app.on('will-quit', () => {
+    stopStats()
   })
 
   // 注册所有 IPC 处理

@@ -101,7 +101,7 @@ import {
   IconRefresh
 } from '@arco-design/web-vue/es/icon'
 import ModalPopover from '../../ModalPopover.vue'
-import DebugInfo from './debugInfo.vue'
+import DebugInfo from './DebugInfo.vue'
 
 defineEmits(['action', 'saveName', 'update:nodeName', 'clearDebug', 'refresh'])
 

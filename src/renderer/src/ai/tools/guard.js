@@ -14,7 +14,7 @@ export const limitText = (value) => {
   return `${text.slice(0, head)}…[truncated ${omitted} bytes — 需要完整数据请缩小查询范围或加条件过滤]…${text.slice(-tail)}`
 }
 
-/** 敏感字段匹配（apiKey/password/token/secret 等；chat.vue 快照与 workflow.js 返回脱敏共用） */
+/** 敏感字段匹配（apiKey/password/token/secret 等；ChatPanel.vue 快照与 workflow.js 返回脱敏共用） */
 const SENSITIVE_KEYS = /api[_-]?key|password|passwd|token|secret|authorization|cookie|appid|app[_-]?secret/i
 
 /** config 深度脱敏：敏感字段（apiKey/password/token/secret 等）值打码（防明文配置发给第三方模型） */

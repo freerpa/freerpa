@@ -23,6 +23,7 @@ import { snipContext, sanitizeContext, friendlyAIError, toOpenAiToolCall } from 
 import { executeToolCalls, STALL_ROUNDS, STALL_PROMPT_MSG, GRACE_PROMPT_MSG } from './toolLoop'
 import { useFlowStore } from '@/workflow/store'
 import { quickValidateWorkflow } from '@/workflow/engine/validate'
+import { toPlain } from '../../utils/deepCopy.js'
 
 const MAX_TOOL_ROUNDS = 128 // 工具循环轮次上限，防止模型死循环（含每轮结束前的工作流检测修正轮）
 
@@ -55,7 +56,7 @@ export const useAiChat = ({ workflowId, tools, executors, buildSystem, buildTurn
       }))
       // JSON 深拷贝：messages.value 是 Vue reactive 数组，元素为 Proxy，
       // 直接经 IPC 传输会因 structuredClone 无法克隆 Proxy 报 "An object could not be cloned"
-      contextMessages = JSON.parse(JSON.stringify(messages.value))
+      contextMessages = toPlain(messages.value)
     } catch (error) {
       console.error('获取聊天记录失败:', error)
     }
@@ -179,7 +180,7 @@ export const useAiChat = ({ workflowId, tools, executors, buildSystem, buildTurn
       // （reactive 数组 push 会把元素包装成 proxy；经 viewRound（proxy）修改的 tool_calls
       // 底层数组元素也会被 Vue 包装），structuredClone 无法克隆 proxy，直接传会报
       // 「An object could not be cloned」（曾出现在 aiModels.start 的 chatStart）
-      const payloadMessages = JSON.parse(JSON.stringify(messages))
+      const payloadMessages = toPlain(messages)
       chatStream = createChatStream(
         {
           providerId: model.providerId,
@@ -266,7 +267,7 @@ export const useAiChat = ({ workflowId, tools, executors, buildSystem, buildTurn
     // （Vue Proxy 无法被 structuredClone 克隆，直接传会报「An object could not be cloned」）
     const persistIn = (msg) =>
       window.electronAPI.ai
-        .saveMessage(workflowId, convId, JSON.parse(JSON.stringify(msg)))
+        .saveMessage(workflowId, convId, toPlain(msg))
         .catch(() => {})
 
     // 用户消息（attachments 持久化展示，且仅入上下文不重复拼接）；

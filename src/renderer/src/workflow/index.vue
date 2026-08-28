@@ -15,7 +15,7 @@
       @mouseleave="aiFocus = false"
       :style="{ right: aiVisible ? '20px' : '-740px' }"
     >
-      <chat
+      <ChatPanel
         :workflowId="workflowId"
         :visible="aiVisible"
         @close="aiVisible = false"
@@ -28,7 +28,7 @@
 import { ref, onMounted, onUnmounted, provide, inject } from 'vue'
 import FlowCanvas from './components/FlowCanvas.vue'
 import FlowToolbar from './components/FlowToolbar.vue'
-import chat from '@/ai/chat.vue'
+import ChatPanel from '@/ai/ChatPanel.vue'
 import { storeToRefs } from 'pinia'
 import { useFlowStore } from './store'
 import { useStore } from '@/store'

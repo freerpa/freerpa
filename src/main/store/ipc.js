@@ -20,7 +20,17 @@ export const register = () => {
     return get(key)
   })
 
+  // 危险 key 黑名单（原型污染）：拒绝以这些为 key 的写入
+  const isUnsafeKey = (key) =>
+    key === '__proto__' || key === 'constructor' || key === 'prototype'
+
   ipcMain.handle('store:set', async (event, key, value) => {
+    if (typeof key !== 'string' || key.trim() === '') {
+      throw new Error('配置 key 不能为空')
+    }
+    if (isUnsafeKey(key)) {
+      throw new Error(`非法配置 key: ${key}`)
+    }
     return set(key, value)
   })
 

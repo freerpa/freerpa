@@ -1,6 +1,6 @@
 /**
  * @file: AI 面板 prompt 构建（系统提示 / 每轮工作流快照 / 用户偏好记忆）
- * 从 chat.vue 独立出来：稳定 system 前缀 + 每轮 user turn 尾部注入的瞬时快照 + 轻量记忆召回。
+ * 从 ChatPanel.vue 独立出来：稳定 system 前缀 + 每轮 user turn 尾部注入的瞬时快照 + 轻量记忆召回。
  * 敏感配置脱敏统一走 tools/guard.js 的 maskSensitive。
  */
 import { ref } from 'vue'

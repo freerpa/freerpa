@@ -24,8 +24,8 @@ export const normalizePermissions = (saved) => {
   }
 }
 
-/** 深拷贝（IPC 传参：Vue 响应式 Proxy 不可被 structuredClone 克隆） */
-export const toPlain = (obj) => JSON.parse(JSON.stringify(obj))
+/** 深拷贝（IPC 传参：Vue 响应式 Proxy 不可被 structuredClone 克隆；通用实现见 utils/deepCopy.js） */
+export { toPlain } from './deepCopy.js'
 
 /** 读取全局权限（未配置时取主进程单点生成的最安全默认，含预置 FREERPA-DATA 目录；IPC 失败回退静态 DEFAULTS） */
 export const loadGlobalPermissions = async () => {

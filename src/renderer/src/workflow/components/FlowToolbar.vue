@@ -207,7 +207,7 @@ import {
 } from '@arco-design/web-vue/es/icon'
 import { RiDashboardLine } from '@remixicon/vue'
 import NodeList from './NodeList.vue'
-import IconSwitch from './custom/components/iconSwitch.vue'
+import IconSwitch from './custom/components/IconSwitch.vue'
 import { useFlowStore } from '../store'
 import { inject, computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'

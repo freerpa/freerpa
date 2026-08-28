@@ -7,7 +7,6 @@
  */
 
 import { execSync } from 'child_process'
-import { app } from 'electron'
 import puppeteer from 'puppeteer-core'
 
 // 存储所有打开的浏览器实例
@@ -29,6 +28,8 @@ export const killBrowserProcess = async (envId) => {
   const entry = openBrowserInstances.get(envId)
   if (!entry) return
   const { process: proc, senderRef } = entry
+  // 置停止标记：startPageMonitor 的轮询下一轮立即终止（避免进程关闭后残留一次 2s 轮询）
+  entry.monitorStopped = true
   openBrowserInstances.delete(envId)
 
   safeSend(senderRef, 'env:browserClosed', { envId: String(envId) })
@@ -87,6 +88,8 @@ const startPageMonitor = async (envId, entry) => {
   try {
     const browser = await puppeteer.connect({ browserWSEndpoint: entry.wsEndpoint, defaultViewport: null })
     const check = async () => {
+      // 进程已关闭（killBrowserProcess 置标记）：终止轮询，不再残留下一次 setTimeout
+      if (entry.monitorStopped) return
       try {
         const pages = await browser.pages()
         if (pages.length === 0) {

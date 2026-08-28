@@ -3,6 +3,7 @@ import {
   rebuildElementIds,
   calculateBoundingBox
 } from './index'
+import { toPlain } from '../../utils/deepCopy.js'
 // 处理节点复制
 export const handleNodeCopy = (vueFlowRef, clipboard, selectedNodes) => {
   let activeNodes = vueFlowRef.getSelectedNodes
@@ -35,8 +36,8 @@ export const handleNodeCopy = (vueFlowRef, clipboard, selectedNodes) => {
 
   if (activeNodes.length > 0) {
     clipboard.value = {
-      nodes: JSON.parse(JSON.stringify(activeNodes)),
-      edges: JSON.parse(JSON.stringify(activeEdges)),
+      nodes: toPlain(activeNodes),
+      edges: toPlain(activeEdges),
       source: {
         flowId: vueFlowRef.id,
         viewport: vueFlowRef.viewport

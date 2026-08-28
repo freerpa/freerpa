@@ -6,194 +6,134 @@ const data = () => window.electronAPI.data
 
 // 工具结果注入 LLM 上下文的大小上限（head/tail 截断，见 guard.js）
 import { limitText, assertArgs } from './guard.js'
+import { defineTool } from './defineTool.js'
 
 const toText = (res) => limitText(res)
 
 export const createDataTableTools = () => [
-  {
-    type: 'function',
-    function: {
-      name: 'listTables',
-      description: '列出所有数据表（数据表即「数据管理」中的数据模型）。',
-      strict: true,
-      parameters: {
-        type: 'object',
-        properties: {
-          keyword: { type: 'string', description: '按表名搜索', default: '' },
-          page: { type: 'number', description: '页码，默认1', default: 1 },
-          pageSize: { type: 'number', description: '每页条数，默认20', default: 20 }
-        },
-        additionalProperties: false
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'getTable',
-      description: '获取单个数据表的详情（字段结构）。',
-      strict: true,
-      parameters: {
-        type: 'object',
-        properties: { id: { type: 'string', description: '数据表ID' } },
-        required: ['id'],
-        additionalProperties: false
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'createTable',
-      description:
-        '创建数据表（数据管理中的数据模型，搭建工作流需要配套数据存储时用）。fields 为字段定义数组，至少 1 个字段：每个字段 name 为英文标识（如 name/price，规则 /^[a-zA-Z][a-zA-Z0-9_]*$/，不能是 id/color/created_at），description 为字段中文名（表格表头，必填），type 支持 string/number/date。',
-      strict: true,
-      parameters: {
-        type: 'object',
-        properties: {
-          name: { type: 'string', description: '数据表名称' },
-          description: { type: 'string', description: '数据表描述', default: '' },
-          category_id: { type: 'string', description: '所属分类ID（可选，默认不分类）', default: '' },
-          fields: {
-            type: 'array',
-            description: '字段定义（至少 1 个）',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string', description: '字段英文标识（如 goods_name，拼音或英文）' },
-                description: { type: 'string', description: '字段中文名（表格表头，必填）' },
-                type: { type: 'string', enum: ['string', 'number', 'date'], description: '字段类型' },
-                required: { type: 'boolean', description: '是否必填（可选，默认 false）' },
-                unique: { type: 'boolean', description: '是否唯一（可选，默认 false）' }
-              },
-              required: ['name', 'description', 'type'],
-              additionalProperties: false
-            }
-          }
-        },
-        required: ['name'],
-        additionalProperties: false
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'deleteTable',
-      description: '删除数据表（数据管理中的数据模型，含其全部数据，危险操作）。',
-      strict: true,
-      parameters: {
-        type: 'object',
-        properties: { id: { type: 'string', description: '数据表ID' } },
-        required: ['id'],
-        additionalProperties: false
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'queryData',
-      description: '查询数据表中的记录。',
-      strict: true,
-      parameters: {
-        type: 'object',
-        properties: {
-          modelId: { type: 'string', description: '数据表ID' },
-          page: { type: 'number', description: '页码，默认1', default: 1 },
-          pageSize: { type: 'number', description: '每页条数，默认10', default: 10 },
-          filters: {
-            type: 'array',
-            description: '过滤条件',
-            items: {
-              type: 'object',
-              properties: {
-                field: { type: 'string', description: '字段名' },
-                operator: {
-                  type: 'string',
-                  enum: ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'like', 'in'],
-                  description: '比较操作符'
-                },
-                value: { description: '比较值' }
-              },
-              required: ['field', 'operator', 'value'],
-              additionalProperties: false
-            }
-          }
-        },
-        required: ['modelId'],
-        additionalProperties: false
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'createData',
-      description: '向数据表新增一条记录。',
-      strict: true,
-      parameters: {
-        type: 'object',
-        properties: {
-          modelId: { type: 'string', description: '数据表ID' },
-          data: {
+  defineTool('listTables', '列出所有数据表（数据表即「数据管理」中的数据模型）。', {
+    type: 'object',
+    properties: {
+      keyword: { type: 'string', description: '按表名搜索', default: '' },
+      page: { type: 'number', description: '页码，默认1', default: 1 },
+      pageSize: { type: 'number', description: '每页条数，默认20', default: 20 }
+    },
+    additionalProperties: false
+  }),
+  defineTool('getTable', '获取单个数据表的详情（字段结构）。', {
+    type: 'object',
+    properties: { id: { type: 'string', description: '数据表ID' } },
+    required: ['id'],
+    additionalProperties: false
+  }),
+  defineTool(
+    'createTable',
+    '创建数据表（数据管理中的数据模型，搭建工作流需要配套数据存储时用）。fields 为字段定义数组，至少 1 个字段：每个字段 name 为英文标识（如 name/price，规则 /^[a-zA-Z][a-zA-Z0-9_]*$/，不能是 id/color/created_at），description 为字段中文名（表格表头，必填），type 支持 string/number/date。',
+    {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: '数据表名称' },
+        description: { type: 'string', description: '数据表描述', default: '' },
+        category_id: { type: 'string', description: '所属分类ID（可选，默认不分类）', default: '' },
+        fields: {
+          type: 'array',
+          description: '字段定义（至少 1 个）',
+          items: {
             type: 'object',
-            description: '要写入的字段值（字段名: 值）',
-            additionalProperties: true
+            properties: {
+              name: { type: 'string', description: '字段英文标识（如 goods_name，拼音或英文）' },
+              description: { type: 'string', description: '字段中文名（表格表头，必填）' },
+              type: { type: 'string', enum: ['string', 'number', 'date'], description: '字段类型' },
+              required: { type: 'boolean', description: '是否必填（可选，默认 false）' },
+              unique: { type: 'boolean', description: '是否唯一（可选，默认 false）' }
+            },
+            required: ['name', 'description', 'type'],
+            additionalProperties: false
           }
-        },
-        required: ['modelId', 'data'],
-        additionalProperties: false
-      }
+        }
+      },
+      required: ['name'],
+      additionalProperties: false
     }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'updateData',
-      description: '批量更新数据表中的记录（按 id 数组）。',
-      strict: true,
-      parameters: {
-        type: 'object',
-        properties: {
-          modelId: { type: 'string', description: '数据表ID' },
-          ids: {
-            type: 'array',
-            description: '要更新的记录 id 列表',
-            items: { type: ['number', 'string'] }
+  ),
+  defineTool('deleteTable', '删除数据表（数据管理中的数据模型，含其全部数据，危险操作）。', {
+    type: 'object',
+    properties: { id: { type: 'string', description: '数据表ID' } },
+    required: ['id'],
+    additionalProperties: false
+  }),
+  defineTool('queryData', '查询数据表中的记录。', {
+    type: 'object',
+    properties: {
+      modelId: { type: 'string', description: '数据表ID' },
+      page: { type: 'number', description: '页码，默认1', default: 1 },
+      pageSize: { type: 'number', description: '每页条数，默认10', default: 10 },
+      filters: {
+        type: 'array',
+        description: '过滤条件',
+        items: {
+          type: 'object',
+          properties: {
+            field: { type: 'string', description: '字段名' },
+            operator: {
+              type: 'string',
+              enum: ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'like', 'in'],
+              description: '比较操作符'
+            },
+            value: { description: '比较值' }
           },
-          data: {
-            type: 'object',
-            description: '要更新的字段值（字段名: 值）',
-            additionalProperties: true
-          }
-        },
-        required: ['modelId', 'ids', 'data'],
-        additionalProperties: false
+          required: ['field', 'operator', 'value'],
+          additionalProperties: false
+        }
       }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'deleteData',
-      description: '批量删除数据表中的记录（按 id 数组）。',
-      strict: true,
-      parameters: {
+    },
+    required: ['modelId'],
+    additionalProperties: false
+  }),
+  defineTool('createData', '向数据表新增一条记录。', {
+    type: 'object',
+    properties: {
+      modelId: { type: 'string', description: '数据表ID' },
+      data: {
         type: 'object',
-        properties: {
-          modelId: { type: 'string', description: '数据表ID' },
-          ids: {
-            type: 'array',
-            description: '要删除的记录 id 列表',
-            items: { type: ['number', 'string'] }
-          }
-        },
-        required: ['modelId', 'ids'],
-        additionalProperties: false
+        description: '要写入的字段值（字段名: 值）',
+        additionalProperties: true
       }
-    }
-  }
+    },
+    required: ['modelId', 'data'],
+    additionalProperties: false
+  }),
+  defineTool('updateData', '批量更新数据表中的记录（按 id 数组）。', {
+    type: 'object',
+    properties: {
+      modelId: { type: 'string', description: '数据表ID' },
+      ids: {
+        type: 'array',
+        description: '要更新的记录 id 列表',
+        items: { type: ['number', 'string'] }
+      },
+      data: {
+        type: 'object',
+        description: '要更新的字段值（字段名: 值）',
+        additionalProperties: true
+      }
+    },
+    required: ['modelId', 'ids', 'data'],
+    additionalProperties: false
+  }),
+  defineTool('deleteData', '批量删除数据表中的记录（按 id 数组）。', {
+    type: 'object',
+    properties: {
+      modelId: { type: 'string', description: '数据表ID' },
+      ids: {
+        type: 'array',
+        description: '要删除的记录 id 列表',
+        items: { type: ['number', 'string'] }
+      }
+    },
+    required: ['modelId', 'ids'],
+    additionalProperties: false
+  })
 ]
 
 export const createDataTableExecutors = () => ({
