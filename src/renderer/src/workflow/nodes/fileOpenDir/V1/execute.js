@@ -13,8 +13,8 @@ const execute = async (node, context) => {
   if (!fs.existsSync(dirPath)) {
     throw new Error(`目录不存在: ${dirPath}`)
   }
-  // 获取要打开的路径
-  const targetPath = await fs.realpath(dirPath)
+  // 获取要打开的路径（fs.realpath 为回调式 API，改用同步版避免回调缺失报错）
+  const targetPath = fs.realpathSync(dirPath)
 
   try {
     // 判断是否是目录

@@ -4,9 +4,36 @@
  */
 import { bridge } from './bridge.js'
 
+/**
+ * 可见性排序：在匹配到的结果中优先返回可见元素，但不可见元素不剔除（保留原顺序兜底）。
+ * 避免 waitForSelector(visible:true) 因元素隐藏（如 input[type=file]、透明/零尺寸按钮）而误判为不存在。
+ */
+async function preferVisible(page, handles) {
+  if (!handles.length) return handles
+  const vis = new Set()
+  await Promise.all(handles.map(async (h, i) => {
+    try {
+      const ok = await page.evaluate((el) => {
+        if (!el || el.nodeType !== 1) return false
+        const r = el.getBoundingClientRect()
+        const s = getComputedStyle(el)
+        return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && parseFloat(s.opacity || 1) > 0
+      }, h)
+      if (ok) vis.add(i)
+    } catch {
+      // 句柄已失效等异常按不可见处理
+    }
+  }))
+  if (!vis.size) return handles // 全部不可见：不因不可见而剔除，保留原顺序
+  const visible = []
+  const invisible = []
+  handles.forEach((h, i) => (vis.has(i) ? visible : invisible).push(h))
+  return [...visible, ...invisible]
+}
+
 async function findByCss(page, expr, opts) {
   try {
-    if (opts.wait) await page.waitForSelector(expr, { visible: true })
+    if (opts.wait) await page.waitForSelector(expr) // 仅等待元素出现，不要求可见
     return page.$$(expr)
   } catch { return [] }
 }
@@ -14,7 +41,7 @@ async function findByCss(page, expr, opts) {
 async function findByXPath(page, expr, opts) {
   try {
     const pseudo = `::-p-xpath(${expr})`
-    if (opts.wait) await page.waitForSelector(pseudo, { visible: true })
+    if (opts.wait) await page.waitForSelector(pseudo) // 仅等待元素出现，不要求可见
     return page.$$(pseudo)
   } catch { return [] }
 }
@@ -98,7 +125,7 @@ async function matchAll(page, selectors, opts) {
 export async function find(page, element, opts = { all: false, wait: true }) {
   if (!element?.selectors?.length) return opts.all ? [] : null
   const fn = element.match_condition === 'all' ? matchAll : matchAny
-  const handles = await fn(page, element.selectors, opts)
+  const handles = await preferVisible(page, await fn(page, element.selectors, opts)) // 统一可见优先，覆盖全部 finder
   return opts.all ? handles : (handles[0] || null)
 }
 

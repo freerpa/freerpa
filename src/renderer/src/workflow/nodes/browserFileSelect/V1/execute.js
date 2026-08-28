@@ -127,7 +127,7 @@ const execute = async (node, context) => {
       }`
     )
     for (let index in targetFiles) {
-      targetFiles[index] = await fs.realpath(targetFiles[index])
+      targetFiles[index] = fs.realpathSync(targetFiles[index])
     }
     // 上传文件
     if (isMultiple) {

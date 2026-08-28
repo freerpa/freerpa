@@ -121,8 +121,8 @@
       <!-- 底部操作区 -->
       <div class="dp-footer">
         <div class="dp-footer-actions">
-          <a-button size="small" @click="onCancel">取消</a-button>
-          <a-button size="small" type="primary" :disabled="!canConfirm" @click="onConfirm">选择</a-button>
+          <a-button @click="onCancel">取消</a-button>
+          <a-button type="primary" :disabled="!canConfirm" @click="onConfirm">选择</a-button>
         </div>
       </div>
     </div>
