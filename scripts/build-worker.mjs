@@ -171,20 +171,31 @@ function buildProdImportMap() {
     }
   }
   for (const s of specs) {
-    const pkg = s.split('/')[0]
+    const { pkg, subpath } = splitBareSpec(s)
     const ver = getPkgVersion(pkg)
     if (!ver) {
       console.warn(`⚠ 未找到依赖版本: ${pkg}（跳过映射 ${s}）`)
       continue
     }
-    if (s.includes('/')) {
+    if (subpath) {
       // exact 映射完整 npm: 说明符（deno 不支持 npm: 前缀拼接）
-      prodMap[s] = `npm:${pkg}@${ver}/${s.slice(pkg.length + 1)}`
+      prodMap[s] = `npm:${pkg}@${ver}/${subpath}`
     } else {
       prodMap[pkg] = `npm:${pkg}@${ver}`
     }
   }
   return { imports: prodMap }
+}
+
+/** 拆分裸说明符为 { pkg, subpath }，正确处理 scoped 包（@scope/name[/sub]） */
+function splitBareSpec(spec) {
+  if (spec.startsWith('@')) {
+    const parts = spec.split('/')
+    if (parts.length < 2) return { pkg: spec, subpath: '' }
+    return { pkg: `${parts[0]}/${parts[1]}`, subpath: parts.slice(2).join('/') }
+  }
+  const i = spec.indexOf('/')
+  return i === -1 ? { pkg: spec, subpath: '' } : { pkg: spec.slice(0, i), subpath: spec.slice(i + 1) }
 }
 
 function getPkgVersion(pkg) {
@@ -259,37 +270,70 @@ function materializeNodeModules(dir) {
       if (!host.isDirectory()) continue
       const nm = path.join(denoDir, host.name, 'node_modules')
       if (!fs.existsSync(nm)) continue
-      surfacePackages(nm, dir, (n) => { surfaced += n })
+      // consumerName / hostVersion：当前这个 .deno 宿主包对应的顶层包名与版本（去除最后 @版本 尾缀）。
+      // 冲突时仅当顶层该包版本 === 本 host 版本（即它正是被 hoist 到顶层的那一份）才向它嵌套，
+      // 避免把同名不同版本的传递依赖（如 https-proxy-agent@5 的 agent-base@6）误塞进 hoisted 的 @9 包下。
+      const at = host.name.lastIndexOf('@')
+      const consumerName = at > 0 ? host.name.slice(0, at) : host.name
+      const hostVersion = at > 0 ? host.name.slice(at + 1) : ''
+      surfacePackages(nm, dir, consumerName, hostVersion, (n) => { surfaced += n })
     }
-    console.log(`✓ 展开 ${surfaced} 个传递依赖到 node_modules 顶层`)
+    console.log(`✓ 展开 ${surfaced} 个传递依赖到 node_modules（冲突版本已按 consumer 嵌套安置）`)
   }
 
   console.log('✓ node_modules 顶层符号链接已实体化')
 }
 
-/** 把 node_modules 目录下所有包（含 scoped 包）逐一补齐到顶层 rootNm（已存在则跳过） */
-function surfacePackages(nm, rootNm, onCount) {
+/**
+ * 把某 .deno 宿主包 node_modules 下的包补齐到顶层 rootNm（近似 npm 扁平布局）。
+ * - 顶层无此包名 → hoist 到顶层；
+ * - 顶层已存在且是不同版本（冲突）→ 按 npm 语义嵌套到当前 consumer 的 node_modules 下，
+ *   避免顶层旧版本遮蔽该 consumer 真正需要的正确版本（如 https-proxy-agent@9 需 agent-base@9 ESM，而非顶层 agent-base@6 CJS）。
+ * - 当前包自身的目录（rel === consumerName）跳过，不自我嵌套。
+ */
+function surfacePackages(nm, rootNm, consumerName, hostVersion, onCount) {
   for (const seg of fs.readdirSync(nm, { withFileTypes: true })) {
     if (!seg.isDirectory() && !seg.isSymbolicLink()) continue
+    let rel
+    let src
     if (seg.name.startsWith('@')) {
       // scoped 包：@scope/name
       const scopeDir = path.join(nm, seg.name)
       for (const sub of fs.readdirSync(scopeDir, { withFileTypes: true })) {
         if (!sub.isDirectory() && !sub.isSymbolicLink()) continue
-        const rel = `${seg.name}/${sub.name}`
-        if (maybeSurface(path.join(scopeDir, sub.name), rootNm, rel)) onCount(1)
+        rel = `${seg.name}/${sub.name}`
+        src = path.join(scopeDir, sub.name)
+        if (maybeSurface(src, rootNm, rel, consumerName, hostVersion)) onCount(1)
       }
-    } else {
-      if (maybeSurface(path.join(nm, seg.name), rootNm, seg.name)) onCount(1)
+      continue
     }
+    rel = seg.name
+    src = path.join(nm, seg.name)
+    if (maybeSurface(src, rootNm, rel, consumerName, hostVersion)) onCount(1)
   }
 }
 
-/** 若根节点下不存在 rel 路径，则拷贝实体化；返回是否新增 */
-function maybeSurface(from, rootNm, rel) {
+/**
+ * 补齐单个 dep。返回是否新增。
+ * 无冲突 → hoist 顶层；冲突 → 仅当顶层 consumer 确为本 host 版本时才嵌套到其目录下；自身目录 → 跳过。
+ */
+function maybeSurface(from, rootNm, rel, consumerName, hostVersion) {
   const dest = path.join(rootNm, rel)
-  if (fs.existsSync(dest)) return false
-  fs.cpSync(from, dest, { recursive: true, dereference: true })
+  if (!fs.existsSync(dest)) {
+    fs.cpSync(from, dest, { recursive: true, dereference: true })
+    return true
+  }
+  // 顶层已占用（同名不同版本）：按 npm 语义嵌套安置——但仅当顶层 consumer 正是本 host 版本，
+  // 否则（如 https-proxy-agent@5 也指向同名 hoisted @9）跳过，避免旧/新版本互相覆盖。
+  if (!consumerName || !hostVersion || rel === consumerName) return false
+  const consumerDir = path.join(rootNm, consumerName)
+  const nestedDest = path.join(consumerDir, 'node_modules', rel)
+  if (!fs.existsSync(consumerDir) || fs.existsSync(nestedDest)) return false
+  let topVer = ''
+  try { topVer = JSON.parse(fs.readFileSync(path.join(consumerDir, 'package.json'), 'utf-8')).version || '' } catch { return false }
+  if (topVer !== hostVersion) return false
+  fs.mkdirSync(path.dirname(nestedDest), { recursive: true })
+  fs.cpSync(from, nestedDest, { recursive: true, dereference: true })
   return true
 }
 

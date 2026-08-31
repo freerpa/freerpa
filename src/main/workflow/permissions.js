@@ -90,6 +90,9 @@ export const buildDenoPermissions = (effective, infraReadPaths) => {
   const run = effective.process
   const ffi = effective.ffi
   const imp = effective.import
+  // env 默认完整放行（npm 依赖如 debug 在加载期会枚举 process.env，deno 白名单模式下抛 NotCapable）。
+  // 仅当用户额外添加了自定义环境变量（非基础设施项）时降级为白名单，尊重用户主动收紧。
+  const customEnv = (effective.env.allow || []).filter((k) => !INFRA_ENV.includes(k))
   return {
     read: [...new Set([...infraReadPaths, ...effective.io.roots])],
     write: [...effective.io.roots],
@@ -97,7 +100,7 @@ export const buildDenoPermissions = (effective, infraReadPaths) => {
     run: run.enabled ? (run.commands.length ? run.commands : true) : [],
     ffi: ffi.enabled ? (ffi.paths.length ? ffi.paths : true) : [],
     import: imp.enabled ? (imp.hosts.length ? imp.hosts : true) : [],
-    env: [...new Set([...(effective.env.allow || [])])],
+    env: customEnv.length ? [...effective.env.allow] : true,
     sys: [...new Set([...(effective.sys.allow || []).filter((k) => SYS_KINDS.has(k))])]
   }
 }
