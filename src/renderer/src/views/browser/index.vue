@@ -43,7 +43,8 @@
         <div class="env-content"><p class="description">{{ env.description || '暂无描述' }}</p></div>
         <div class="env-actions">
           <a-space>
-            <a-tag :color="envStatusMap[env.id] ? 'green' : 'gray'" size="large">{{ envStatusMap[env.id] ? '已打开' : '未打开' }}</a-tag>
+            <a-tag v-if="envStatusMap[env.id]" :color="'green'" size="large" class="status-tag" @click="handleFocusBrowser(env)" title="点击置顶当前浏览器"><template #icon><ri-eye-line /></template>{{ '已打开' }}</a-tag>
+            <a-tag v-else :color="'gray'" size="large">{{ '未打开' }}</a-tag>
             <a-button v-if="!envStatusMap[env.id]" type="primary" :loading="loadingMap[env.id]" @click="handleOpenBrowser(env)"><template #icon><ri-chrome-line /></template>打开浏览器</a-button>
             <a-button v-else status="danger" :loading="loadingMap[env.id]" @click="handleCloseBrowser(env)"><template #icon><icon-stop /></template>关闭浏览器</a-button>
           </a-space>
@@ -67,7 +68,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, onActivated, reactive } from 'vue'
 import { IconEdit, IconDelete, IconMoreVertical, IconStop, IconExport, IconCopy } from '@arco-design/web-vue/es/icon'
-import { RiChromeLine } from '@remixicon/vue'
+import { RiChromeLine, RiEyeLine } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
 import BrowserEditor from './components/BrowserEditor.vue'
 import RecycleBin from '@/components/RecycleBin.vue'
@@ -130,6 +131,11 @@ const handleOpenBrowser = async (env) => {
   try { selectedEnvForOpen.value = await browserAPI.getBrowser(env.id) || env } catch { selectedEnvForOpen.value = env }
   showOpenModal.value = true
 }
+const handleFocusBrowser = async (env) => {
+  try {
+    await window.electronAPI.env.focusBrowser({ envId: env.id })
+  } catch { /* 置顶失败静默 */ }
+}
 const handleBrowserOpened = (envId) => { envStatusMap[envId] = true; showOpenModal.value = false }
 const handleOpenCancel = () => { showOpenModal.value = false }
 
@@ -184,5 +190,5 @@ onActivated(() => { fetchBrowserStatus() })
 }
 .env-header { display: flex; align-items: center; font-size: 18px; font-weight: bold; .env-icon { margin-right: 12px; } }
 .env-content .description { color: var(--color-text-3); height: 60px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; font-size: 13px; }
-.env-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+.env-actions { display: flex; justify-content: flex-end; margin-top: 12px; .status-tag { cursor: pointer; user-select: none; } }
 </style>

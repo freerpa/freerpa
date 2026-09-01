@@ -5,11 +5,14 @@
  * 负责：启动随包内置的 fingerprint-chromium 进程，CDP 连接
  */
 
-import { app, dialog } from 'electron'
-import { spawn } from 'child_process'
+import { app } from 'electron'
+import { spawn, exec } from 'child_process'
+import { promisify } from 'util'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { getBundledKernelBinaryPath, getPlatform, stripKernelQuarantine } from './paths'
+
+const execAsync = promisify(exec)
 
 // CDP 端口范围
 const CDP_PORT_START = 19222
@@ -45,36 +48,32 @@ const waitForCdpReady = (port, timeout = 30000) => {
 }
 
 /**
- * 把内核启动失败转为可读错误；macOS 未授权/未签名时弹窗引导用户授权
+ * 清理被强制退出后残留的、占用同一 profile（userDataDir）的内核进程。
+ * 仅精确匹配该 userDataDir，不会误杀仍在运行的其他环境浏览器。
  */
-const createLaunchError = (err = {}, platform, kernelDir) => {
-  const isMacAuth =
-    platform === 'macos' &&
-    (err?.code === 'EACCES' || err?.code === 'EPERM' || err?.signal === 'SIGKILL' || typeof err?.code === 'number')
-  if (isMacAuth) {
-    showMacAuthorizeDialog(kernelDir)
-    return new Error('macOS 阻止了未签名浏览器内核的运行，请按弹窗引导授权后重试')
+const killOrphanByUserDataDir = async (userDataDir) => {
+  if (!userDataDir) return
+  try {
+    if (process.platform === 'win32') {
+      // 匹配命令行包含该 userDataDir 的进程并终止（WMI LIKE）
+      const dir = userDataDir.replace(/'/g, "''")
+      await execAsync(`wmic process where "CommandLine like '%${dir}%'" call terminate`)
+    } else if (process.platform === 'darwin' || process.platform === 'linux') {
+      // pkill -f 按完整命令行匹配；无匹配时退出码为 1，非致命
+      const dir = userDataDir.replace(/'/g, "'\\''")
+      await execAsync(`pkill -f '${dir}'`)
+    }
+  } catch {
+    // 无残留进程或清理失败均视为正常
   }
-  const base = err?.message || (err?.code ? `内核启动失败（${err.code}）` : '内核进程启动失败')
-  return new Error(String(base))
 }
 
 /**
- * macOS 未签名内核被拦截时，弹窗给出授权引导
+ * 把内核启动失败转为可读错误；不再弹窗，避免被误判为 macOS 未签名提示
  */
-const showMacAuthorizeDialog = (kernelDir) => {
-  dialog.showMessageBox({
-    type: 'warning',
-    title: '浏览器内核无法启动',
-    message: 'macOS 阻止了未签名浏览器内核的运行',
-    detail: [
-      '请在「系统设置 → 隐私与安全性 → 安全性」中为内核点击「仍要打开」以允许运行。',
-      '若仍无法启动，请打开「终端」执行以下命令移除内核的隔离属性后再试：',
-      `xattr -dr com.apple.quarantine "${kernelDir}"`,
-    ].join('\n\n'),
-    buttons: ['知道了'],
-    defaultId: 0,
-  })
+const createLaunchError = (err = {}) => {
+  const base = err?.message || (err?.code ? `内核启动失败（${err.code}）` : '内核进程启动失败')
+  return new Error(String(base))
 }
 
 /**
@@ -102,6 +101,9 @@ export const launchKernel = async (options = {}) => {
   if (platform === 'macos') {
     try { await stripKernelQuarantine(path.dirname(binaryPath)) } catch (e) { console.error('移除内核隔离属性失败:', e?.message || e) }
   }
+
+  // 清理强制退出后残留、占用同一 profile 的内核进程（避免旧进程占用 profile/CDP 端口导致启动失败）
+  await killOrphanByUserDataDir(userDataDir)
 
   const cdpPort = getNextPort()
 
@@ -135,9 +137,9 @@ export const launchKernel = async (options = {}) => {
       clearTimeout(timer)
       err ? reject(err) : resolve()
     }
-    childProcess.once('error', (err) => settle(createLaunchError(err || {}, platform, path.dirname(binaryPath))))
+    childProcess.once('error', (err) => settle(createLaunchError(err || {})))
     childProcess.once('exit', (code) => {
-      if (code !== 0) settle(createLaunchError({ code }, platform, path.dirname(binaryPath)))
+      if (code !== 0) settle(createLaunchError({ code }))
     })
   })
 
@@ -147,5 +149,5 @@ export const launchKernel = async (options = {}) => {
   const id = uuidv4()
   const wsEndpoint = await waitForCdpReady(cdpPort, 30000)
 
-  return { process: childProcess, port: cdpPort, wsEndpoint, id, userDataDir }
+  return { process: childProcess, port: cdpPort, wsEndpoint, id, userDataDir, headless }
 }

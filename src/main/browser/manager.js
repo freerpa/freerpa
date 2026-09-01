@@ -6,8 +6,11 @@
  * 负责实例跟踪、关闭、应用退出清理
  */
 
-import { execSync } from 'child_process'
+import { execSync, exec } from 'child_process'
+import { promisify } from 'util'
 import puppeteer from 'puppeteer-core'
+
+const execAsync = promisify(exec)
 
 // 存储所有打开的浏览器实例
 const openBrowserInstances = new Map()
@@ -64,6 +67,7 @@ export const registerBrowser = (envId, instance, senderRef) => {
     process: instance.process,
     port: instance.port,
     wsEndpoint: instance.wsEndpoint,
+    headless: !!instance.headless,
     senderRef
   }
   openBrowserInstances.set(envId, entry)
@@ -153,4 +157,32 @@ export const killAllBrowsers = async () => {
   const envIds = [...openBrowserInstances.keys()]
   refCounts.clear()
   await Promise.all(envIds.map((envId) => killBrowserProcess(envId)))
+}
+
+/**
+ * 把指定浏览器内核进程的窗口置顶/显示到前台。
+ * 无头模式无窗口，调用方应先通过 entry.headless 判断跳过。
+ * macOS 经 System Events 按 PID 置前；Windows 经 WScript.Shell.AppActivate；Linux 无通用方案，跳过。
+ */
+export const bringBrowserToFront = async (pid) => {
+  if (!pid) return
+  try {
+    if (process.platform === 'darwin') {
+      // 置前 + 取消隐藏 + 将所有最小化窗口恢复，确保最小化后也能呼出
+      await execAsync(`osascript -e 'tell application "System Events"
+	set p to first process whose unix id is ${Number(pid)}
+	set frontmost of p to true
+	set visible of p to true
+	repeat with w in windows of p
+		set value of attribute "AXMinimized" of w to false
+	end repeat
+end tell'`)
+    } else if (process.platform === 'win32') {
+      await execAsync(
+        `powershell -NoProfile -Command "(New-Object -ComObject WScript.Shell).AppActivate(${Number(pid)})"`
+      )
+    }
+  } catch (e) {
+    console.error('置顶浏览器窗口失败:', e?.message || e)
+  }
 }

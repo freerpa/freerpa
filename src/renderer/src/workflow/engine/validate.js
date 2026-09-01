@@ -8,6 +8,7 @@
  */
 import nodes from '@nodes-path'
 import { getNodeGroupBySubFlow, getLeafPathMap, paramReferRegex } from '../utils'
+import { getNodeOutputs } from '../resolve-io.js'
 import { toPlain } from '../../utils/deepCopy.js'
 
 /** 构建工作流执行数据（深拷贝 config/inputs/outputs，排除 comment/subFlow 容器与停用节点）。id 为工作流 ID（engine 传入；检测场景可省略） */
@@ -61,11 +62,18 @@ export const getFlowData = (store, id) => {
 export const resolveParamRefs = (flowData, vueFlowRef) => {
   const errors = []
   // 按照子流程分组（root 为主流程）
-  const NodeGroupBySubFlow = getNodeGroupBySubFlow(vueFlowRef.getNodes)
+  const allNodes = vueFlowRef.getNodes
+  const NodeGroupBySubFlow = getNodeGroupBySubFlow(allNodes)
   const LeafPathMaps = new Map()
   Object.keys(NodeGroupBySubFlow).forEach((parent) => {
     const groupNodes = NodeGroupBySubFlow[parent]
-    LeafPathMaps.set(parent, getLeafPathMap(groupNodes))
+    // 隐藏节点（收起子流程未渲染）的 data.outputs 可能缺失：按节点定义+配置兜底补齐，保证引用解析完整
+    const groupNodesWithOutputs = groupNodes.map((node) =>
+      node.data?.outputs
+        ? node
+        : { ...node, data: { ...node.data, outputs: getNodeOutputs(node, allNodes, nodes) } }
+    )
+    LeafPathMaps.set(parent, getLeafPathMap(groupNodesWithOutputs))
   })
   // 替换配置中的参数路径为节点 id
   flowData.nodes.forEach((node) => {

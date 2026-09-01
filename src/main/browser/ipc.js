@@ -5,7 +5,7 @@
 
 import { ipcMain } from 'electron'
 import { launchEnvBrowser } from './launch.js'
-import { getAllBrowserStatus, getBrowserInstance, incrementRef, decrementRef } from './manager'
+import { getAllBrowserStatus, getBrowserInstance, incrementRef, decrementRef, bringBrowserToFront } from './manager'
 
 const safeMsg = (e, fallback) => (e && typeof e.message === 'string') ? e.message : fallback
 
@@ -45,6 +45,17 @@ export const register = () => {
   ipcMain.handle('env:closeBrowser', async (_, { envId }) => {
     try { await decrementRef(envId); return { code: 200, message: '浏览器已关闭' } }
     catch (e) { return { code: 400, message: safeMsg(e, '关闭失败') } }
+  })
+
+  // 置顶/显示打开的浏览器窗口（无头模式无窗口，跳过）
+  ipcMain.handle('env:focusBrowser', async (_, { envId }) => {
+    try {
+      const entry = getBrowserInstance(envId)
+      if (!entry) return { code: 400, message: '浏览器未打开' }
+      if (entry.headless) return { code: 200, skipped: true, message: '无头模式无窗口显示' }
+      await bringBrowserToFront(entry.process?.pid)
+      return { code: 200, message: '已置顶浏览器' }
+    } catch (e) { return { code: 400, message: safeMsg(e, '置顶失败') } }
   })
 
   // ========== 状态查询 ==========

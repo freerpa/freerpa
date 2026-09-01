@@ -18,6 +18,7 @@ import { register as pluginRegisterIPC } from '../plugin/ipc'
 import { registerPluginScheme, registerPluginProtocol } from '../plugin/protocol'
 import { register as aiRegisterIPC } from '../ai'
 import { stopStats } from '../stats/index.js'
+import { killAllBrowsers } from '../browser/manager.js'
 
 /**
  * 应用启动引导
@@ -102,6 +103,8 @@ export const bootstrap = async () => {
   // 任何退出路径（app.exit / 正常退出）都会触发 will-quit：清理统计上报定时器
   app.on('will-quit', () => {
     stopStats()
+    // 兜底：无论经何种退出路径，都尽量关闭已打开的浏览器进程（正常路径 window-close 已处理，此处覆盖其余路径）
+    killAllBrowsers().catch(() => {})
   })
 
   // 注册所有 IPC 处理
