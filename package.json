@@ -1,6 +1,6 @@
 {
   "name": "FreeRPA",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "FreeRPA 风影RPA",
   "main": "./out/main/index.js",
   "author": "Auto Studio",
