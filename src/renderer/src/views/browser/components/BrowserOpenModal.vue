@@ -106,7 +106,6 @@ import {
   IconClockCircle,
   IconCloseCircleFill
 } from '@arco-design/web-vue/es/icon'
-import { API_CONFIG } from '@/api/config'
 
 const props = defineProps({ env: { type: Object, required: true } })
 const emit = defineEmits(['success', 'cancel'])
@@ -126,8 +125,6 @@ const proxyResult = ref(null),
   proxyError = ref('')
 const openError = ref('')
 
-import { countryLang } from '@/utils/geoLang'
-
 const geoInfo = computed(() => {
   if (!proxyResult.value) return '-'
   const parts = []
@@ -143,7 +140,6 @@ const checkAborted = () => {
 
 const checkProxy = async () => {
   checkAborted()
-  const baseUrl = API_CONFIG.BASE_URL
   if (isDirectMode.value || !props.env.proxy_url) {
     proxyResult.value = {
       ip: '-',
@@ -157,20 +153,18 @@ const checkProxy = async () => {
     return
   }
   try {
-    const proxy = encodeURIComponent(props.env.proxy_url)
-    const res = await fetch(`${baseUrl}/geo/query?proxy=${proxy}`)
+    const res = await window.electronAPI.env.queryGeo({ proxy: props.env.proxy_url })
     checkAborted()
-    const d = await res.json()
-    if (d.code !== 200 || !d.data) throw new Error(d.message || '代理检测失败')
-    const cc = (d.data.countryCode || '').toUpperCase()
+    if (res.code !== 200 || !res.data) throw new Error(res.message || '代理检测失败')
+    const d = res.data
     proxyResult.value = {
-      ip: d.data.ipAddress || d.data.ip || d.data.query || '未知',
-      country: d.data.countryName || '',
-      region: d.data.regionName || '',
-      city: d.data.cityName || '',
-      isp: d.data.isp || '',
-      timeZone: d.data.timeZone || '-',
-      language: countryLang[cc] || cc || '-'
+      ip: d.ip || '未知',
+      country: d.country || '',
+      region: d.region || '',
+      city: d.city || '',
+      isp: d.isp || '',
+      timeZone: d.timeZone || '-',
+      language: d.language || '-'
     }
   } catch (e) {
     if (e.message === 'ABORTED') throw e

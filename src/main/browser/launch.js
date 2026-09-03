@@ -4,7 +4,6 @@
  */
 import { app } from 'electron'
 import path from 'path'
-import { API_CONFIG } from '@/api/config'
 import { queryGeoInfo } from './utils/proxy.js'
 import { getPlatform, launchKernel } from './kernel'
 import { registerBrowser } from './manager'
@@ -32,10 +31,10 @@ export const launchEnvBrowser = async ({
   extraArgs = [],
   sender = null
 }) => {
-  // 代理 GEO 检测（校验代理可用性并获取时区/语言）
+  // 代理 GEO 检测（校验代理可用性并获取时区/语言；本地直连，无桥接）
   let geoInfo = null
   if (proxy) {
-    geoInfo = await queryGeoInfo(proxy, API_CONFIG.BASE_URL)
+    geoInfo = await queryGeoInfo(proxy)
     if (!geoInfo) throw new Error('代理检测失败')
   }
 

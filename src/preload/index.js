@@ -87,6 +87,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     closeBrowser: (params) => ipcRenderer.invoke('env:closeBrowser', params),
     getAllBrowserStatus: () => ipcRenderer.invoke('env:getAllBrowserStatus'),
     focusBrowser: (params) => ipcRenderer.invoke('env:focusBrowser', params),
+    queryGeo: (params) => ipcRenderer.invoke('env:queryGeo', params),
     // 事件监听
     onBrowserOpened: (callback) => {
       const listener = (event, params) => callback(params)

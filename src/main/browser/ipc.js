@@ -5,6 +5,7 @@
 
 import { ipcMain } from 'electron'
 import { launchEnvBrowser } from './launch.js'
+import { queryGeoInfo } from './utils/proxy.js'
 import { getAllBrowserStatus, getBrowserInstance, incrementRef, decrementRef, bringBrowserToFront } from './manager'
 
 const safeMsg = (e, fallback) => (e && typeof e.message === 'string') ? e.message : fallback
@@ -45,6 +46,17 @@ export const register = () => {
   ipcMain.handle('env:closeBrowser', async (_, { envId }) => {
     try { await decrementRef(envId); return { code: 200, message: '浏览器已关闭' } }
     catch (e) { return { code: 400, message: safeMsg(e, '关闭失败') } }
+  })
+
+  // 本地查询 IP/代理地理信息（直连 GEO 服务，多平台容灾，无桥接）
+  ipcMain.handle('env:queryGeo', async (_, { proxy = '' } = {}) => {
+    try {
+      const data = await queryGeoInfo(proxy || '')
+      if (!data) return { code: 400, message: '代理检测失败', data: null }
+      return { code: 200, message: 'success', data }
+    } catch (e) {
+      return { code: 400, message: safeMsg(e, '代理检测失败'), data: null }
+    }
   })
 
   // 置顶/显示打开的浏览器窗口（无头模式无窗口，跳过）

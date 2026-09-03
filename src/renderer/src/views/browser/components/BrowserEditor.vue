@@ -101,11 +101,8 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { IconCheckCircleFill, IconCloseCircleFill } from '@arco-design/web-vue/es/icon'
 import { Message } from '@arco-design/web-vue'
 import CategorySelect from '@/components/CategorySelect.vue'
-import { API_CONFIG } from '@/api/config'
 
 const { browserLocal: browserAPI } = window.electronAPI
-
-import { countryLang } from '@/utils/geoLang'
 
 const props = defineProps({
   envId: [String, Number]
@@ -152,27 +149,24 @@ const handleProxyCheck = async () => {
   proxyResult.value = null
 
   try {
-    const baseUrl = API_CONFIG.BASE_URL
     // 使用完整代理地址（含协议前缀）进行检测
     let fullProxyUrl = form.value.proxy_url
     if (fullProxyUrl && !fullProxyUrl.startsWith('http') && !fullProxyUrl.startsWith('socks')) {
       fullProxyUrl = form.value.proxy_protocol + fullProxyUrl
     }
-    const proxy = encodeURIComponent(fullProxyUrl)
-    const response = await fetch(`${baseUrl}/geo/query?proxy=${proxy}`)
-    const data = await response.json()
+    const data = await window.electronAPI.env.queryGeo({ proxy: fullProxyUrl })
 
     if (data.code === 200 && data.data) {
-      const cc = (data.data.countryCode || '').toUpperCase()
+      const d = data.data
       proxyResult.value = {
         success: true,
-        ip: data.data.ipAddress || data.data.ip || data.data.query || '未知',
-        country: data.data.countryName || '',
-        region: data.data.regionName || '',
-        city: data.data.cityName || '',
-        isp: data.data.isp || '',
-        timeZone: data.data.timeZone || '-',
-        language: countryLang[cc] || cc || '-'
+        ip: d.ip || '未知',
+        country: d.country || '',
+        region: d.region || '',
+        city: d.city || '',
+        isp: d.isp || '',
+        timeZone: d.timeZone || '-',
+        language: d.language || '-'
       }
     } else {
       proxyResult.value = {

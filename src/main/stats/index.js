@@ -6,6 +6,7 @@
 import { randomUUID } from 'crypto'
 import { app } from 'electron'
 import { API_CONFIG } from '@/api/config'
+import { queryGeoInfo } from '../browser/utils/proxy.js'
 import { getSetting, upsertSetting } from '../data/settings'
 import { getPlatformKey } from '../../shared/platform.js'
 
@@ -43,14 +44,35 @@ async function postStats(path, payload) {
   }
 }
 
+/** 本地解析本机出口 IP 归属地（网站端不再查询，随上报携带）；失败返回 null，最长等待 10s */
+async function resolveLocalGeo() {
+  try {
+    const info = await Promise.race([
+      queryGeoInfo(''),
+      new Promise((resolve) => setTimeout(() => resolve(null), 10_000)),
+    ])
+    if (!info) return null
+    return {
+      country_code: info.countryCode || '',
+      country_name: info.country || '',
+      region_name: info.region || '',
+      city_name: info.city || '',
+    }
+  } catch {
+    return null
+  }
+}
+
 /** 启动上报（日活） */
 async function reportStartup() {
   try {
     const id = await getDeviceId()
+    const geo = await resolveLocalGeo()
     await postStats('/stats/startup', {
       device_id: id,
       platform: getPlatformKey(),
       app_version: app.getVersion(),
+      geo,
     })
   } catch {
     // 忽略
