@@ -54,7 +54,7 @@ const crud = createEntityCrud({
 
 export const getElementSets = async (params) => {
   return withDb('es_sets', ensureTables, async (db) => {
-    const result = await queryPage({ db, table: 'es_sets', keywordCols: ['title', 'description'], ...params })
+    const result = await queryPage({ db, table: 'es_sets', keywordCols: ['title', 'description'], defaultOrder: 'created_at DESC', ...params })
     // 元素数量一次性批量取回（消除列表每项 N+1 查询）
     if (result.data.length > 0) {
       const ids = result.data.map((s) => s.id)

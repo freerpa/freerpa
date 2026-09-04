@@ -30,6 +30,7 @@ const crud = createEntityCrud({
   entityname: '网页',
   ensureTable,
   keywordCols: ['name', 'description'],
+  defaultOrder: 'created_at DESC',
   createCols: ['name', 'description', 'category_id', 'kernel_id', 'proxy_url', 'config'],
   updateCols: ['name', 'description', 'category_id', 'kernel_id', 'proxy_url', 'config'],
   jsonCols: ['config']

@@ -25,6 +25,7 @@ const crud = createEntityCrud({
   entityName: '工作流',
   ensureTable,
   keywordCols: ['name', 'description'],
+  defaultOrder: 'created_at DESC',
   createCols: ['name', 'description', 'category_id', 'graph'],
   updateCols: ['name', 'description', 'category_id', 'graph'],
   jsonCols: ['graph'],
