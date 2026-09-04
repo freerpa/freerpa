@@ -14,3 +14,4 @@ doc
 browser/darwin/*
 browser/linux/*
 browser/win32/*
+reasonix.toml
