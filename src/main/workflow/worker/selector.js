@@ -110,23 +110,30 @@ async function resolve(page, sel, opts) {
 }
 
 async function matchAny(page, selectors, opts) {
+  if (!selectors.length) return []
+  // 并行解析：任一选择器命中立即返回，不等待其余完成；全部完成后仍未命中则返回空
+  let resolveHit, resolveDone
+  const hit = new Promise((r) => { resolveHit = r })
+  const allDone = new Promise((r) => { resolveDone = r })
+  let pending = selectors.length
+
   for (const sel of selectors) {
-    const h = await resolve(page, sel, opts)
-    if (h.length) return h
+    resolve(page, sel, opts)
+      .then((h) => { if (h.length) resolveHit(h) })
+      .catch(() => {})
+      .finally(() => { if (--pending === 0) resolveDone() })
   }
-  return []
+
+  return Promise.race([hit, allDone]).then((r) => r || [])
 }
 
 async function matchAll(page, selectors, opts) {
   if (!selectors.length) return []
-  const groups = []
-  for (const sel of selectors) {
-    const h = await resolve(page, sel, opts)
-    if (!h.length) return []
-    groups.push(h)
-  }
+  // 并行解析所有选择器，任一为空则整体不匹配
+  const results = await Promise.all(selectors.map((sel) => resolve(page, sel, opts)))
+  for (const h of results) if (!h.length) return []
   const seen = new Set()
-  return groups.flat().filter((h) => (seen.has(h) ? false : (seen.add(h), true)))
+  return results.flat().filter((h) => (seen.has(h) ? false : (seen.add(h), true)))
 }
 
 /**

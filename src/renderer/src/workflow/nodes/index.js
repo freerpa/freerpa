@@ -98,7 +98,7 @@ export const categories = {
       'browserFileSelect',
       'browserScreenshot',
       'browserMonitor',
-      'browserOnNewPage',
+      'browserPageEvent',
       'browserDownloadListener',
       'browserDomListener',
       'browserNetworkListener',

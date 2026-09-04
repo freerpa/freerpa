@@ -15,7 +15,10 @@ const parseData = (source, rules) => {
     try {
       // 获取源数据（路径缺失返回 undefined 而非路径片段；中间 null/undefined 安全短路）
       let data = source
-      data = selector.split('.').reduce((obj, key) => obj?.[key], source)
+
+      if(typeof data === 'object'){
+        data = selector.split('.').reduce((obj, key) => obj?.[key], source)
+      }
 
       // 应用格式化
       if (format) {
