@@ -22,11 +22,10 @@ const execute = async (node, context) => {
   // 获取字段内容
   const getFieldContent = async (element, parser) => {
     try {
-      // 获取子元素
-      // await element.waitForSelector(parser.selector)
+      // 获取子元素（支持自定义选择器对象：css / xpath / text，相对当前元素解析）
       let subElement = element
       if (parser.selector) {
-        subElement = await element.$(parser.selector)
+        subElement = await element.find(parser.selector)
       }
       if (!subElement) return ''
 

@@ -84,10 +84,13 @@ const handleKeyDownOnce = async (event) => {
   // 匹配应用内快捷键
   const matchId = findMatch(event, inAppShortcuts.value)
 
-  // 如果正在执行,则不处理画布快捷键
+  // 如果正在执行,则仅放行画布内的停止与保存，其它快捷键不处理
   if (isExecuting.value) {
     if (matchId === 'workflow.stop') {
       flowStore.engine.stop()
+    } else if (matchId === 'workflow.save') {
+      flowStore.saveWorkflow()
+      event.preventDefault()
     }
     return
   }

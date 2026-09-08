@@ -103,6 +103,9 @@ class NodeExecutor extends EventEmitter {
   }
 
   setState(state, error = null, force = false) {
+    // 节点已被清理（cleanup 置空 queue/node）后，忽略仍在运行的异步回调（complete/setState）发来的状态变更，
+    // 避免读空指针（queue.length）报错：此时终态与关闭浏览器已由 cleanup 负责
+    if (this.queue === null || this.node === null) return
     this.state = state
     this.sendDebugInfo(state, error)
     // 状态非 running 且队列非空 → 继续执行队列

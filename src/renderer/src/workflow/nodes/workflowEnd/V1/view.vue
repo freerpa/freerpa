@@ -2,7 +2,7 @@
   <div class="end-workflow-view">
     <a-space>
       结束当前流程
-      <a-tooltip content="点击右上角可配置输出项作为父节点的输出">
+      <a-tooltip content="左侧面板配置输出项作为父节点的输出">
         <icon-question-circle />
       </a-tooltip>
     </a-space>

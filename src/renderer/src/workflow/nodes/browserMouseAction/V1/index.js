@@ -91,7 +91,7 @@ export default {
           type: 'alert',
           quickConfig: true,
           onlyQuick: true,
-          description: '点击右上角查看完整拖拽配置'
+          description: '左侧面板查看完整拖拽配置'
         },
         {
           id: 'dragConfig',

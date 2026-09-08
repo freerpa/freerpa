@@ -9,19 +9,20 @@ import { bridge } from './bridge.js'
  * 避免 waitForSelector(visible:true) 因元素隐藏（如 input[type=file]、透明/零尺寸按钮）而误判为不存在。
  * 关键：可见性检查失败的 handle（已 detached / 句柄失效）必须从结果剔除——
  * 否则残留的失效 handle 会在后续节点操作时报 "Node is detached from document"。
+ * 统一使用 handle.evaluate 求值，页面与元素得到的 handle 均适用。
  */
-async function preferVisible(page, handles) {
+async function preferVisible(handles) {
   if (!handles.length) return handles
   const vis = new Set()
   const dead = new Set()
   await Promise.all(handles.map(async (h, i) => {
     try {
-      const ok = await page.evaluate((el) => {
+      const ok = await h.evaluate((el) => {
         if (!el || el.nodeType !== 1) return false
         const r = el.getBoundingClientRect()
         const s = getComputedStyle(el)
         return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && parseFloat(s.opacity || 1) > 0
-      }, h)
+      })
       if (ok) vis.add(i)
     } catch {
       // 句柄已失效（detached）：标记并从结果剔除，避免后续操作报错
@@ -42,18 +43,19 @@ async function preferVisible(page, handles) {
   return [...visible, ...invisible]
 }
 
-async function findByCss(page, expr, opts) {
+// root 可为 Page 或 ElementHandle：二者均有 $$；waitForSelector 仅 Page 具备（元素级不等待）
+async function findByCss(root, expr, opts) {
   try {
-    if (opts.wait) await page.waitForSelector(expr) // 仅等待元素出现，不要求可见
-    return page.$$(expr)
+    if (opts.wait && root.waitForSelector) await root.waitForSelector(expr) // 仅等待元素出现，不要求可见
+    return root.$$(expr)
   } catch { return [] }
 }
 
-async function findByXPath(page, expr, opts) {
+async function findByXPath(root, expr, opts) {
   try {
     const pseudo = `::-p-xpath(${expr})`
-    if (opts.wait) await page.waitForSelector(pseudo) // 仅等待元素出现，不要求可见
-    return page.$$(pseudo)
+    if (opts.wait && root.waitForSelector) await root.waitForSelector(pseudo) // 仅等待元素出现，不要求可见
+    return root.$$(pseudo)
   } catch { return [] }
 }
 
@@ -143,16 +145,62 @@ async function matchAll(page, selectors, opts) {
 export async function find(page, element, opts = { all: false, wait: true }) {
   if (!element?.selectors?.length) return opts.all ? [] : null
   const fn = element.match_condition === 'all' ? matchAll : matchAny
-  const handles = await preferVisible(page, await fn(page, element.selectors, opts)) // 统一可见优先，覆盖全部 finder
+  const handles = await preferVisible(await fn(page, element.selectors, opts)) // 统一可见优先，覆盖全部 finder
   return opts.all ? handles : (handles[0] || null)
 }
 
+// ─── 元素级（子元素）选择器解析 ───────────────────────────────
+// 文本选择器（相对当前元素，作用于其子孙）
+const subTextXPath = (subtype, q) => {
+  const map = {
+    contains: `.//*[contains(normalize-space(text()), ${q})]`,
+    equals: `.//*[normalize-space(text()) = ${q}]`,
+    start: `.//*[starts-with(normalize-space(text()), ${q})]`,
+    end: `.//*[substring(normalize-space(text()), string-length(normalize-space(text())) - string-length(${q}) + 1) = ${q}]`
+  }
+  return map[subtype]
+}
+
+// 在目标元素相对作用域内解析单个选择器（仅 css / xpath / text；position/image 为页面坐标语义，子元素无意义）
+async function resolveOnElement(el, sel) {
+  const expr = sel.expression || ''
+  try {
+    if (sel.type === 'css') return el.$$(expr)
+    if (sel.type === 'xpath') return el.$$(`::-p-xpath(${expr})`)
+    if (sel.type === 'text') {
+      const xp = subTextXPath(sel.text_subtype, quote(expr))
+      return xp ? el.$$(`::-p-xpath(${xp})`) : []
+    }
+  } catch { /* 忽略禁用的选择器类型 */ }
+  return []
+}
+
 /**
- * 挂载 find 到 puppeteer.Page.prototype
- * 注意：puppeteer-core 是 ESM 包，Page 为命名导出（default 导出的 .Page 为 undefined）
+ * element.find(element, { all?, wait? }) — 相对元素解析子元素
+ * @returns {ElementHandle | ElementHandle[] | null}
  */
-export function mountFinder(Page) {
-  const proto = Page?.prototype
-  if (!proto) return
-  proto.find ??= async function (element, opts) { return find(this, element, opts) }
+export async function findInElement(el, element, opts = { all: false }) {
+  if (!element?.selectors?.length) return opts.all ? [] : null
+  const groups = []
+  for (const sel of element.selectors) groups.push(await resolveOnElement(el, sel))
+  let handles
+  if (element.match_condition === 'all') {
+    if (groups.some((g) => !g.length)) return opts.all ? [] : null
+    handles = groups.flat()
+  } else {
+    handles = groups.find((g) => g.length) || []
+  }
+  const alive = await preferVisible(handles)
+  return opts.all ? alive : (alive[0] || null)
+}
+
+/**
+ * 挂载 find 到 puppeteer.Page.prototype 与 ElementHandle.prototype
+ * 注意：puppeteer-core 是 ESM 包，Page/ElementHandle 为命名导出（default 导出的 .Page 为 undefined）
+ */
+export function mountFinder(Page, ElementHandle) {
+  const pageProto = Page?.prototype
+  if (pageProto) pageProto.find ??= async function (element, opts) { return find(this, element, opts) }
+  const elProto = ElementHandle?.prototype
+  if (elProto) elProto.find ??= async function (element, opts) { return findInElement(this, element, opts) }
 }

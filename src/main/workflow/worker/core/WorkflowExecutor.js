@@ -114,7 +114,7 @@ class WorkflowExecutor extends EventEmitter {
     } catch (error) {
       // _handleNodeError 已 cleanup('error') 并抛出时避免重复 cleanup（否则同一错误触发两次 engine 级 error 事件）
       if (this.state !== 'error') {
-        this.cleanup('error', error)
+        await this.cleanup('error', error)
       }
       throw error
     }
@@ -245,7 +245,8 @@ class WorkflowExecutor extends EventEmitter {
     const errorHandleType = node?.config?.errorHandleType
 
     if (!node || !errorHandleType || errorHandleType === 'stop') {
-      this.cleanup('error', error)
+      // 结束流程：await 确保销毁钩子（关闭打开的浏览器）执行完毕、且错误状态可靠上报后再中止
+      await this.cleanup('error', error)
       throw error
     }
 
@@ -273,7 +274,8 @@ class WorkflowExecutor extends EventEmitter {
   async _handleRetryFailed(nodeId, error, action, node) {
     switch (action) {
       case 'stop':
-        this.cleanup('error', error)
+        // 结束流程：await 确保销毁钩子（关闭打开的浏览器）执行完毕、且错误状态可靠上报后再中止
+        await this.cleanup('error', error)
         throw error
       case 'ignore':
         this.next(nodeId)
@@ -443,12 +445,22 @@ class WorkflowExecutor extends EventEmitter {
   }
 
   async cleanup(status = 'stopped', error = null) {
-    for (const subFlow of this.subFlows.values()) {
-      await subFlow.stop()
+    // 结束流程：先触发各节点销毁钩子（关闭已打开的浏览器）、子流程停止，最后上报终态。
+    // 各步独立 try/catch：任一步异常都不能跳过后续销毁钩子或终态上报，否则会"浏览器没关、错误信息丢失"。
+    try {
+      for (const subFlow of this.subFlows.values()) {
+        await subFlow.stop()
+      }
+    } catch (e) {
+      console.error('清理子流程失败:', e)
     }
     this.subFlows.clear()
 
-    await this.executorManager.cleanup()
+    try {
+      await this.executorManager.cleanup()
+    } catch (e) {
+      console.error('清理节点执行器失败:', e)
+    }
     clearTimeout(this.completeTimer)
     this.completeTimer = null
     this.runningCount = 0

@@ -3,12 +3,12 @@
  * openBrowser：内核由主进程启动（RPC），puppeteer 连接与页面操作在 worker 本地。
  */
 import path from 'node:path'
-import puppeteer, { Page } from 'puppeteer-core'
+import puppeteer, { Page, ElementHandle } from 'puppeteer-core'
 import { bridge } from './bridge.js'
 import { mountFinder } from './selector.js'
 
-// 挂载 page.find 到 Page.prototype（Page 为 ESM 命名导出）
-mountFinder(Page)
+// 挂载 page.find / element.find 到 Page / ElementHandle 原型（均为 ESM 命名导出）
+mountFinder(Page, ElementHandle)
 
 export { puppeteer }
 export * from 'puppeteer-core'
@@ -142,15 +142,11 @@ export const page_eval = async (page, code, ...args) => {
 // ═══════════ 打开浏览器（worker 版） ═══════════
 /**
  * 主进程启动/复用内核并返回 wsEndpoint，worker 内 puppeteer.connect + 独立 BrowserContext
- * 并发防重：同一工作流内同一时刻的重复调用共享同一内核与 page（防引擎重复调度竞态）；
- * 串行多次调用（如多个浏览器节点）仍各自打开新浏览器
+ * 每次调用各自打开独立页面：同环境并发打开会在同一内核内得到不同的标签页
+ * （主进程负责内核启动去重与复用，worker 层不再共享 page，保证「相同环境多开」互不干扰）
  */
-let pendingOpen = null
-
 export const openBrowser = async (env = null, options = {}) => {
-  if (pendingOpen) return await pendingOpen
-  pendingOpen = doOpen(env, options).finally(() => { pendingOpen = null })
-  return await pendingOpen
+  return doOpen(env, options)
 }
 
 async function doOpen(env, options) {
@@ -168,10 +164,9 @@ async function doOpen(env, options) {
     let page
     let closePage
     if (instance.reuse) {
-      // 复用已打开的内核：新建独立 BrowserContext（不影响原浏览器页面）
-      const context = await browser.createBrowserContext()
-      page = await context.newPage()
-      closePage = async () => { try { await context.close() } catch { /* 已关闭 */ } }
+      // 复用已打开的内核：在同一默认上下文新建独立窗口（共享 cookie/登录态，且非同一窗口的标签）
+      page = await browser.newPage({ type: 'window' })
+      closePage = async () => { try { await page.close() } catch { /* 已关闭 */ } }
     } else {
       // 新启动的内核自带默认页面：复用首个页面并关闭多余页面（避免打开两个浏览器）
       const pages = await browser.pages()

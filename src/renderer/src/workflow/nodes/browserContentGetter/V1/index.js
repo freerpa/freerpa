@@ -95,7 +95,7 @@ export default {
           id: 'parseRulesTip',
           nolabel: true,
           type: 'alert',
-          content: '点击右上角齿轮配置子项解析规则',
+          content: '左侧面板配置子项解析规则',
           show: '${getType} == "html"',
           quickConfig: true,
           onlyQuick: true

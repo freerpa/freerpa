@@ -148,7 +148,7 @@ export default {
           default: '',
           quickConfig: true,
           onlyQuick: true,
-          content: '点击右上角齿轮配置网络监听参数'
+          content: '左侧面板配置网络监听参数'
         }
       ]
     },

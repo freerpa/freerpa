@@ -1,4 +1,4 @@
-import { BaseWindow, WebContentsView, session, globalShortcut } from 'electron'
+import { BaseWindow, WebContentsView, session, globalShortcut, shell } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import path from 'path'
 
@@ -59,6 +59,33 @@ export const createWindow = () => {
 
   // 阻挡 F11 全屏
   globalShortcut.register('F11', () => {})
+
+  /**
+   * 主渲染进程导航守卫：
+   * 允许加载的地址仅为应用自身（生产 file:// 渲染产物 / 开发 electron-vite dev server origin）。
+   * 其余一律视为外部地址：阻止导航（避免主界面被带到其他页面后无法返回），
+   * 并改用系统默认浏览器弹出新窗口访问。
+   */
+  const isInternalUrl = (url) => {
+    try {
+      const u = new URL(url)
+      if (u.protocol === 'file:' || u.protocol === 'devtools:') return true
+      if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+        return u.origin === new URL(process.env['ELECTRON_RENDERER_URL']).origin
+      }
+      return false
+    } catch {
+      return false
+    }
+  }
+
+  const guardNavigation = (event, url) => {
+    if (isInternalUrl(url)) return
+    event.preventDefault()
+    shell.openExternal(url).catch(() => {})
+  }
+  view.webContents.on('will-navigate', guardNavigation)
+  view.webContents.on('will-redirect', guardNavigation)
 
   // 加载内容
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
