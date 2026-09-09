@@ -3,7 +3,7 @@
     <a-input-search
       :model-value="displayName"
       :placeholder="field?.placeholder || field?.description || '选择元素'"
-      size="mini"
+
       readonly
       :button-props="{ type: 'secondary', style: { width: '38px' } }"
       search-button

@@ -8,6 +8,9 @@
 
 import { execSync, exec } from 'child_process'
 import { promisify } from 'util'
+import fs from 'fs'
+import path from 'path'
+import { app } from 'electron'
 import puppeteer from 'puppeteer-core'
 
 const execAsync = promisify(exec)
@@ -16,6 +19,21 @@ const execAsync = promisify(exec)
 const openBrowserInstances = new Map()
 // 引用计数：追踪每个环境有多少使用者在连接
 const refCounts = new Map()
+
+// 随机指纹临时数据目录根（位于 userData 下；目录名 = 指纹种子）
+const TEMP_SESSION_ROOT = 'tempSession'
+const TEMP_SESSION_PATH = () => path.join(app.getPath('userData'), TEMP_SESSION_ROOT)
+
+/** 若 userDataDir 属于 tempSession（随机指纹临时目录）则删除之；常规 sessions 目录绝不动 */
+const maybeRemoveTempSessionDir = (userDataDir) => {
+  if (!userDataDir || !userDataDir.includes(`${path.sep}${TEMP_SESSION_ROOT}${path.sep}`)) return
+  try { fs.rmSync(userDataDir, { recursive: true, force: true }) } catch (_) { /* 目录被占用/不存在时忽略 */ }
+}
+
+/** 清空整个 tempSession 随机指纹临时目录（应用退出前调用） */
+export const cleanupTempSessionDir = () => {
+  try { fs.rmSync(TEMP_SESSION_PATH(), { recursive: true, force: true }) } catch (_) { /* 忽略 */ }
+}
 
 /**
  * 安全发送 IPC 消息到渲染进程
@@ -68,11 +86,13 @@ export const registerBrowser = (envId, instance, senderRef) => {
     port: instance.port,
     wsEndpoint: instance.wsEndpoint,
     headless: !!instance.headless,
+    userDataDir: instance.userDataDir,
     senderRef
   }
   openBrowserInstances.set(envId, entry)
 
   entry.process.on('exit', () => {
+    maybeRemoveTempSessionDir(entry.userDataDir) // 随机指纹临时目录在进程退出后即删
     if (openBrowserInstances.delete(envId)) {
       safeSend(entry.senderRef, 'env:browserClosed', { envId: String(envId) })
     }
@@ -157,6 +177,7 @@ export const killAllBrowsers = async () => {
   const envIds = [...openBrowserInstances.keys()]
   refCounts.clear()
   await Promise.all(envIds.map((envId) => killBrowserProcess(envId)))
+  cleanupTempSessionDir() // 应用退出前清空随机指纹临时数据目录
 }
 
 /**

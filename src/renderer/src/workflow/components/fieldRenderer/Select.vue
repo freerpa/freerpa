@@ -1,6 +1,5 @@
 <template>
   <a-select
-    size="small"
     v-model="value"
     :placeholder="field.description"
     :loading="loading"

@@ -6,7 +6,7 @@ import { clipboard, shell, app, ipcMain } from 'electron'
 import { getBrowserDetail } from '../../api/browserDetail.js'
 import { launchEnvBrowser } from '../../browser/launch.js'
 import {
-  getBrowserInstance, registerBrowser, incrementRef, decrementRef
+  getBrowserInstance, registerBrowser, incrementRef, decrementRef, killBrowserProcess
 } from '../../browser/manager'
 import { matchTemplate } from '../../browser/selector/imageMatcher.js'
 import { sendToRendererAsync } from './rendererUtils.js'
@@ -32,14 +32,20 @@ async function browserOpen(args, host, flowId) {
   const { env, options } = args[0] || {}
   const { headless = false, proxy: optionProxy = '', extraArgs = [] } = options || {}
   const envId = env?.id
+  const randomFingerprint = !!env?.random_fingerprint
 
   // 已打开则复用现有内核（worker 内创建独立 BrowserContext）
+  // 随机指纹例外：不复用上次实例，先关闭旧实例再全新启动（保证每次打开都是全新的浏览器）
   if (envId) {
     const existing = getBrowserInstance(envId)
     if (existing) {
-      incrementRef(envId)
-      trackOpen(flowId, envId)
-      return { wsEndpoint: existing.wsEndpoint, instanceId: existing.instanceId, reuse: true }
+      if (randomFingerprint) {
+        await killBrowserProcess(envId)
+      } else {
+        incrementRef(envId)
+        trackOpen(flowId, envId)
+        return { wsEndpoint: existing.wsEndpoint, instanceId: existing.instanceId, reuse: true }
+      }
     }
   }
 
@@ -70,13 +76,21 @@ async function browserOpen(args, host, flowId) {
 async function doLaunch(env, options) {
   const { headless = false, proxy: optionProxy = '', extraArgs = [] } = options || {}
   const proxy = optionProxy || env?.proxy_url || ''
+  // 环境配置字段（getBrowserDetail 已展开 config）：随机指纹、窗口尺寸
+  const randomFingerprint = !!env?.random_fingerprint
+  const width = Number(env?.width) || 1280
+  const height = Number(env?.height) || 720
 
   return launchEnvBrowser({
     envId: env?.id,
     proxy,
-    fingerprintSeed: env?.fingerprint?.seed,
+    // 随机指纹开启时传 undefined → 由 launchEnvBrowser 每次随机新种子；否则用已保存种子
+    fingerprintSeed: randomFingerprint ? undefined : env?.fingerprint?.seed,
     headless,
     timezone: env?.timezone || '',
+    width,
+    height,
+    randomFingerprint,
     lang: 'en-US',
     extraArgs
   })

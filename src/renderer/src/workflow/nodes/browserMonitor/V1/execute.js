@@ -5,87 +5,88 @@ import { page_eval } from '@pageEval'
 const execute = async (node, context) => {
 
   const { onNodeEvent, sendNodeEvent, onBeforeDestroy, next } = context
-  const { frameRate, quality } = node.config
   const { page } = node.inputs
-  
-  const cdp = await page.createCDPSession();
+  // 参数 clamp：避免 NaN / 越界导致 CDP 推流参数非法
+  const frameRate = Math.max(1, Math.min(60, Number(node.config.frameRate) || 30))
+  const quality = Math.max(1, Math.min(100, Number(node.config.quality) || 70))
+  let cdp = null
+  let streaming = false
+  const frameHandler = async (frameData) => {
+    try {
+      sendNodeEvent({ type: 'image', data: frameData.data })
+      // 必须回 ACK，否则浏览器停止推流
+      await cdp.send('Page.screencastFrameAck', { sessionId: frameData.sessionId })
+    } catch (err) {
+      if (!err.message.includes('Target closed')) console.warn('推流转发错误：', err.message)
+    }
+  }
+
+  cdp = await page.createCDPSession()
+  cdp.on('Page.screencastFrame', frameHandler)
+
   onNodeEvent(async ({ type, data }) => {
     if (type === 'start') {
-      console.error('start', frameRate, quality)
-      // 🌟 核心替换：开启CDP原生屏幕推流（替代单次截图，无阻塞）
+      if (streaming) return // 幂等：已在推流则跳过，避免重复 start/重复注册
+      streaming = true
+      // 开启 CDP 原生屏幕推流（替代单次截图，无阻塞）
       await cdp.send('Page.startScreencast', {
-        format: 'webp', // 推流编码：webp（体积最小，推荐），可选jpeg
-        quality,    // 画质：0-100，80兼顾清晰和体积
-        frameRate,  // 推流帧率：30帧/秒（流畅不卡顿，60帧可改60，视性能调整）
-      });
-      // 🌟 监听浏览器推流的帧数据（异步触发，非阻塞）
-      cdp.on('Page.screencastFrame', async (frameData) => {
-        try {
-          sendNodeEvent({
-            type: 'image',
-            data: frameData.data
-          })
-          // 2. 必须向浏览器发送确认：已接收帧（否则浏览器会停止推流）
-          await cdp.send('Page.screencastFrameAck', { sessionId: frameData.sessionId });
-        } catch (err) {
-          if (!err.message.includes('Target closed')) console.warn('推流转发错误：', err.message);
-        }
-      });
-      // 获取浏览器视口尺寸（用于后续计算鼠标位置）
-      const viewport = await page_eval(page, `(el) => {
-            return {
-              width: window.innerWidth,
-              height: window.innerHeight
-            }
-          };`)
-      // 🌟 初始化：发送浏览器视口尺寸（用于后续计算鼠标位置）
-      sendNodeEvent({
-        type: 'init',
-        data: {
-          viewport
-        }
-      });
+        format: 'webp', // 推流编码：webp（体积最小，推荐），可选 jpeg
+        quality,        // 画质：0-100
+        frameRate       // 推流帧率
+      })
+      // 获取浏览器视口尺寸（用于计算鼠标相对坐标）
+      const viewport = await page_eval(page, `() => ({
+            width: window.innerWidth,
+            height: window.innerHeight
+          })`)
+      sendNodeEvent({ type: 'init', data: { viewport } })
     } else if (type === 'end') {
-      console.error('end')
-      // 停止推流
-      await cdp.send('Page.stopScreencast');
+      await stopStream()
     } else if (type === 'mouseMove') {
-      await page.mouse.move(data.x, data.y);
+      await page.mouse.move(data.x, data.y)
     } else if (type === 'mouseDown') {
-      await page.mouse.down({ button: data.button });
+      // 携带坐标定位，否则点击可能落在错误位置
+      await page.mouse.down({ x: data.x, y: data.y, button: data.button })
     } else if (type === 'mouseUp') {
-      await page.mouse.up({ button: data.button });
+      await page.mouse.up({ x: data.x, y: data.y, button: data.button })
     } else if (type === 'mouseWheel') {
-      await page.mouse.wheel({
-        deltaX: data.deltaX,
-        deltaY: data.deltaY
-      });
+      await page.mouse.wheel({ x: data.x, y: data.y, deltaX: data.deltaX, deltaY: data.deltaY })
     } else if (type === 'input') {
-      await page.keyboard.type(data);
+      await page.keyboard.type(data)
     } else if (type === 'goto') {
-      await page.goto(data);
+      await page.goto(data)
     } else if (type === 'refresh') {
-      await page.reload();
+      await page.reload()
     } else if (type === 'forward') {
-      await page.goForward();
+      await page.goForward()
     } else if (type === 'backward') {
-      await page.goBack();
+      await page.goBack()
     }
-
   })
+
+  const stopStream = async () => {
+    if (!streaming) return
+    streaming = false
+    try {
+      if (cdp && cdp.connection) await cdp.send('Page.stopScreencast')
+    } catch (err) {
+      if (!err.message.includes('Target closed')) console.warn('停止推流失败：', err.message)
+    }
+  }
+
   // 发送状态信息
-  sendNodeEvent({
-    type: 'status',
-    data: true
-  })
+  sendNodeEvent({ type: 'status', data: true })
   next()
-  onBeforeDestroy(() => {
-    sendNodeEvent({
-      type: 'status',
-      data: false
-    })
-  })
 
+  onBeforeDestroy(async () => {
+    sendNodeEvent({ type: 'status', data: false })
+    // 兜底：无论流程如何结束都停止推流并释放 CDP 会话，避免泄漏
+    await stopStream()
+    cdp.off('Page.screencastFrame', frameHandler)
+    try { await cdp.detach() } catch (err) {
+      if (!err.message.includes('Target closed')) console.warn('释放 CDP 会话失败：', err.message)
+    }
+  })
 }
 
 export default execute

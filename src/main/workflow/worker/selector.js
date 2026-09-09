@@ -43,12 +43,23 @@ async function preferVisible(handles) {
   return [...visible, ...invisible]
 }
 
+// 页面连接是否已丢失（浏览器进程退出 / CDP 断开 / Target 关闭），判定后应向上抛错而非吞掉
+function isPageLost(root, err) {
+  if (root && typeof root.isClosed === 'function' && root.isClosed()) return true
+  const msg = String(err?.message || '')
+  return /\btarget\b[^]*?\bis closed|\btarget\b[^]*?\bclosed|session closed/i.test(msg)
+}
+// 页面连接丢失则抛错；其他错误（选择器无匹配等）返回 false，交给调用方降级处理
+function throwIfPageLost(root, err) {
+  if (isPageLost(root, err)) throw err
+}
+
 // root 可为 Page 或 ElementHandle：二者均有 $$；waitForSelector 仅 Page 具备（元素级不等待）
 async function findByCss(root, expr, opts) {
   try {
     if (opts.wait && root.waitForSelector) await root.waitForSelector(expr) // 仅等待元素出现，不要求可见
     return root.$$(expr)
-  } catch { return [] }
+  } catch (err) { throwIfPageLost(root, err); return [] }
 }
 
 async function findByXPath(root, expr, opts) {
@@ -56,7 +67,7 @@ async function findByXPath(root, expr, opts) {
     const pseudo = `::-p-xpath(${expr})`
     if (opts.wait && root.waitForSelector) await root.waitForSelector(pseudo) // 仅等待元素出现，不要求可见
     return root.$$(pseudo)
-  } catch { return [] }
+  } catch (err) { throwIfPageLost(root, err); return [] }
 }
 
 async function findByText(page, subtype, expr, opts) {
@@ -83,7 +94,7 @@ async function findByPoint(page, expr) {
     const tag = await handle.evaluate((el) => el?.tagName || '')
     if (!tag) { await handle.dispose(); return [] }
     return [handle]
-  } catch { return [] }
+  } catch (err) { throwIfPageLost(page, err); return [] }
 }
 
 // 图片选择器：截屏在 worker 内完成，匹配经主进程 RPC（sharp）
@@ -96,7 +107,7 @@ async function findByImage(page, expression) {
     const m = await bridge.rpc('matchTemplate', `data:image/png;base64,${raw}`, expression)
     if (!m) return []
     return findByPoint(page, `${Math.round((m.x + (m.width >> 1)) / dpr)},${Math.round((m.y + (m.height >> 1)) / dpr)}`)
-  } catch { return [] }
+  } catch (err) { throwIfPageLost(page, err); return [] }
 }
 
 function quote(s) {
@@ -118,15 +129,19 @@ async function matchAny(page, selectors, opts) {
   const hit = new Promise((r) => { resolveHit = r })
   const allDone = new Promise((r) => { resolveDone = r })
   let pending = selectors.length
+  let pageLostErr = null
 
   for (const sel of selectors) {
     resolve(page, sel, opts)
       .then((h) => { if (h.length) resolveHit(h) })
-      .catch(() => {})
+      .catch((err) => { if (isPageLost(page, err) && !pageLostErr) pageLostErr = err })
       .finally(() => { if (--pending === 0) resolveDone() })
   }
 
-  return Promise.race([hit, allDone]).then((r) => r || [])
+  const r = await Promise.race([hit, allDone]).then((r) => r || [])
+  // 页面连接已丢失且无一选择器命中：向上抛错，避免静默返回空
+  if (pageLostErr && !r.length) throw pageLostErr
+  return r
 }
 
 async function matchAll(page, selectors, opts) {

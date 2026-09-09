@@ -172,7 +172,15 @@ onMounted(() => {
     remove1 = envAPI.onBrowserOpened(({ envId }) => { envStatusMap[envId] = true; loadingMap[envId] = false })
     remove2 = envAPI.onBrowserClosed(({ envId }) => { envStatusMap[envId] = false; loadingMap[envId] = false })
     remove3 = envAPI.onSaveSession(async ({ envId, fingerprint }) => {
-      if (fingerprint) { try { await browserAPI.updateBrowser({ id: envId, config: { fingerprint } }) } catch {} }
+      // 合并写入保存的指纹，避免整包替换覆盖窗口尺寸/随机指纹/代理等其他 config 字段
+      if (fingerprint) {
+        try {
+          const existing = await browserAPI.getBrowser(envId)
+          let cfg = {}
+          try { cfg = typeof existing?.config === 'string' ? JSON.parse(existing.config) : (existing?.config || {}) } catch {}
+          await browserAPI.updateBrowser({ id: envId, config: { ...cfg, fingerprint } })
+        } catch {}
+      }
     })
   }
   fetchBrowserStatus()

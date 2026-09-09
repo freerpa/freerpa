@@ -29,7 +29,10 @@ export const launchEnvBrowser = async ({
   timezone = '',
   lang = 'en-US',
   extraArgs = [],
-  sender = null
+  sender = null,
+  width = 1280,
+  height = 720,
+  randomFingerprint = false
 }) => {
   // 代理 GEO 检测（校验代理可用性并获取时区/语言；本地直连，无桥接）
   let geoInfo = null
@@ -38,15 +41,29 @@ export const launchEnvBrowser = async ({
     if (!geoInfo) throw new Error('代理检测失败')
   }
 
-  const userDataDir = envId ? path.join(app.getPath('userData'), 'sessions', String(envId)) : undefined
+  const effectiveSeed =
+    randomFingerprint
+      ? Math.floor(Math.random() * 2147483647) + 1
+      : (fingerprintSeed ?? Math.floor(Math.random() * 2147483647) + 1)
+
+  // 随机指纹：使用独立临时数据目录（目录名=指纹种子），不与常规 session 共用登录态；
+  // 常规模式沿用 envId 对应 sessions 目录。
+  const userDataDir = randomFingerprint
+    ? path.join(app.getPath('userData'), 'tempSession', String(effectiveSeed))
+    : envId
+      ? path.join(app.getPath('userData'), 'sessions', String(envId))
+      : undefined
+
   const instance = await launchKernel({
     platform: getPlatform(),
     proxy,
-    fingerprintSeed: fingerprintSeed ?? Math.floor(Math.random() * 2147483647) + 1,
+    fingerprintSeed: effectiveSeed,
     headless,
     timezone: geoInfo?.timeZone || timezone,
     lang: geoInfo?.language || lang,
     userDataDir,
+    width: Number(width) || 1280,
+    height: Number(height) || 720,
     extraArgs: ['--no-restore-session-state', '--disable-session-crashed-bubble', ...extraArgs]
   })
 

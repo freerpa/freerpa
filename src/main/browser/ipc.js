@@ -6,34 +6,46 @@
 import { ipcMain } from 'electron'
 import { launchEnvBrowser } from './launch.js'
 import { queryGeoInfo } from './utils/proxy.js'
-import { getAllBrowserStatus, getBrowserInstance, incrementRef, decrementRef, bringBrowserToFront } from './manager'
+import { getAllBrowserStatus, getBrowserInstance, incrementRef, decrementRef, bringBrowserToFront, killBrowserProcess } from './manager'
 
 const safeMsg = (e, fallback) => (e && typeof e.message === 'string') ? e.message : fallback
 
 export const register = () => {
   // ========== 打开/关闭浏览器 ==========
 
-  ipcMain.handle('env:openBrowser', async (event, { envId, proxy, fingerprint: existingFingerprint }) => {
+  ipcMain.handle('env:openBrowser', async (event, { envId, proxy, fingerprint: existingFingerprint, width, height, randomFingerprint = false }) => {
     try {
-      // 如果已打开则复用（工作流可能已启动同一环境）
+      // 已打开：常规模式复用（工作流可能已启动同一环境）；
+      // 随机指纹模式例外——每次打开必须是全新浏览器，先关闭旧实例再重新启动全新内核
       const existing = getBrowserInstance(envId)
       if (existing) {
-        return { code: 200, message: '浏览器已打开（复用）', data: { instanceId: existing.instanceId, port: existing.port, wsEndpoint: existing.wsEndpoint } }
+        if (randomFingerprint) {
+          await killBrowserProcess(envId)
+        } else {
+          return { code: 200, message: '浏览器已打开（复用）', data: { instanceId: existing.instanceId, port: existing.port, wsEndpoint: existing.wsEndpoint } }
+        }
       }
 
-      const fingerprint = existingFingerprint?.seed ? existingFingerprint
-        : { seed: Math.floor(Math.random() * 2147483647) + 1, platform: { win32: 'windows', darwin: 'macos' }[process.platform] || 'linux' }
+      // 随机指纹开启时不再复用已保存种子，每次打开生成本次随机种子（且不落库）
+      const fingerprint = randomFingerprint
+        ? null
+        : existingFingerprint?.seed
+          ? existingFingerprint
+          : { seed: Math.floor(Math.random() * 2147483647) + 1, platform: { win32: 'windows', darwin: 'macos' }[process.platform] || 'linux' }
 
       const instance = await launchEnvBrowser({
         envId,
         proxy: proxy || '',
-        fingerprintSeed: fingerprint.seed,
+        fingerprintSeed: fingerprint?.seed,
+        width,
+        height,
+        randomFingerprint,
         sender: event.sender
       })
 
       incrementRef(envId)
 
-      if (!existingFingerprint?.seed) {
+      if (fingerprint?.seed && !existingFingerprint?.seed) {
         try { if (event.sender && !event.sender.isDestroyed()) event.sender.send('env:saveSession', { envId: String(envId), fingerprint }) } catch (_) { }
       }
 

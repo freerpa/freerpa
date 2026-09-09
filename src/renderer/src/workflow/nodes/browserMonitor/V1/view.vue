@@ -165,27 +165,31 @@ const onNodeEvent = ({ type, data }) => {
   }
 }
 
-// 渲染图像到canvas
+// 渲染图像到canvas（复用 Image 实例，仅在尺寸变化时重置画布，避免每帧清空+重设 transform）
+const renderImg = new Image()
+let canvasW = 0
+let canvasH = 0
 const renderImage = (base64Data) => {
-  const img = new Image()
-  img.onload = () => {
+  if (!renderImg.complete || renderImg.src === 'data:image/webp;base64,' + base64Data) return
+  renderImg.onload = () => {
     if (canvas.value) {
-      const ctx = canvas.value.getContext('2d')
-      // 计算画布尺寸，使用固定宽高比
+      const dpr = window.devicePixelRatio || 1
       const containerWidth = canvasWH.value.width
       const containerHeight = canvasWH.value.height
-      // 考虑设备像素比，提高清晰度
-      const dpr = window.devicePixelRatio || 1
-      canvas.value.width = containerWidth * dpr
-      canvas.value.height = containerHeight * dpr
-      // 缩放上下文以匹配DPR
-      ctx.scale(dpr, dpr)
-      // 绘制图像
+      // 尺寸变化才重置画布（重置会清空并重设缩放，需避免每帧执行）
+      if (containerWidth !== canvasW || containerHeight !== canvasH) {
+        canvasW = containerWidth
+        canvasH = containerHeight
+        canvas.value.width = containerWidth * dpr
+        canvas.value.height = containerHeight * dpr
+      }
+      const ctx = canvas.value.getContext('2d')
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, containerWidth, containerHeight)
-      ctx.drawImage(img, 0, 0, containerWidth, containerHeight)
+      ctx.drawImage(renderImg, 0, 0, containerWidth, containerHeight)
     }
   }
-  img.src = 'data:image/webp;base64,' + base64Data
+  renderImg.src = 'data:image/webp;base64,' + base64Data
 }
 const getRelativePosition = (e) => {
   const rect = canvas.value.getBoundingClientRect()
@@ -240,15 +244,13 @@ const handleWheel = (e) => {
   }
 }
 
-const addEventListener = (eventName, handler) => {
-  // 添加事件监听器
+const addEventListener = () => {
   canvas.value.addEventListener('mousemove', handleMouseMove)
   canvas.value.addEventListener('mousedown', handleMouseDown)
   canvas.value.addEventListener('mouseup', handleMouseUp)
   canvas.value.addEventListener('wheel', handleWheel)
 }
-const removeEventListener = (eventName, handler) => {
-  // 移除事件监听器
+const removeEventListener = () => {
   canvas.value.removeEventListener('mousemove', handleMouseMove)
   canvas.value.removeEventListener('mousedown', handleMouseDown)
   canvas.value.removeEventListener('mouseup', handleMouseUp)

@@ -87,6 +87,17 @@
           </a-button>
         </a-input-group>
       </a-form-item>
+      <!-- 窗口尺寸 + 随机指纹 -->
+      <a-form-item label="窗口尺寸">
+        <a-space size="small" wrap>
+          <a-input-number v-model="form.width" :min="100" :max="7680" placeholder="宽" style="width: 110px" :precision="0" />
+          <span>x</span>
+          <a-input-number v-model="form.height" :min="100" :max="4320" placeholder="高" style="width: 110px" :precision="0" />
+        </a-space>
+      </a-form-item>
+      <a-form-item label="随机指纹" extra="开启后每次打开浏览器都随机指纹（全新浏览器）">
+        <a-switch v-model="form.random_fingerprint" />
+      </a-form-item>
     </a-form>
     <!-- 保存按钮 -->
     <div class="env-button-group">
@@ -121,8 +132,13 @@ const form = ref({
   description: '',
   category: '',
   proxy_protocol: 'direct',
-  proxy_url: ''
+  proxy_url: '',
+  width: 1280,
+  height: 720,
+  random_fingerprint: false
 })
+// 保留原 config（编辑时合并，避免覆盖指纹等其它字段）
+const rawConfig = ref({})
 
 // 代理检测
 const proxyChecking = ref(false)
@@ -203,6 +219,16 @@ const handleSubmit = async () => {
       proxyUrl = form.value.proxy_protocol + proxyUrl
     }
 
+    // config 深拷贝为纯对象再提交：rawConfig 是 Vue ref（深层 reactive 代理），浅展开会把嵌套
+    // 对象（如 fingerprint）以 Proxy 传给 IPC，报 "An object could not be cloned"
+    const config = JSON.parse(JSON.stringify({
+      ...rawConfig.value,
+      proxy_direct: isDirect.value,
+      width: Number(form.value.width) || 1280,
+      height: Number(form.value.height) || 720,
+      random_fingerprint: !!form.value.random_fingerprint
+    }))
+
     const env = {
       id: props.envId,
       name: form.value.name,
@@ -210,7 +236,7 @@ const handleSubmit = async () => {
       category_id: form.value.category,
       kernel_id: '',
       proxy_url: proxyUrl,
-      config: { proxy_direct: isDirect.value }
+      config
     }
     if (props.envId) {
       await browserAPI.updateBrowser(env)
@@ -234,8 +260,12 @@ const handleCancel = () => {
     description: '',
     category: '',
     proxy_protocol: 'http://',
-    proxy_url: ''
+    proxy_url: '',
+    width: 1280,
+    height: 720,
+    random_fingerprint: false
   }
+  rawConfig.value = {}
   proxyResult.value = null
   emit('cancel')
 }
@@ -247,8 +277,13 @@ const fetchBrowserDetail = async (id) => {
     if (result) {
       let config = {}
       try { config = typeof result.config === 'string' ? JSON.parse(result.config) : (result.config || {}) } catch (e) {}
+      rawConfig.value = config
       const proxyDirect = config.proxy_direct || false
       const isDirectMode = proxyDirect === true || proxyDirect === 1 || proxyDirect === 'true'
+      // 窗口尺寸与随机指纹（默认 1280×720 / 关）
+      const width = Number(config.width) || 1280
+      const height = Number(config.height) || 720
+      const randomFingerprint = config.random_fingerprint === true || config.random_fingerprint === 1 || config.random_fingerprint === 'true'
 
       if (isDirectMode) {
         form.value = {
@@ -257,7 +292,10 @@ const fetchBrowserDetail = async (id) => {
           description: result.description || '',
           category: result.category_id || '',
           proxy_protocol: 'direct',
-          proxy_url: ''
+          proxy_url: '',
+          width,
+          height,
+          random_fingerprint: randomFingerprint
         }
       } else {
         // 解析代理地址中的协议前缀
@@ -275,7 +313,10 @@ const fetchBrowserDetail = async (id) => {
           description: result.description || '',
           category: result.category_id || '',
           proxy_protocol: proxyProtocol,
-          proxy_url: proxyUrl
+          proxy_url: proxyUrl,
+          width,
+          height,
+          random_fingerprint: randomFingerprint
         }
       }
     }
@@ -319,5 +360,11 @@ onMounted(async () => {
     color: #f53f3f;
     background: #ffece8;
   }
+}
+
+.field-extra {
+  font-size: 12px;
+  color: var(--color-text-3);
+  margin-left: 8px;
 }
 </style>

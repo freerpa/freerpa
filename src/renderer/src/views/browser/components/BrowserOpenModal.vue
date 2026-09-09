@@ -110,12 +110,20 @@ import {
 const props = defineProps({ env: { type: Object, required: true } })
 const emit = defineEmits(['success', 'cancel'])
 
-const isDirectMode = computed(
-  () =>
-    props.env?.proxy_direct === true ||
-    props.env?.proxy_direct === 1 ||
-    props.env?.proxy_direct === 'true'
-)
+// 支持两种 env 结构：顶层已展开字段（视为优先），或 config 为 JSON 字符串/对象
+const cfgVal = (key) => {
+  const top = props.env?.[key]
+  if (top !== undefined && top !== null) return top
+  let c = props.env?.config
+  if (typeof c === 'string') { try { c = JSON.parse(c) } catch { c = {} } }
+  return c?.[key]
+}
+const boolVal = (v) => v === true || v === 1 || v === 'true'
+
+const isDirectMode = computed(() => boolVal(cfgVal('proxy_direct')))
+const randomFingerprint = computed(() => boolVal(cfgVal('random_fingerprint')))
+const width = computed(() => Number(cfgVal('width')) || 1280)
+const height = computed(() => Number(cfgVal('height')) || 720)
 
 let aborted = false
 const currentStep = ref(1)
@@ -179,7 +187,10 @@ const openBrowser = async () => {
   const res = await envAPI.openBrowser({
     envId: props.env.id,
     proxy: isDirectMode.value ? '' : props.env.proxy_url || '',
-    fingerprint: toRaw(props.env?.fingerprint || undefined)
+    fingerprint: toRaw(cfgVal('fingerprint') || undefined),
+    width: width.value,
+    height: height.value,
+    randomFingerprint: randomFingerprint.value
   })
   checkAborted()
   if (res.code !== 200) {

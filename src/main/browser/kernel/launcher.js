@@ -89,6 +89,8 @@ export const launchKernel = async (options = {}) => {
     lang = 'en-US',
     extraArgs = [],
     timezone = '',
+    width = 1280,
+    height = 720,
   } = options
 
   // 内核随包分发，直接定位内置二进制
@@ -114,10 +116,16 @@ export const launchKernel = async (options = {}) => {
     `--user-data-dir=${userDataDir}`,
     '--no-first-run', '--no-default-browser-check',
     `--lang=${lang}`,
+    // 关闭「窗口被遮挡/最小化时后台节流」，保证任何状态下渲染进程都持续运行、CDP 不断开
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+    '--disable-background-timer-throttling',
     ...extraArgs,
   ]
 
+  // 有头/无头统一按配置设定尺寸；无头下 --headless=new 以 --window-size 作为视口尺寸
   if (headless) args.push('--headless=new')
+  args.push(`--window-size=${width},${height}`)
 
   if (proxy) {
     args.push(`--proxy-server=${proxy.replace(/\/\/.+:.+@/, '//')}`, '--disable-non-proxied-udp')
