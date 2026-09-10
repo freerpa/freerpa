@@ -60,7 +60,16 @@
                   <a-option value="equals">等于</a-option>
                   <a-option value="contains">包含</a-option>
                 </a-select>
+                <Text
+                  v-if="props.paramRef"
+                  v-model="record.expression"
+                  :field="{ paramRef: true, placeholder: '匹配文本' }"
+                  :intercept="false"
+                  :auto-size="{ minRows: 1, maxRows: 3 }"
+                  class="expr-input"
+                />
                 <a-input
+                  v-else
                   v-model="record.expression"
                   size="mini"
                   placeholder="匹配文本"
@@ -85,6 +94,14 @@
                 />
               </template>
               <!-- 其他类型 -->
+              <Text
+                v-if="props.paramRef && record.type !== 'image'"
+                v-model="record.expression"
+                :field="{ paramRef: true, placeholder: getPlaceholder(record.type) }"
+                :intercept="false"
+                :auto-size="{ minRows: 1, maxRows: 3 }"
+                class="expr-input"
+              />
               <a-input
                 v-else
                 v-model="record.expression"
@@ -113,10 +130,13 @@
   import { Message } from '@arco-design/web-vue';
   import { IconDelete, IconPlus, IconMinusCircleFill } from '@arco-design/web-vue/es/icon';
   import { RiCrosshair2Line } from '@remixicon/vue';
+  import Text from '@/workflow/components/fieldRenderer/Text.vue';
 
   const props = defineProps({
     index: { type: Number, default: 0 },
     showRemove: { type: Boolean, default: true },
+    // 是否启用参数引用（工作流环境=true，元素集编辑=false）
+    paramRef: { type: Boolean, default: false },
   });
 
   const model = defineModel({ type: Object, required: true });

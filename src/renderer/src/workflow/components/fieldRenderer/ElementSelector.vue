@@ -42,7 +42,7 @@
         <div class="edit-panel">
           <div class="panel-header">目标元素</div>
           <div class="edit-body">
-            <ElementItem v-model="editingElement" :show-remove="false" />
+            <ElementItem v-model="editingElement" :show-remove="false" param-ref />
           </div>
           <div class="edit-footer">
             <a-button @click="onModalCancel">取消</a-button>
