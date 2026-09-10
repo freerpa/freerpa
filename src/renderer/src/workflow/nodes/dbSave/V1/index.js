@@ -7,7 +7,7 @@ export default {
   type: 'dbSave',
   name: '数据保存',
   icon: IconSave,
-  description: '保存数据到数据表',
+  description: '数据保存节点：将输入的对象或对象数组批量插入到指定数据表（每 1000 条一批），输出数据标识（供删除/修改使用）与本次保存条数。',
   view: false,
   config: [
     {
@@ -49,7 +49,7 @@ export default {
       name: '数据',
       type: ['array', 'object'],
       required: true,
-      description: '要保存的数据对象'
+      description: '要保存到数据表的数据（单个对象或对象数组，对象的键对应数据表字段）'
     }
   ],
   outputs: [
@@ -57,7 +57,7 @@ export default {
       id: 'query',
       name: '数据标识',
       type: 'dataQuery',
-      description: '用于删除和修改数据'
+      description: '本次保存数据的数据标识（数据表 + 行 ID），可传给“数据删除/修改”节点'
     },
     {
       id: 'savedCount',

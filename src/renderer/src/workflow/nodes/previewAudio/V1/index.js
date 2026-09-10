@@ -6,7 +6,7 @@ export default {
   type: 'previewAudio',
   name: '音频预览',
   icon: IconMusic,
-  description: '预览音频文件',
+  description: '音频预览节点：在节点画布上播放输入的音频（支持本地文件路径与网络地址），用于人工查看运行中间结果。',
   view: true,
   config: [],
   inputs: [

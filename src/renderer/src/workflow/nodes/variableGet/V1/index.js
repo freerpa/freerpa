@@ -8,7 +8,7 @@ export default {
   type: 'variableGet',
   name: '读取变量',
   icon: RiLogoutBoxLine,
-  description: '读取全局变量',
+  description: '读取全局变量节点：按变量名从全局变量存储中读取当前值并输出，供下游节点引用。',
   view: false,
   config: [
     {
@@ -27,11 +27,11 @@ export default {
               name: '变量名',
               type: 'string',
               required: true,
-              description: '要读取的变量名称',
+              description: '要读取的全局变量名',
               quickConfig: true
             }
           ],
-          description: '要读取的全局变量',
+          description: '要读取的全局变量名列表，运行时逐个读取各变量当前值作为输出',
           quickConfig: true
         }
       ]

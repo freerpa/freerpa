@@ -45,7 +45,7 @@ export default {
       id: 'worksheet',
       name: '工作表',
       type: 'worksheet',
-      description: '工作表'
+      description: '创建/读取到的 Excel 工作表对象（供后续单元格、行列操作节点使用）'
     }
   ]
 }

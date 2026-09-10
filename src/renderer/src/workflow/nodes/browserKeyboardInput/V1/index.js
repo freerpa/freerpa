@@ -7,7 +7,7 @@ export default {
   type: 'browserKeyboardInput',
   name: '键盘操作',
   icon: RiKeyboardLine,
-  description: '模拟键盘操作',
+  description: '键盘操作节点：向页面目标元素模拟输入文本（整体粘贴或逐字输入，可选先清空/回车确认），或按下指定按键（可组合 Ctrl/Alt/Shift 等修饰键），用于表单填写与快捷键操作。',
   view: false,
   config: [
     {
@@ -24,7 +24,7 @@ export default {
             { label: '按下按键', value: 'key' }
           ],
           default: 'input',
-          description: '键盘输入的模式',
+          description: '操作模式：input（向目标元素输入文本）/ key（按下指定按键，可组合修饰键）',
           quickConfig: true
         },
         // 按键目标
@@ -32,7 +32,7 @@ export default {
           id: 'keySelector',
           name: '按键区域',
           type: 'selector',
-          description: '要操作的按键区域，为空则默认当前页面焦点区域',
+          description: '按键操作的作用区域（元素选择器），为空时作用于当前页面焦点区域',
           quickConfig: true,
           show: '${keyboardMode} === "key"'
         },
@@ -41,7 +41,7 @@ export default {
           id: 'inputSelector',
           name: '目标元素',
           type: 'selector',
-          description: '要输入的目标元素',
+          description: '文本输入的目标元素（如输入框、文本框）',
           required: true,
           quickConfig: true,
           show: '${keyboardMode} === "input"'
@@ -55,7 +55,7 @@ export default {
             { label: '逐字输入', value: 'char' }
           ],
           default: 'paste',
-          description: '文本输入的方式',
+          description: '输入方式：paste（整体粘贴文本，速度快）/ char（逐字输入，更接近真人操作）',
           quickConfig: true,
           show: '${keyboardMode} === "input"'
         },
@@ -65,7 +65,7 @@ export default {
           type: 'number',
           min: 0,
           default: 100,
-          description: '每个字符的输入间隔(ms)',
+          description: '逐字输入时每个字符（或逐键按下时每个按键）的输入间隔（毫秒）',
           quickConfig: true,
           show: '${mode} === "char"'
         },
@@ -73,7 +73,7 @@ export default {
           id: 'text',
           name: '输入内容',
           type: 'text',
-          description: '要输入的文本内容',
+          description: '要输入到目标元素的文本内容',
           quickConfig: true,
           show: '${keyboardMode} === "input"'
         },
@@ -87,7 +87,7 @@ export default {
             { label: '回车确认', value: 'pressEnter' }
           ],
           default: ['clearFirst'],
-          description: '输入设置',
+          description: '输入选项：先清空（输入前全选删除原有内容）/ 回车确认（输入完成后按回车键）',
           show: '${keyboardMode} === "input"',
           quickConfig: true
         },
@@ -109,7 +109,7 @@ export default {
             { label: 'Command', value: 'Command' },
             { label: 'Option', value: 'Option' }
           ],
-          description: '同时按下的修饰键',
+          description: '与按键同时按下的修饰键（可多选，如 Ctrl+C 组合）',
           show: '${keyboardMode} === "key"',
           quickConfig: true
         },
@@ -213,7 +213,7 @@ export default {
             { label: '/', value: '/' },
             { label: '?', value: '?' }
           ],
-          description: '要按下的键',
+          description: '要按下的按键（可多选，依次按下）',
           show: '${keyboardMode} === "key"',
           quickConfig: true
         }
@@ -225,7 +225,8 @@ export default {
       id: 'page',
       name: '浏览器',
       type: 'page',
-      required: true
+      required: true,
+      description: '浏览器页面对象（来自“打开浏览器”节点）'
     }
   ],
   outputs: []

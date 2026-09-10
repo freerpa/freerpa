@@ -7,7 +7,7 @@ export default {
   type: 'fileMove',
   name: '移动文件',
   icon: RiFileTransferLine,
-  description: '移动文件或目录',
+  description: '移动文件节点：把文件或目录移动到目标路径，可强制覆盖同名目标，输出目标路径。',
   config: [
     {
       id: 'basic',

@@ -9,7 +9,7 @@ export default {
   type: 'timeSchedule',
   name: '定时触发',
   icon: IconPlayArrow,
-  description: '定时触发后续节点',
+  description: '定时触发节点（流程起点）：按配置的周期规则（每月/每周/每N天/每N时/每N分/每N秒）自动定时触发后续节点，也可手动确认触发。触发时输出配置的“触发参数”供下游使用。',
   view: true,
   config: [
     {
@@ -21,7 +21,7 @@ export default {
           name: '定时',
           type: 'switch',
           default: false,
-          description: '启用定时触发，配置定时规则',
+          description: '是否启用定时触发：开启后按下方周期规则自动触发；关闭时仅通过手动确认触发',
           quickConfig: true
         },
         {
@@ -57,7 +57,7 @@ export default {
             },
           ],
           default: 'day',
-          description: '设置触发周期，默认天',
+          description: '触发周期：每月/每周/每N天/每N时/每N分/每N秒，决定按哪种粒度定时',
           quickConfig: true
         },
         {
@@ -68,7 +68,7 @@ export default {
           max: 60,
           show: "['day','hour','minute','second'].includes(${schedule})",
           default: 1,
-          description: '设置N值，默认1',
+          description: '周期数值 N（每 N 天/时/分/秒触发一次），范围 1-60，默认 1',
           quickConfig: true
         },
         {
@@ -108,7 +108,7 @@ export default {
             },
           ],
           default: [1],
-          description: '设置触发周，默认周一',
+          description: '每周触发时选择的星期（可多选），默认周一',
           required: true,
           props: {
             allowClear: true
@@ -133,7 +133,7 @@ export default {
             return options
           },
           default: [1],
-          description: '设置触发日',
+          description: '每月触发时选择的日期（1-31，可多选）',
           required: true,
           props: {
             allowClear: true
@@ -158,7 +158,7 @@ export default {
             return options
           },
           default: [0],
-          description: '设置触发时',
+          description: '触发的小时（0-23，可多选）',
           required: true,
           props: {
             allowClear: true
@@ -183,7 +183,7 @@ export default {
             return options
           },
           default: [0],
-          description: '设置触发分',
+          description: '触发的分钟（0-59，可多选）',
           required: true,
           props: {
             allowClear: true
@@ -208,7 +208,7 @@ export default {
             return options
           },
           default: [0],
-          description: '设置触发秒',
+          description: '触发的秒（0-59，可多选）',
           required: true,
           props: {
             allowClear: true
@@ -220,7 +220,7 @@ export default {
           type: 'number',
           min: 0,
           default: 0,
-          description: '最大触发次数,0表示不限制',
+          description: '最大触发次数，达到后停止定时并结束节点；0 表示不限制',
           quickConfig: true,
           show: "${enableSchedule}"
         },
@@ -228,7 +228,7 @@ export default {
           id: 'params',
           name: '触发参数',
           type: 'array',
-          description: '设置触发时的参数',
+          description: '触发时随事件输出的参数列表（参数名 + 类型 + 默认值），供下游节点引用',
           fields: configFields
         }
       ]

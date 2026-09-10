@@ -45,7 +45,7 @@ export default {
     name: '工作表',
     type: 'worksheet',
     required: true,
-    description: '工作表'
+    description: '要保存的 Excel 工作表对象（来自“创建工作簿”节点）'
   }],
   outputs: [
     {

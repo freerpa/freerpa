@@ -7,7 +7,7 @@ export default {
   type: 'fileCopy',
   name: '复制文件',
   icon: IconCopy,
-  description: '复制文件或目录',
+  description: '复制文件节点：把文件或目录复制到目标路径，可强制覆盖同名目标，输出目标路径。',
   config: [
     {
       id: 'basic',

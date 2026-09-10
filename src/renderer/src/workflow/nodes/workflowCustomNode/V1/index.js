@@ -18,7 +18,7 @@ export default {
   name: '自定义脚本',
   // 节点类型
   type: 'workflowCustomNode',
-  description: '使用 JavaScript 代码实现自定义逻辑，支持node模块和远程es6模块调用',
+  description: '自定义脚本节点：在 worker 内执行用户编写的 JavaScript 代码，实现任意自定义逻辑。代码中可读取 inputs（输入项）与 config（配置项），调用 complete(输出对象) 完成节点并输出数据；支持远程 ES6 模块动态导入。',
   // 节点图标
   icon: IconCode,
   view: true,
@@ -43,6 +43,7 @@ export default {
           name: '执行代码',
           type: 'code',
           nolabel: true,
+          description: '要执行的 JavaScript 代码：代码中可用 complete(outputs) 完成节点并输出数据，可用 inputs 读取输入项、config 读取配置项',
           default: `// 在这里编写你的javascript代码
 // 你可以使用 inputs 获取输入数据,config 获取配置数据
 // 使用 complete() 完成节点并输出数据 如：complete({输出参数1: 输出数据1,输出参数2: 输出数据2})
@@ -69,7 +70,7 @@ complete({
           name: '输入项',
           nolabel: true,
           type: 'array',
-          description: '设置输入参数',
+          description: '节点输入项声明：定义代码中可用 inputs 读取的输入参数（参数名 + 类型 + 默认值），上游节点数据按参数名注入',
           fields: fields,
           default: [
             {
@@ -97,7 +98,7 @@ complete({
           name: '配置项',
           nolabel: true,
           type: 'array',
-          description: '设置自定义配置数据',
+          description: '节点配置项声明：定义可在代码中用 config 读取的自定义配置参数（参数名 + 类型 + 默认值）',
           fields: configFields,
           default: []
         }
@@ -112,7 +113,7 @@ complete({
           name: '输出项',
           nolabel: true,
           type: 'array',
-          description: '设置输出参数',
+          description: '节点输出项声明：定义 complete() 输出数据的结构（参数名 + 类型），供下游节点引用',
           fields: fields,
           default: [
             {

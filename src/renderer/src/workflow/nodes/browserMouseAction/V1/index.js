@@ -7,7 +7,7 @@ export default {
   type: 'browserMouseAction',
   name: '鼠标操作',
   icon: RiCursorLine,
-  description: '模拟鼠标操作',
+  description: '鼠标操作节点：对页面元素模拟单击、双击、右键、悬停、拖拽或滚轮滚动等鼠标行为，支持一次点击全部匹配元素。',
   view: false,
   config: [
     {
@@ -35,7 +35,7 @@ export default {
             { label: '滚轮', value: 'wheel' },
           ],
           default: 'click',
-          description: '鼠标操作类型',
+          description: '操作类型：click（单击）/ dblclick（双击）/ rightClick（右键）/ hover（悬停）/ drag（拖拽）/ wheel（滚轮）',
           quickConfig: true
         },
         {
@@ -43,7 +43,7 @@ export default {
           name: '水平滚动',
           type: 'number',
           default: 0,
-          description: '滚轮水平滚动的距离',
+          description: '滚轮水平滚动距离（像素，正值向右、负值向左）',
           show: "${action} === 'wheel'",
           quickConfig: true
         },
@@ -52,7 +52,7 @@ export default {
           name: '垂直滚动',
           type: 'number',
           default: 0,
-          description: '滚轮垂直滚动的距离',
+          description: '滚轮垂直滚动距离（像素，正值向下、负值向上）',
           show: "${action} === 'wheel'",
           quickConfig: true
         },
@@ -71,7 +71,7 @@ export default {
           type: 'number',
           min: 0,
           default: 500,
-          description: '操作前的延迟时间(毫秒)'
+          description: '执行操作前的延迟时间（毫秒），用于等待元素/页面稳定'
         },
         {
           id: 'interval',
@@ -79,7 +79,7 @@ export default {
           type: 'number',
           min: 0,
           default: 100,
-          description: '多个元素点击的间隔时间(毫秒)',
+          description: '点击全部时，多个元素之间的点击间隔时间（毫秒）',
           show: '${clickAll}',
           quickConfig: true
         },
@@ -164,7 +164,8 @@ export default {
       id: 'page',
       name: '浏览器',
       type: 'page',
-      required: true
+      required: true,
+      description: '浏览器页面对象（来自“打开浏览器”节点）'
     }
   ],
   outputs: [

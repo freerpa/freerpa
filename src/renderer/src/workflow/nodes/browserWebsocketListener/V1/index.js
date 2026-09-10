@@ -7,7 +7,7 @@ export default {
   type: 'browserWebsocketListener',
   name: 'WebSocket监听',
   icon: IconThunderbolt,
-  description: '监听WebSocket通信',
+  description: 'WebSocket 监听节点：监听页面发起的 WebSocket 连接（可按地址过滤），接收到服务端推送的帧数据时输出消息内容。',
   config: [
     {
       id: 'basic',
@@ -17,7 +17,7 @@ export default {
           id: 'url',
           name: '监听地址',
           type: 'input',
-          description: '要监听的WebSocket地址',
+          description: '要监听的 WebSocket 地址关键字（为空时监听所有连接）',
           quickConfig: true
         }
       ]
@@ -28,7 +28,8 @@ export default {
       id: 'page',
       name: '浏览器',
       type: 'page',
-      required: true
+      required: true,
+      description: '浏览器页面对象（来自“打开浏览器”节点）'
     }
   ],
   outputs: [

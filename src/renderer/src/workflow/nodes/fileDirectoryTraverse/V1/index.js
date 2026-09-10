@@ -7,7 +7,7 @@ export default {
   type: 'fileDirectoryTraverse',
   name: '读取目录',
   icon: RiFolderLine,
-  description: '读取指定目录下的所有文件或文件夹',
+  description: '读取目录节点：遍历指定目录下的文件与子目录（支持递归、最大深度、包含/排除通配符与排序），输出路径列表、条目数量与根目录。',
   config: [
     {
       id: 'basic',
@@ -30,7 +30,7 @@ export default {
             { label: '文件夹', value: 'directories' }
           ],
           default: ['files'],
-          description: '选择要读取的内容类型',
+          description: '要读取的条目类型：文件 / 文件夹（可多选）',
           quickConfig: true
         },
         {

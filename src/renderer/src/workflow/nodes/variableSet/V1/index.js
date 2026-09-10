@@ -8,7 +8,7 @@ export default {
   type: 'variableSet',
   name: '设置变量',
   icon: RiLoginBoxLine,
-  description: '设置全局变量',
+  description: '设置全局变量节点：把变量写入全局变量存储（跨节点、跨子流程共享）。每个变量的取值优先级为：上游输入同名数据 > 配置的默认值。',
   view: false,
   config: [
     {
@@ -27,11 +27,11 @@ export default {
               name: '变量名',
               type: 'string',
               required: true,
-              description: '变量名称',
+              description: '全局变量名，写入后其他节点可用该名称读取',
               quickConfig: true
             }
           ],
-          description: '要设置的全局变量',
+          description: '要写入全局变量存储的变量列表（变量名 + 默认值）',
           quickConfig: true
         }
       ]

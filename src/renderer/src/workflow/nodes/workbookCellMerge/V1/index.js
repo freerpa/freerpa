@@ -3,7 +3,7 @@ export default {
   type: 'workbookCellMerge',
   name: '合并单元格',
   icon: RiMergeCellsVertical,
-  description: '合并工作表中的单元格',
+  description: '合并单元格节点：将工作表中“起始单元格”到“结束单元格”范围内的单元格合并为一个，并输出合并区域的起始行列号。',
   view: false,
   config: [
     {

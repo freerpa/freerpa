@@ -16,7 +16,7 @@ export default {
   type: 'browserPageEvent',
   name: '页面事件',
   icon: RiBroadcastLine,
-  description: '监听页面生命周期及各类事件（对应 puppeteer PageEvent）',
+  description: '页面事件监听节点：监听页面跳转、控制台消息、弹窗、打开新标签页、页面脚本报错等事件，事件发生时输出对应的事件数据（持续监听时每次触发都会输出）。',
   view: false,
   config: [
     {
@@ -29,7 +29,7 @@ export default {
           type: 'select',
           options: eventOptions,
           default: 'console',
-          description: '选择要监听的页面事件',
+          description: '要监听的页面事件类型：页面跳转/控制台消息/弹窗/打开新标签页/页面脚本报错',
           quickConfig: true
         },
         {
@@ -47,7 +47,7 @@ export default {
           type: 'select',
           default: 'load',
           show: "${event}==='framenavigated'",
-          description: '页面跳转后等导航加载到什么状态再输出地址（page.waitForNavigation(awaitUntil)）',
+          description: '页面跳转后等待导航到达的状态再输出地址：不等待/页面加载完成/页面渲染完成/网络加载完成',
           quickConfig: true,
           options: [
             { label: '不等待', value: '' },
@@ -72,7 +72,8 @@ export default {
       id: 'page',
       name: '浏览器',
       type: 'page',
-      required: true
+      required: true,
+      description: '浏览器页面对象（来自“打开浏览器”节点）'
     }
   ],
   outputs: [

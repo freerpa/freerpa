@@ -54,7 +54,7 @@ export default {
   type: 'browserNetworkListener',
   name: '网络监听',
   icon: IconWifi,
-  description: '监听浏览器网络请求',
+  description: '网络监听节点：监听浏览器发出的网络请求与响应，可按 URL、请求方法、请求头、请求体、资源类型、状态码及响应内容等条件过滤，匹配时输出完整的请求与响应信息。',
   view: false,
   config: [
     {
@@ -66,6 +66,7 @@ export default {
           name: 'URL匹配',
           type: 'object',
           default: {},
+          description: 'URL 匹配条件：mode（全部满足/任一满足）+ 规则（等于/包含/正则）',
           fields: [
             mode,
             {
@@ -100,6 +101,7 @@ export default {
           id: 'method',
           name: '请求方法',
           type: 'checkbox',
+          description: '要监听的请求方法（可多选）',
           options: [
             { label: 'GET', value: 'GET' },
             { label: 'POST', value: 'POST' },
@@ -116,6 +118,7 @@ export default {
           name: '请求头匹配',
           type: 'object',
           default: {},
+          description: '请求头匹配条件：参数名称 + 匹配方式（存在/等于/包含/为空/正则）',
           fields: [
             mode,
             rules
@@ -126,6 +129,7 @@ export default {
           name: '请求体匹配',
           type: 'object',
           default: {},
+          description: '请求体匹配条件：参数名称（支持点号路径）+ 匹配方式',
           fields: [
             mode,
             rules
@@ -218,7 +222,8 @@ export default {
       id: 'page',
       name: '浏览器',
       type: 'page',
-      required: true
+      required: true,
+      description: '浏览器页面对象（来自“打开浏览器”节点）'
     }
   ],
   outputs: [

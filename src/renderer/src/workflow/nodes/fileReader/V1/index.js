@@ -7,7 +7,7 @@ export default {
   type: 'fileReader',
   name: '读取文件',
   icon: RiFileTextLine,
-  description: '读取本地文件内容',
+  description: '读取文件节点：读取本地文件的全部内容或按行读取指定行区间，支持 UTF-8/GBK/ASCII/Binary 编码，输出文件内容与文件路径。',
   config: [
     {
       id: 'basic',
@@ -46,7 +46,7 @@ export default {
           ],
           default: 'all',
           quickConfig: true,
-          description: '文件读取方式'
+          description: '读取方式：all（读取全部内容，上限 50MB）/ line（按行读取指定区间）'
         },
         {
           id: 'startLine',

@@ -7,7 +7,7 @@ export default {
   type: 'fileWriter',
   name: '写入文件',
   icon: RiFileEditLine,
-  description: '将内容写入本地文件',
+  description: '写入文件节点：把内容以指定编码写入本地文件，支持覆盖或追加模式（追加时可选前置换行）。',
   config: [
     {
       id: 'basic',
@@ -54,7 +54,7 @@ export default {
           ],
           default: 'overwrite',
           quickConfig: true,
-          description: '文件写入模式'
+          description: '写入模式：overwrite（覆盖原有内容）/ append（追加到文件末尾）'
         },
         {
           id: 'appendLineBreak',

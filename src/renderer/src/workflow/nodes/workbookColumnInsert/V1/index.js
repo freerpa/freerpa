@@ -3,7 +3,7 @@ export default {
   type: 'workbookColumnInsert',
   name: '插入列',
   icon: RiInsertColumnRight,
-  description: '插入工作表的列',
+  description: '插入列节点：在指定列号处插入一列（原列及其后的列右移），或在表格末尾追加一列。',
   view: false,
   config: [
     {

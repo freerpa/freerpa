@@ -8,7 +8,7 @@ export default {
   type: 'systemClipboard',
   name: '系统剪贴板',
   icon: IconPaste,
-  description: '读取或设置系统剪贴板内容',
+  description: '系统剪贴板操作节点：读取系统剪贴板的文本内容、写入文本到剪贴板，或清空剪贴板。读取/写入模式均输出 content（剪贴板文本）。',
   config: [
     {
       id: 'basic',
@@ -24,7 +24,7 @@ export default {
             { label: '清空', value: 'clear' }
           ],
           default: 'read',
-          description: '选择要执行的剪贴板操作',
+          description: '剪贴板操作类型：read（读取系统剪贴板文本）/ write（写入文本）/ clear（清空剪贴板）',
           quickConfig: true,
           onChange: (value, formData) => {
             if (value === 'read') {
@@ -46,7 +46,7 @@ export default {
           name: '写入内容',
           type: 'text',
           default: '',
-          description: '要写入剪贴板的内容（仅在设置剪贴板时使用）,优先级低于参数传入的内容',
+          description: '要写入剪贴板的文本内容（仅写入模式生效；若上游传入同名 content 数据，则以上游数据为准）',
           quickConfig: true,
           show: "${type} === 'write'"
         },

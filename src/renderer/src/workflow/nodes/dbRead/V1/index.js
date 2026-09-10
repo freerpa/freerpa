@@ -7,7 +7,7 @@ export default {
   type: 'dbRead',
   name: '数据读取',
   icon: IconList,
-  description: '从数据表中读取数据',
+  description: '数据读取节点：按查询条件、排序与分页从数据表读取数据，支持随机读取与只读指定字段，输出查询结果数组、结果条数、总条数及数据标识（供删除/修改使用）。',
   view: false,
   config: [
     {
@@ -43,7 +43,7 @@ export default {
           type: 'number',
           min: 1,
           default: 1,
-          description: '起始页码',
+          description: '查询的起始页码（从 1 开始）',
           quickConfig: true
         },
         {
@@ -52,14 +52,14 @@ export default {
           type: 'number',
           min: 1,
           default: 10,
-          description: '每次读取的数据条数',
+          description: '每页读取的数据条数（分页大小）',
           quickConfig: true
         },
         {
           id: 'conditions',
           name: '查询条件',
           type: 'array',
-          description: '设置查询条件',
+          description: '查询条件：字段 + 操作符（等于/包含/范围内/为空等）+ 匹配值，支持多个条件组与“全部满足/任一满足”逻辑',
           fields: [
             {
               id: 'conditions',
@@ -121,13 +121,13 @@ export default {
           name: '随机读取',
           type: 'switch',
           default: false,
-          description: '是否随机读取数据'
+          description: '是否随机读取数据（开启后忽略排序设置）'
         },
         {
           id: 'sort',
           name: '排序设置',
           type: 'array',
-          description: '设置排序规则',
+          description: '排序规则：排序字段 + 升序/降序（可配置多条）',
           show: '!${random}',
           fields: [
             {
@@ -153,7 +153,7 @@ export default {
           id: 'readFields',
           name: '读取字段',
           type: 'array',
-          description: '设置要读取的字段',
+          description: '仅读取指定的字段（留空则读取全部字段）',
           fields: [
             {
               id: 'field',
@@ -184,13 +184,13 @@ export default {
       id: 'query',
       name: '数据标识',
       type: 'dataQuery',
-      description: '用于删除和修改数据'
+      description: '本次查询结果的数据标识（数据表 + 行 ID），可传给“数据删除/修改”节点'
     },
     {
       id: 'total',
       name: '总条数',
       type: 'number',
-      description: '查询到的总条数'
+      description: '满足条件的数据总条数'
     }
   ]
 }

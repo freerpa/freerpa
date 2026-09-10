@@ -3,7 +3,7 @@ export default {
   type: 'workbookCellWrite',
   name: '写数据',
   icon: RiTextSnippet,
-  description: '写入工作表数据',
+  description: '写数据节点：将内容写入工作表的指定单元格（可配置多个“行号 + 列号 + 内容”单元格）。',
   view: false,
   config: [
     {

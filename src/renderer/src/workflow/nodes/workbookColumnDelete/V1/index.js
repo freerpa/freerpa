@@ -3,7 +3,7 @@ export default {
   type: 'workbookColumnDelete',
   name: '删除列',
   icon: RiDeleteColumn,
-  description: '删除工作表的列',
+  description: '删除列节点：删除指定列号所在的列（可配置按正序或倒序依次删除）。',
   view: false,
   config: [
     {
@@ -23,7 +23,7 @@ export default {
         {
           id: 'order',
           name: '顺序',
-          description: '删除行的顺序',
+          description: '删除列的顺序',
           type: 'radio',
           default: 'asc',
           quickConfig: true,

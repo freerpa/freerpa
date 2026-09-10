@@ -7,7 +7,7 @@ export default {
   type: 'fileDirCreate',
   name: '创建目录',
   icon: RiFolderAddLine,
-  description: '创建目录（支持递归创建）',
+  description: '创建目录节点：在本地创建目录，支持多级递归创建；创建成功返回目录路径，失败返回空字符串。',
   view: false,
   config: [
     {
@@ -21,7 +21,8 @@ export default {
           pathType: 'directory',
           default: '',
           required: true,
-          quickConfig: true
+          quickConfig: true,
+          description: '要创建的目录路径（支持多级，自动递归创建）'
         }
       ]
     }

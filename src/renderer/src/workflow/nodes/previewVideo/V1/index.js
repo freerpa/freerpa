@@ -6,7 +6,7 @@ export default {
   type: 'previewVideo',
   name: '视频预览',
   icon: IconLiveBroadcast,
-  description: '预览视频文件',
+  description: '视频预览节点：在节点画布上播放输入的视频（支持本地文件路径与网络地址），用于人工查看运行中间结果。',
   view: true,
   resizable: true,
   size: {

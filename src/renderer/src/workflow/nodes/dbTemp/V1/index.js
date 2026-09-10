@@ -7,7 +7,7 @@ export default {
   type: 'dbTemp',
   name: '数据暂存',
   icon: IconStorage,
-  description: '将数据暂存到暂存器中，以数组形式输出，如果需要清空暂存器，请使用清空暂存节点',
+  description: '数据暂存节点：将输入数据累积暂存到暂存器（数组），每次执行追加一条，并输出暂存器引用、暂存的数据数组与长度。如需清空请使用“清空暂存”节点。',
   view: false,
   config: [],
   inputs: [
@@ -15,7 +15,7 @@ export default {
       id: 'data',
       name: '数据',
       type: ['object', 'array', 'string', 'number', 'boolean'],
-      description: '要暂存的数据',
+      description: '要暂存的数据（每次执行追加到暂存器末尾）',
       required: true
     }
   ],
@@ -24,13 +24,13 @@ export default {
       id: 'tempStore',
       name: '暂存器',
       type: 'tempStore',
-      description: '用于清空数据暂存'
+      description: '暂存器对象（含清空函数），传给“清空暂存”节点使用'
     },
     {
       id: 'data',
       name: '数据',
       type: 'array',
-      description: '暂存的数据'
+      description: '暂存器中累积的所有数据（数组）'
     },
     {
       id: 'length',

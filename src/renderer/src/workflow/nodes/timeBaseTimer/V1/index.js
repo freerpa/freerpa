@@ -7,7 +7,7 @@ export default {
   type: 'timeBaseTimer',
   name: '计时器',
   icon: RiTimerLine,
-  description: '创建一个计时器，用于计时和获取当前时间的秒数',
+  description: '计时器节点：创建一个按秒计时的计时器并自动开始。每过 1 秒更新输出（当前秒数 second、剩余秒数 remainingSecond），倒计时到 0 时自动完成节点并继续执行后续节点。计时器对象可交给“操作计时器”节点控制。',
   view: true,
   config: [
     {
@@ -19,7 +19,7 @@ export default {
           name: '计时秒数',
           default: 30,
           type: 'number',
-          description: '计时器达到秒数后，继续执行后续节点',
+          description: '倒计时总秒数：从 0 开始计时，剩余秒数减到 0 时自动完成节点并继续执行',
           quickConfig: true
         }
       ]
@@ -31,19 +31,19 @@ export default {
       id: 'timer',
       name: '计时器',
       type: 'timer',
-      description: '计时器'
+      description: '计时器对象（含 start/stop/clear 方法），可传给“操作计时器”节点控制'
     },
     {
       id: 'second',
       name: '当前秒数',
       type: 'number',
-      description: '当前计时器的秒数'
+      description: '当前已计时的秒数（自开始/清零起累计）'
     },
     {
       id: 'remainingSecond',
       name: '剩余秒数',
       type: 'number',
-      description: '计时器剩余的秒数'
+      description: '剩余秒数（总秒数 - 当前秒数）'
     }
   ]
 }

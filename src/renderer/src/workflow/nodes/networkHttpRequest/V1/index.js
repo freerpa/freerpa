@@ -7,7 +7,7 @@ export default {
   type: 'networkHttpRequest',
   name: 'HTTP请求',
   icon: IconWifi,
-  description: '发送 HTTP 请求，支持 GET/POST/PUT/PATCH/DELETE/HEAD/OPTIONS、自定义请求头、代理、form-data/urlencoded/json/xml/plain/html 请求体',
+  description: 'HTTP 请求节点：发送 HTTP 请求，支持 GET/POST/PUT/PATCH/DELETE/HEAD/OPTIONS、自定义请求头、代理，以及 form-data/urlencoded/json/xml/javascript/plain/html 等请求体，输出响应码、响应头与按 Content-Type 自动解析的响应数据。',
   view: true,
   config: [
     {
@@ -37,7 +37,7 @@ export default {
           name: '请求地址',
           type: 'text',
           required: true,
-          description: 'HTTP请求的URL地址',
+          description: 'HTTP 请求的 URL 地址（未带协议时自动补全 http://）',
           quickConfig: true
         },
         {
@@ -53,7 +53,7 @@ export default {
           type: 'text',
           default: '',
           quickConfig: true,
-          description: '协议://用户名:密码@地址:端口'
+          description: '代理地址，格式：协议://用户名:密码@地址:端口（支持 http/https/socks4/socks5）'
         },
         {
           id: 'headers',
@@ -77,7 +77,7 @@ export default {
               type: 'text'
             }
           ],
-          description: 'HTTP请求头'
+          description: '自定义 HTTP 请求头（参数名 + 参数值）'
         },
         {
           id: 'bodyType',
@@ -85,7 +85,7 @@ export default {
           type: 'select',
           default: 'form-data',
           show: "['POST', 'PUT', 'PATCH', 'DELETE'].includes(${method})",
-          description: '内容类型',
+          description: '请求体类型，决定请求体编码方式与 Content-Type：form-data/urlencoded/json/xml/javascript/plain/html',
           options: [
             {
               label: 'form-data',
@@ -121,7 +121,7 @@ export default {
           id: 'bodyFormData',
           name: '请求体',
           type: 'array',
-          description: '请求体参数',
+          description: '表单请求体参数（参数名 + 参数值），用于 form-data / urlencoded 类型',
           show: "${bodyType} === 'form-data' || ${bodyType} === 'urlencoded'",
           codeView: {
             type: 'object',
@@ -147,7 +147,7 @@ export default {
           id: 'bodyFormFiles',
           name: '文件',
           type: 'array',
-          description: '文件参数',
+          description: 'form-data 模式下要上传的文件（参数名 + 本地文件路径）',
           show: "${bodyType} === 'form-data'",
           fields: [
             {
@@ -168,7 +168,7 @@ export default {
         {
           id: 'bodyText',
           name: '请求体',
-          description: '请求体内容',
+          description: '请求体文本内容（用于 json/xml/javascript/plain/html 类型）',
           type: 'code',
           show: "['json', 'xml', 'javascript', 'plain', 'html'].includes(${bodyType})",
           language: '${bodyType}',

@@ -7,7 +7,7 @@ export default {
   type: 'browserPageScroll',
   name: '页面滚动',
   icon: RiScrollToBottomLine,
-  description: '控制页面或指定元素的滚动',
+  description: '页面滚动节点：滚动整个页面或指定容器元素，支持滚动到元素/指定位置/边界，以及持续滚动（含往复滚动与停止策略）。',
   view: false,
   config: [
     {
@@ -25,7 +25,7 @@ export default {
             { label: '持续滚动', value: 'continuous' }
           ],
           default: 'element',
-          description: '滚动的方式',
+          description: '滚动方式：element（滚动到目标元素）/ position（滚动到指定坐标）/ edge（滚动到边界）/ continuous（持续滚动）',
           quickConfig: true,
           required: true
         },
@@ -33,7 +33,7 @@ export default {
           id: 'scrollArea',
           name: '滚动区域',
           type: 'selector',
-          description: '要滚动的区域,默认为整个页面',
+          description: '要滚动的容器元素，默认为整个页面',
           quickConfig: true,
           required: false
         },
@@ -46,7 +46,7 @@ export default {
             { label: '瞬间跳转', value: 'instant' }
           ],
           default: 'smooth',
-          description: '滚动的动画效果',
+          description: '滚动动画效果：smooth（平滑滚动）/ instant（瞬间跳转）',
           quickConfig: true
         },
         {
@@ -86,7 +86,7 @@ export default {
           required: true,
           quickConfig: true,
           show: "${scrollType} == 'position'",
-          description: '是否相对于当前位置滚动'
+          description: '是否相对于当前位置滚动（开启后按当前位置偏移，关闭则为绝对坐标）'
         },
         {
           id: 'direction',
@@ -99,7 +99,7 @@ export default {
             { label: '右', value: 'right' }
           ],
           default: 'down',
-          description: '持续滚动的方向',
+          description: '滚动方向：上/下/左/右（用于持续滚动与滚动到边界）',
           quickConfig: true,
           show: "['continuous', 'edge'].includes(${scrollType})"
         },
@@ -128,7 +128,7 @@ export default {
           name: '往复滚动',
           type: 'switch',
           default: false,
-          description: '到达边界后反向滚动',
+          description: '到达边界后是否反向滚动（往复滚动）',
           quickConfig: true,
           show: "${scrollType} == 'continuous'"
         },
@@ -142,7 +142,7 @@ export default {
             { label: '无限滚动', value: 'infinite' }
           ],
           default: 'duration',
-          description: '滚动停止的条件',
+          description: '持续滚动的停止条件：edgeCount（触边 N 次后停止）/ duration（持续 N 毫秒后停止）/ infinite（无限滚动，需手动停止）',
           quickConfig: true,
           show: "${scrollType} == 'continuous'"
         },
@@ -175,7 +175,8 @@ export default {
       id: 'page',
       name: '浏览器',
       type: 'page',
-      required: true
+      required: true,
+      description: '浏览器页面对象（来自“打开浏览器”节点）'
     }
   ],
   outputs: []

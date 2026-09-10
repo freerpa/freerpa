@@ -7,7 +7,7 @@ export default {
   type: 'dbConnect',
   name: '连接数据库',
   icon: RiDatabase2Line,
-  description: '连接外部数据库，支持 MySQL、PostgreSQL、SQLite',
+  description: '连接数据库节点：建立到外部数据库（MySQL/PostgreSQL/SQLite）的连接，输出连接引用，供“执行SQL”节点使用。',
   view: false,
   config: [
     {
@@ -98,7 +98,7 @@ export default {
       id: 'connection',
       name: '数据库',
       type: 'dbConnection',
-      description: '数据库连接引用，供执行SQL节点使用'
+      description: '数据库连接引用，供“执行SQL”节点使用'
     }
   ]
 }

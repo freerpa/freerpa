@@ -3,7 +3,7 @@ export default {
   type: 'workbookRowInsert',
   name: '插入行',
   icon: RiInsertRowBottom,
-  description: '插入工作表的行',
+  description: '插入行节点：在指定行号处插入一行（原行及之后的行下移），或在表格末尾追加一行。',
   view: false,
   config: [
     {

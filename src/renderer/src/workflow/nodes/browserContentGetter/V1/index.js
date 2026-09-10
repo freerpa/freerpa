@@ -7,7 +7,7 @@ export default {
   type: 'browserContentGetter',
   name: '内容获取',
   icon: RiArticleLine,
-  description: '获取页面上的文本、属性等内容',
+  description: '内容获取节点：从页面元素上提取文本、链接、图片、音频/视频、属性、表单值、计算样式、位置等数据；可一次获取多个元素、按元素状态过滤、对已获取列表去重，并支持 HTML 子项解析输出结构化字段。',
   view: false,
   config: [
     {
@@ -48,7 +48,7 @@ export default {
             { label: '视口内', value: 'inViewport' }
           ],
           default: [],
-          description: '要获取内容的目标元素状态',
+          description: '目标元素需满足的状态：可见 / 在视口内（可多选，不选则不过滤）',
           quickConfig: true
         },
         {
@@ -68,7 +68,7 @@ export default {
             { label: '元素位置', value: 'position' }
           ],
           default: 'text',
-          description: '要获取的内容类型',
+          description: '要提取的内容类型：文本/链接/图片/音频/视频/HTML 子项解析/元素属性/表单值/计算样式/元素位置',
           quickConfig: true
         },
         {
@@ -110,7 +110,7 @@ export default {
             allowClear: true
           },
           options: [], // 动态获取数据表列表
-          description: '根据数据表中的字段配置解析规则',
+          description: '选择数据表，自动按其字段生成解析规则',
           remote: true,
           remoteMethod: async (keyword = '') => {
             const result = await window.electronAPI.data.getModels({
@@ -149,7 +149,7 @@ export default {
           name: '解析规则',
           type: 'array',
           show: '${getType} == "html"',
-          description: '解析规则',
+          description: 'HTML 子项解析规则：为每个要输出的字段配置“字段名 + 子元素选择器 + 获取类型”，从列表项中提取结构化数据',
           default: [],
           quickConfig: false,
           fields: [
@@ -212,7 +212,8 @@ export default {
       id: 'page',
       name: '浏览器',
       type: 'page',
-      required: true
+      required: true,
+      description: '浏览器页面对象（来自“打开浏览器”节点）'
     }
   ],
   outputs: [

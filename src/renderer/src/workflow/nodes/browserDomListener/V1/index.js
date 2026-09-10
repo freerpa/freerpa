@@ -7,7 +7,7 @@ export default {
   type: 'browserDomListener',
   name: '元素监听',
   icon: IconEye,
-  description: '监听DOM元素的变化',
+  description: '元素监听节点：按固定间隔轮询检查目标元素的状态（存在/可见/视口/属性/位置/尺寸/文本/HTML/输入值/子项数量等），任一监听项的状态发生变化时触发后续节点。',
   view: false,
   config: [
     {
@@ -43,7 +43,7 @@ export default {
           ],
           multiple: true,
           default: [],
-          description: '要监听的变化类型',
+          description: '要监听的变化类型（可多选）：元素存在/不存在、可见/不可见、在视口内/外、属性/位置/尺寸/文本/HTML/输入值/子项数量变化',
           required: true,
           quickConfig: true
         },
@@ -62,7 +62,7 @@ export default {
           name: '持续监听',
           type: 'switch',
           default: true,
-          description: '是否持续监听元素变化',
+          description: '是否持续监听元素变化（否则状态变化一次后结束节点）',
           quickConfig: true
         }
       ]
@@ -73,7 +73,8 @@ export default {
       id: 'page',
       name: '浏览器',
       type: 'page',
-      required: true
+      required: true,
+      description: '浏览器页面对象（来自“打开浏览器”节点）'
     }
   ],
   outputs: []

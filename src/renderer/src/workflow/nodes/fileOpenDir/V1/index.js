@@ -7,7 +7,7 @@ export default {
   type: 'fileOpenDir',
   name: '打开目录',
   icon: RiFolderOpenLine,
-  description: '打开目录',
+  description: '打开目录节点：在系统文件管理器中打开指定目录；若传入的是文件路径，则在资源管理器中定位到该文件。',
   config: [
     {
       id: 'basic',
@@ -18,7 +18,7 @@ export default {
           name: '目录路径',
           type: 'path',
           pathType: 'folder',
-          description: '要打开的目录路径',
+          description: '要打开的目录或文件路径',
           quickConfig: true,
           required: true
         }

@@ -3,7 +3,7 @@ export default {
   type: 'workbookCellMergeUn',
   name: '取消单元格合并',
   icon: RiSplitCellsVertical,
-  description: '取消合并工作表中的单元格',
+  description: '取消合并节点：取消指定单元格所在区域的单元格合并，恢复为独立单元格。',
   view: false,
   config: [
     {

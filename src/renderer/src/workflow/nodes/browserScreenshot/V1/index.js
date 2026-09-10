@@ -7,7 +7,7 @@ export default {
   type: 'browserScreenshot',
   name: '网页截图',
   icon: IconCamera,
-  description: '支持全屏截图、元素选择截图、指定区域截图',
+  description: '网页截图节点：对浏览器页面进行全屏、指定元素或指定坐标区域截图，支持 PNG/JPEG/WebP 格式与质量设置，输出 base64 编码的图片数据。',
   view: false,
   config: [
     {
@@ -25,7 +25,8 @@ export default {
           ],
           default: 'fullscreen',
           required: true,
-          quickConfig: true
+          quickConfig: true,
+          description: '截图类型：fullscreen（整页全屏）/ element（指定元素）/ area（指定坐标区域）'
         },
         {
           id: 'selector',
@@ -44,6 +45,7 @@ export default {
           show: '${screenshotType} === "area"',
           required: true,
           quickConfig: true,
+          description: '截图区域（x/y 起点坐标 + 宽高），仅“区域截图”使用',
           fields: [
             {
               id: 'x',
@@ -85,7 +87,8 @@ export default {
             { label: 'WebP', value: 'webp' }
           ],
           default: 'png',
-          quickConfig: true
+          quickConfig: true,
+          description: '图片格式：png / jpeg / webp'
         },
         {
           id: 'quality',
@@ -94,7 +97,7 @@ export default {
           min: 10,
           max: 100,
           default: 80,
-          description: '图片质量(1-100)',
+          description: '图片质量（10-100），仅 JPEG/WebP 格式生效',
           show: '${imageType} !== "png"',
           required: true,
           quickConfig: true
@@ -108,7 +111,7 @@ export default {
             { label: '隐藏滚动条', value: 'hideScrollbar' }
           ],
           default: [],
-          description: '',
+          description: '截图附加选项：等待动画完成（截图前等待页面动画结束）/ 隐藏滚动条（截图时隐藏页面滚动条）',
           quickConfig: true
         }
       ]
@@ -120,7 +123,7 @@ export default {
       name: '浏览器',
       type: 'page',
       required: true,
-      description: '浏览器'
+      description: '浏览器页面对象（来自“打开浏览器”节点）'
     }
   ],
   outputs: [
@@ -128,7 +131,7 @@ export default {
       id: 'result',
       name: '结果',
       type: 'string',
-      description: 'base64编码的图片数据'
+      description: 'base64编码的图片数据（含 data:image/xxx;base64 前缀）'
     }
   ]
 }

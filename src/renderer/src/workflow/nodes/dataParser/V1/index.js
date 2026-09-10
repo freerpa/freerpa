@@ -8,7 +8,7 @@ export default {
   type: 'dataParser',
   name: '解析数据',
   icon: IconSwap,
-  description: '数据解析节点，根据规则按数据路径提取并转换数据字段，支持格式化输出',
+  description: '解析数据节点：先按“数据路径”定位输入数据，再按“解析规则”提取字段并应用格式化，重组为新结构输出（数组输入逐条解析；单规则时可仅输出值）。',
   view: false,
   config: [
     {
@@ -33,7 +33,7 @@ export default {
           },
           default: '',
           options: [], // 动态获取数据表列表
-          description: '自动获取数据表中的字段',
+          description: '选择数据表，自动按数据表字段生成解析规则',
           remote: true,
           remoteMethod: async (keyword = '') => {
             const result = await window.electronAPI.data.getModels({
@@ -75,7 +75,7 @@ export default {
               id: 'selector',
               name: '数据路径',
               type: 'string',
-              description: '要选取的目标字段'
+              description: '要提取的目标字段路径（点号分隔）'
             },
             {
               id: 'field',

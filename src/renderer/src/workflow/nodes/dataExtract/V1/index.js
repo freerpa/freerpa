@@ -8,7 +8,7 @@ export default {
   type: 'dataExtract',
   name: '提取数据',
   icon: IconMindMapping,
-  description: '提取数据中的指定字段',
+  description: '提取数据节点：按“提取规则”从输入数据中按点号路径取出指定字段并输出（数组输入时逐条解析为对象数组）；每个字段可应用格式化（时间/金额/数字/百分比/文件大小/自定义）。',
   view: false,
   config: [
     {
@@ -25,7 +25,7 @@ export default {
           },
           default: '',
           options: [], // 动态获取数据表列表
-          description: '自动获取数据表中的字段',
+          description: '选择数据表，自动按数据表字段生成提取规则',
           remote: true,
           remoteMethod: async (keyword = '') => {
             const result = await window.electronAPI.data.getModels({
@@ -60,7 +60,7 @@ export default {
           id: 'rules',
           name: '提取规则',
           type: 'array',
-          description: '提取目标数据中的字段',
+          description: '提取规则列表：输出字段名 + 数据路径（支持点号，如 data.list.0.name）+ 可选格式化',
           default: [],
           fields: [
             {

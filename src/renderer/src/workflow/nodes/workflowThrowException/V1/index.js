@@ -4,7 +4,7 @@ export default {
   type: 'workflowThrowException',
   name: '中断流程',
   icon: IconExclamationPolygonFill,
-  description: '中断当前流程并抛出一个报错信息\n报错信息会被父级节点捕获并显示',
+  description: '中断流程节点：立即终止当前流程并抛出配置的报错信息，异常会向上传播，被父级（外层流程/调用方）捕获并显示。',
   prev: true,
   next: false,
   view: false,
@@ -19,7 +19,7 @@ export default {
           type: 'text',
           default: '',
           required: true,
-          description: '抛出的报错信息',
+          description: '中断时抛出的错误信息文本，将作为异常原因向上传播，并在流程执行记录/界面上显示',
           quickConfig: true
         },
       ]

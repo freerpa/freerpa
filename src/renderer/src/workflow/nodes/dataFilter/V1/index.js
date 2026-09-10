@@ -7,7 +7,7 @@ export default {
   type: 'dataFilter',
   name: '过滤数据',
   icon: IconFilter,
-  description: '对数据进行筛选和过滤',
+  description: '过滤数据节点：对输入数组逐条按过滤条件判断，仅保留满足条件的数据（支持数值/字符串/空值/正则/日期比较与自定义函数，多条规则按“满足所有/任一”组合），输出过滤后的数组。',
   view: false,
   config: [
     {
@@ -23,7 +23,7 @@ export default {
             { label: '满足任一', value: 'or' }
           ],
           default: 'and',
-          description: '多个条件的匹配方式',
+          description: '多条规则的组合逻辑：and（全部满足才保留）/ or（任一满足即保留）',
           quickConfig: false
         },
         {
@@ -31,7 +31,7 @@ export default {
           name: '过滤条件',
           nolabel: true,
           type: 'array',
-          description: '设置过滤条件',
+          description: '过滤条件列表：数据路径 + 比较方式 + 比较值（支持多种比较符及日期、自定义函数）',
           fields: [
             {
               id: 'dataPath',
@@ -74,24 +74,28 @@ export default {
               id: 'value',
               name: '比较值',
               type: 'input',
+              description: '与目标字段比较的值（用于等于/不等于/大小/包含/开头结尾等）',
               show: "['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'contains', 'notContains', 'startsWith', 'endsWith'].includes(${operator})"
             },
             {
               id: 'regex',
               name: '表达式',
               type: 'input',
+              description: '正则表达式文本（用于“正则匹配”）',
               show: "${operator} === 'regex'"
             },
             {
               id: 'startDate',
               name: '比较日期',
               type: 'date',
+              description: '比较用日期（“在日期之前/之后”的参照日期，“在时间范围内”的起始日期）',
               show: "['before', 'after', 'between'].includes(${operator})"
             },
             {
               id: 'endDate',
               name: '结束日期',
               type: 'date',
+              description: '“在时间范围内”比较的结束日期',
               show: "${operator} === 'between'"
             },
             {
@@ -99,11 +103,10 @@ export default {
               name: '自定义',
               type: 'code',
               language: 'javascript',
-              description: '自定义处理函数',
+              description: '自定义过滤函数体：接收参数 data（目标字段值），返回布尔值决定是否保留',
               prefix: 'function handler(data, source){',
               default: '//这里书写自定义处理代码\nreturn false',
               suffix: '}',
-              description: '自定义处理函数',
               show: '${operator} === "custom"'
             }
           ]
@@ -116,7 +119,8 @@ export default {
       id: 'data',
       name: '数据',
       type: 'array',
-      required: true
+      required: true,
+      description: '要过滤的数组数据（传入单个对象时自动包装为数组）'
     }
   ],
   outputs: [

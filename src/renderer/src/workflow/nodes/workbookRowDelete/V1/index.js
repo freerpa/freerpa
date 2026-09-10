@@ -3,7 +3,7 @@ export default {
   type: 'workbookRowDelete',
   name: '删除行',
   icon: RiDeleteRow,
-  description: '删除工作表的行',
+  description: '删除行节点：删除指定行号所在的行（可配置按正序或倒序依次删除）。',
   view: false,
   config: [
     {

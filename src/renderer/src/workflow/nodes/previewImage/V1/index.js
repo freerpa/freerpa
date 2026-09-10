@@ -7,7 +7,7 @@ export default {
   type: 'previewImage',
   name: '图像预览',
   icon: IconImage,
-  description: '预览图像并支持图像对比',
+  description: '图像预览节点：在节点画布上显示输入的图像（支持本地路径/网络地址/base64/Buffer），并可同时传入对比图进行并排对比，用于人工核验。',
   view: true,
   resizable: true,
   size: {

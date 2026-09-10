@@ -8,7 +8,7 @@ export default {
   type: 'browserElementState',
   name: '元素状态',
   icon: RiNewsLine,
-  description: '获取指定元素的状态信息',
+  description: '元素状态节点：检查页面元素是否存在、是否可见、是否在视口内，并输出其位置大小信息，常用于流程中判断元素是否就绪或轮询等待。',
   view: false,
   config: [
     {
@@ -31,7 +31,8 @@ export default {
       id: 'page',
       name: '浏览器',
       type: 'page',
-      required: true
+      required: true,
+      description: '浏览器页面对象（来自“打开浏览器”节点）'
     }
   ],
   outputs: [

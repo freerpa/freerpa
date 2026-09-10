@@ -3,7 +3,7 @@ export default {
   type: 'workbookCellRead',
   name: '读数据',
   icon: IconNav,
-  description: '读取工作表的数据',
+  description: '读数据节点：读取工作表中指定行/列范围（或全部行列）的单元格数据，输出为二维数组。',
   view: false,
   config: [
     {

@@ -11,7 +11,7 @@ export default {
   // 节点图标
   icon: IconCloudDownload,
   // 节点描述
-  description: '监听页面下载事件',
+  description: '下载监听节点：监听页面的下载行为。可设置保存目录（自动创建），下载完成时输出下载地址、文件名与保存路径；持续监听模式下每次下载都会触发输出。',
   // 节点分类
   view: true,
   // 节点配置
@@ -25,7 +25,7 @@ export default {
           id: 'savePath',
           name: '保存路径',
           type: 'path',
-          description: '为空则不保存',
+          description: '文件保存目录（自动创建）；为空则不保存文件，仅监听下载信息',
           quickConfig: true
         },
         {
@@ -33,7 +33,7 @@ export default {
           name: '持续监听',
           type: 'switch',
           default: false,
-          description: '是否持续监听下载事件',
+          description: '是否持续监听下载事件（否则只监听一次后卸载）',
           quickConfig: true
         }
       ]
@@ -45,7 +45,8 @@ export default {
       id: 'page',
       name: '浏览器',
       type: 'page',
-      required: true
+      required: true,
+      description: '浏览器页面对象（来自“打开浏览器”节点）'
     }
   ],
   // 输出
@@ -69,7 +70,7 @@ export default {
       name: '文件路径',
       type: 'string',
       label: '文件路径',
-      description: '下载的文件路径'
+      description: '下载完成后的本地保存路径（未设置保存目录时为空）'
     }
   ]
 }

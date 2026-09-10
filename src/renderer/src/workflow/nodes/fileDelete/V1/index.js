@@ -7,7 +7,7 @@ export default {
   type: 'fileDelete',
   name: '删除文件',
   icon: RiFileShredLine,
-  description: '删除文件或目录',
+  description: '删除文件节点：删除本地文件或目录（目录递归删除），可选强制删除忽略只读属性。',
   config: [
     {
       id: 'basic',
@@ -30,7 +30,7 @@ export default {
           name: '文件路径',
           type: 'path',
           pathType: 'file',
-          description: '要删除的文件或目录路径',
+          description: '要删除的文件路径',
           show: "${deleteType} === 'file'",
           quickConfig: true,
           required: true

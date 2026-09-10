@@ -7,7 +7,7 @@ export default {
   type: 'networkWebsocketConnect',
   name: 'WebSocket连接',
   icon: IconThunderbolt,
-  description: '建立WebSocket连接',
+  description: 'WebSocket 连接节点：与 WebSocket 服务器建立连接，支持代理、子协议、自定义握手请求头、连接超时、自动重连与心跳监测；连接成功/断开/收到消息时分别输出连接对象、连接状态与消息内容。',
   config: [
     {
       id: 'basic',
@@ -17,7 +17,7 @@ export default {
           id: 'url',
           name: '连接地址',
           type: 'input',
-          description: 'WebSocket服务器地址',
+          description: 'WebSocket 服务器地址（如 ws://host:port/path，未带 ws:// 前缀时自动补全）',
           quickConfig: true,
           required: true
         },
@@ -32,7 +32,7 @@ export default {
           name: '代理配置',
           type: 'text',
           default: '',
-          description: '为空不使用代理，格式:http://user:pass@host:port',
+          description: '为空不使用代理，格式:http://user:pass@host:port（支持 http/https/socks）',
         },
         {
           id: 'headers',
@@ -101,7 +101,7 @@ export default {
           name: '心跳监测',
           type: 'switch',
           default: false,
-          description: '是否启用心跳监测'
+          description: '是否启用心跳监测（定期发送心跳消息维持连接）'
         },
         {
           id: 'heartbeatInterval',
@@ -128,7 +128,7 @@ export default {
       id: 'websocket',
       name: 'WebSocket对象',
       type: 'websocket',
-      description: 'WebSocket连接对象'
+      description: 'WebSocket连接对象（可传给“WebSocket发送”节点）'
     },
     {
       id: 'connected',

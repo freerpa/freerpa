@@ -14,7 +14,7 @@ export default {
     // 节点图标
     icon: RiFolderInfoLine,
     // 节点描述
-    description: '获取路径的状态信息',
+    description: '路径信息节点：检查指定路径是否存在、是否为文件，并输出完整的文件状态信息（大小、时间戳、类型标志等）。',
     // 节点配置
     config: [],
     // 输入定义

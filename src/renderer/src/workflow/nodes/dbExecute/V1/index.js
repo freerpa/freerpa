@@ -7,7 +7,7 @@ export default {
   type: 'dbExecute',
   name: '执行SQL',
   icon: RiTerminalLine,
-  description: '在已连接的数据库上执行 SQL 语句',
+  description: '执行 SQL 节点：在“连接数据库”节点建立的连接上执行 SQL 语句，输出执行结果（查询行数组 + 影响行数）。',
   view: false,
   config: [
     {

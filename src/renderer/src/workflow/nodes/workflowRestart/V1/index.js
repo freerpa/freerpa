@@ -10,7 +10,7 @@ export default {
   // 节点图标
   icon: RiRestartLine,
   // 节点描述
-  description: '重新执行当前流程',
+  description: '重启流程节点：触发后立即丢弃当前执行进度，从“开始流程”节点重新执行整个工作流（相当于重新运行一次）。',
   // 节点视图
   view: true,
   // 允许前置节点连接点

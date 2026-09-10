@@ -7,7 +7,7 @@ export default {
   type: 'browserElementEdit',
   name: '元素编辑',
   icon: RiEditBoxLine,
-  description: '编辑页面上的元素',
+  description: '元素编辑节点：修改页面元素的属性（追加/剔除/修改/添加/删除属性值）、替换元素内容文本，或直接删除整个元素，对所有匹配元素生效。',
   view: false,
   config: [
     {
@@ -37,7 +37,7 @@ export default {
             { label: '删除元素', value: 'deleteElement' },
           ],
           default: 'deleteElement',
-          description: '要执行的编辑操作类型',
+          description: '编辑操作类型：追加/剔除/修改属性值、添加/删除属性、修改元素内容、删除元素',
           quickConfig: true
         },
         {
@@ -66,7 +66,7 @@ export default {
           type: 'text',
           show:"${type} === 'modifyContent'",
           required: true,
-          description: '要修改的内容',
+          description: '要修改的内容文本',
           default: '',
           quickConfig: true
         },
@@ -78,7 +78,8 @@ export default {
       id: 'page',
       name: '浏览器',
       type: 'page',
-      required: true
+      required: true,
+      description: '浏览器页面对象（来自“打开浏览器”节点）'
     }
   ],
   outputs: []
