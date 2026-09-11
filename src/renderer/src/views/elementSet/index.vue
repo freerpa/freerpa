@@ -66,7 +66,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, provide } from 'vue'
 import { IconEdit, IconDelete, IconMoreVertical, IconExport, IconCopy } from '@arco-design/web-vue/es/icon'
 import { RiStackLine } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
@@ -84,7 +84,7 @@ const selectedId = ref(null)
 const {
   items: elementSets,
   searchKeyword, selectedIds, loading, hasMore, showCopyModal,
-  onCategoryChange, loadMore, refetch,
+  categoryId, onCategoryChange, loadMore, refetch,
   handleCopy, handleCopyConfirm,
   confirmDelete, handleBatchDelete,
   handleExport, handleBatchExport, handleImport
@@ -97,6 +97,9 @@ const {
   moduleConfig: MODULE_CONFIG.elementSet,
   listErrorMsg: '获取元素集列表失败'
 })
+
+// 当前选中分类：供新建/编辑弹窗默认选中（Editor 经 inject('category') 读取）
+provide('category', categoryId)
 
 const handleCreate = () => { selectedId.value = null; showEditor.value = true }
 const handleEdit = (es) => { selectedId.value = es.id; showEditor.value = true }

@@ -416,6 +416,45 @@ export const useAiChat = ({ workflowId, tools, executors, buildSystem, buildTurn
         // 下一轮：新 assistant 消息（切换前已持久化当前轮完整状态）
         viewRound = beginRound(viewRound)
       }
+
+      // ─── 最终兜底检测（引擎侧，不依赖大模型自检）───
+      // 无论 AI 以何种方式结束（finish/文本/守卫触发/轮次上限），只要工作流未通过运行检查，
+      // 就再启动一轮把问题清单发给大模型继续调整，直至通过或达到兜底上限。
+      const MAX_FINAL_FIX_ROUNDS = 5
+      let finalFixRounds = 0
+      while (finalFixRounds < MAX_FINAL_FIX_ROUNDS && !cancelFlag) {
+        const { ok, errors } = quickValidateWorkflow(flowStore)
+        if (ok) break
+        finalFixRounds++
+        const fixMsg = {
+          message_id: uuidv4(),
+          round_id: roundId,
+          role: 'user',
+          content: `【工作流校验未通过】请继续调整，直到全部通过后再结束本轮：\n${errors
+            .map((e) => `- ${e.message}`)
+            .join('\n')}`
+        }
+        contextMessages.push(fixMsg)
+        await persistIn(fixMsg)
+        viewRound = beginRound(viewRound)
+        const fixResult = await runCompletion(viewRound, model)
+        if (fixResult.aborted || cancelFlag) break
+        viewRound.tool_calls = (fixResult.toolCalls || []).map(toOpenAiToolCall)
+        if (fixResult.toolCalls?.length) {
+          viewRound.tool_calling = 'loading'
+          await executeToolCalls({
+            toolCalls: fixResult.toolCalls,
+            roundId,
+            executors,
+            persistIn,
+            contextMessages,
+            messages,
+            failureFingerprints
+          })
+          viewRound.tool_calling = ''
+        }
+        viewRound.loading = false
+      }
       if (viewRound) {
         viewRound.loading = false
         viewRound.tool_calling = ''

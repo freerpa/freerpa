@@ -154,7 +154,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, inject } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { IconPlus, IconDelete } from '@arco-design/web-vue/es/icon'
 import CategorySelect from '@/components/CategorySelect.vue'
@@ -178,6 +178,9 @@ const visible = defineModel('visible')
 
 // API 引用
 const { data: dataAPI } = window.electronAPI
+
+// 当前选中分类（列表页 provide）：新建时默认选中
+const category = inject('category', '')
 
 // 表单数据
 const formRef = ref(null)
@@ -220,6 +223,9 @@ const open = async () => {
       type: model.type,
       fields: JSON.parse(model.fields)
     }
+  } else {
+    // 新建：默认选中当前分类
+    modelForm.value.category = category.value || ''
   }
   await checkHasData()
 }

@@ -41,11 +41,12 @@ export const createPromptContext = ({ workflowId, flowStore }) => {
         name: node.data.name,
         type: node.data.type,
         parentNode: node.parentNode,
-        // 输出摘要（参数引用可达性：{{节点名.输出名}} 需知道各节点输出）
+        // 输出摘要（参数引用可达性：{{节点名.输出名}} 需知道各节点输出；refer 为可直接照抄的整体引用写法）
         outputs: (node.data.outputs || []).map((o) => ({
           name: o.name,
           id: o.id,
-          type: o.type
+          type: o.type,
+          refer: `{{${node.data.name}.${o.name}}}`
         })),
         // config 当前值（脱敏）：修改/核对配置时直接可用
         config: maskSensitive(node.data.config || {})
@@ -76,6 +77,10 @@ export const createPromptContext = ({ workflowId, flowStore }) => {
       JSON.stringify(nodeCatalog),
       '客户端硬性规定（必须遵守，违反会报错或产生非法工作流）：',
       ...HARD_RULES.map((r, i) => `${i + 1}. ${r}`),
+      '参数引用快速提示：',
+      '1. 引用上游输出只能写 {{节点名称.输出名称}}（整体引用，节点/输出用中文名），直接抄快照中 outputs 的 refer 字段最稳妥。',
+      '2. 禁止 {{节点.输出.0.title}} 这类内部索引/取字段/计算；数组/对象输出也是整体引用。需要内部数据时先用【提取数据】或【数据处理】节点加工成新输出再整体引用。',
+      '3. 引用只能在同流程内使用；子流程内可引用本子流程节点输出与循环变量 item/index/totalTimes。',
       '工作流操作规则（工具使用方式）：',
       ...OPERATION_RULES.map((r, i) => `${i + 1}. ${r}`),
       '通用协作规则：',

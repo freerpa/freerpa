@@ -229,6 +229,11 @@ class WorkflowExecutor extends EventEmitter {
       await executor.execute()
     } catch (error) {
       console.error('执行节点失败:', error)
+      // 终态后（cleanup 已把 nodeErrorCount 置 null）仍可能有 fire-and-forget 链上的节点出错：
+      // 直接忽略，避免访问 null 抛 TypeError → unhandled rejection，导致该节点错误状态无法上报
+      if (!this.nodeErrorCount || ['error', 'stopped', 'completed'].includes(this.state)) {
+        return
+      }
       this.nodeErrorCount[nodeId] = this.nodeErrorCount[nodeId] || 0
       try {
         await this._handleNodeError(nodeId, prevNodeId, error)
@@ -396,7 +401,7 @@ class WorkflowExecutor extends EventEmitter {
   }
 
   async next(nodeId) {
-    this.nodeErrorCount[nodeId] = 0
+    if (this.nodeErrorCount) this.nodeErrorCount[nodeId] = 0
 
     let nextEdges = (this._outEdges.get(nodeId) || []).filter(
       (edge) => edge.sourceHandle === 'next'

@@ -55,13 +55,16 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, inject } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { IconPlus } from '@arco-design/web-vue/es/icon'
 import CategorySelect from '@/components/CategorySelect.vue'
 import ElementItem from './ElementItem.vue'
 
 const { elementSet: elementSetAPI } = window.electronAPI
+
+// 当前选中分类（列表页 provide）：新建时默认选中
+const category = inject('category', '')
 
 const props = defineProps({
   modelId: [String, Number]
@@ -173,7 +176,8 @@ const handleOpen = async () => {
     }
   } else {
     form.title = ''
-    form.category = ''
+    // 新建：默认选中当前分类
+    form.category = category.value || ''
     form.description = ''
     form.elements = []
   }

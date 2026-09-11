@@ -62,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, provide } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { IconEdit, IconDelete, IconMoreVertical, IconCopy, IconExport } from '@arco-design/web-vue/es/icon'
 import { RiFlowChart } from '@remixicon/vue'
@@ -86,7 +86,7 @@ const selectedWorkflow = ref(null)
 const {
   items: workflows,
   searchKeyword, selectedIds, loading, hasMore, showCopyModal,
-  onCategoryChange, loadMore, refetch, clearSelectionAndRefetch,
+  categoryId, onCategoryChange, loadMore, refetch, clearSelectionAndRefetch,
   handleCopy, handleCopyConfirm,
   confirmDelete, handleExport, handleBatchExport, handleImport
 } = useResourceList({
@@ -98,6 +98,9 @@ const {
   moduleConfig: MODULE_CONFIG.workflow,
   listErrorMsg: '获取工作流列表失败'
 })
+
+// 当前选中分类：供新建/编辑弹窗默认选中（Editor 经 inject('category') 读取）
+provide('category', categoryId)
 
 const handleCreate = () => { selectedWorkflow.value = null; showWorkflowInfoEditor.value = true }
 const handleEdit = (workflow) => { selectedWorkflow.value = workflow; showWorkflowInfoEditor.value = true }

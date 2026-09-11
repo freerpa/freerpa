@@ -70,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, provide } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { IconEdit, IconDelete, IconMoreVertical, IconSettings, IconCopy, IconExport } from '@arco-design/web-vue/es/icon'
 import { RiDatabase2Line } from '@remixicon/vue'
@@ -95,7 +95,7 @@ const editingModel = ref(null)
 const {
   items: models,
   searchKeyword, selectedIds, loading, hasMore, showCopyModal,
-  onCategoryChange, loadMore, refetch,
+  categoryId, onCategoryChange, loadMore, refetch,
   handleCopy, handleCopyConfirm,
   confirmDelete, handleBatchDelete,
   handleExport, handleBatchExport, handleImport
@@ -108,6 +108,9 @@ const {
   moduleConfig: MODULE_CONFIG.model,
   listErrorMsg: '获取数据表失败'
 })
+
+// 当前选中分类：供新建/编辑弹窗默认选中（Editor 经 inject('category') 读取）
+provide('category', categoryId)
 
 const handleEdit = (model) => { editingModel.value = model?.id ? model : {}; showCreateModal.value = true }
 

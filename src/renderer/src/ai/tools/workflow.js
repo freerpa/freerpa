@@ -132,13 +132,25 @@ export const createWorkflowExecutors = ({ workflowId }) => {
   const executors = {}
 
   // AI 改动后附加工作流可执行性检测（同步快速检测，低开销）：
-  // 检测失败时以 warning 返回给模型，让模型感知问题并自我修正（与系统提示「warning 请修正后重试」一致）
+  // 结果结构化为 data.validation（AI 每次工具调用都能看到当前校验状态），
+  // 有问题时再给 warning（与系统提示「warning 请修正后重试」一致）
   const attachValidation = (result) => {
     const { ok, errors } = quickValidateWorkflow(flowStore)
+    result.data = { ...(result.data || {}), validation: { ok, issues: errors.map((e) => e.message) } }
     if (!ok) {
-      result.warning = `工作流当前无法正常执行：${errors.map((e) => e.message).join('；')}`
+      result.warning = `工作流校验未通过：${errors.map((e) => e.message).join('；')}`
     }
     return result
+  }
+
+  /** 节点引用解析：优先节点 ID，否则按节点名称查找（AI 并行创建多个节点时用名称连接，避免依赖事后才返回的 ID） */
+  const resolveNodeRef = (ref) => {
+    const vf = vueFlowRef.value
+    if (!ref || !vf) return undefined
+    const byId = vf.getNode(ref)
+    if (byId) return byId
+    const name = String(ref).trim()
+    return vf.getNodes.find((n) => n.data?.name === name)
   }
 
   // 自愈：清理画布中两端节点不存在的损坏连线（历史数据遗留，
@@ -224,8 +236,11 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     // connectTo 指定前驱节点时，新节点必须与前驱同级（同一主流程/子流程），
     // 否则 autoConnect 会生成跨容器非法连线，导致后续 autoLayout/渲染读 null 崩溃
     if (connectTo) {
-      const fromNode = vf.getNode(connectTo)
-      if (fromNode && fromNode.parentNode !== initNodeData.parentNode) {
+      const fromNode = resolveNodeRef(connectTo)
+      if (!fromNode) {
+        return { ok: false, error: `找不到前驱节点【${connectTo}】（可用节点名称或ID）` }
+      }
+      if (fromNode.parentNode !== initNodeData.parentNode) {
         initNodeData.parentNode = fromNode.parentNode
       }
     }
@@ -342,7 +357,7 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     }
     // 规则化连接：connectTo 指定前驱节点，端口由 autoConnect 按类型规则自动计算
     if (connectTo) {
-      const fromNode = vf.getNode(connectTo)
+      const fromNode = resolveNodeRef(connectTo)
       if (fromNode) {
         await nextTick()
         autoConnect(vf, createConnection, fromNode, newNode, handleId || 'next')
@@ -357,10 +372,15 @@ export const createWorkflowExecutors = ({ workflowId }) => {
 
   executors.connect = async ({ source, target }) => {
     if (!source || !target) throw new Error('source 与 target 必填')
-    const sourceNode = vueFlowRef.value?.getNode(source)
-    const targetNode = vueFlowRef.value?.getNode(target)
+    const sourceNode = resolveNodeRef(source)
+    const targetNode = resolveNodeRef(target)
     if (!sourceNode || !targetNode) {
-      throw new Error(`节点不存在：${!sourceNode ? source : target}（请用 getWorkflow 或画布快照确认节点ID）`)
+      const current = (vueFlowRef.value?.getNodes || [])
+        .map((n) => `${n.data?.name}(id:${n.id})`)
+        .join('、')
+      throw new Error(
+        `节点不存在：${!sourceNode ? source : target}（节点可用名称或ID；当前画布节点：${current}）`
+      )
     }
     // 规则化连线：端口按节点 outputs/inputs 类型匹配自动计算（与画布拖拽一致）。
     // 预检流程线合法性：source/target 必须同一流程（跨容器连线非法，直接给可读错误，避免生成坏边后崩溃）

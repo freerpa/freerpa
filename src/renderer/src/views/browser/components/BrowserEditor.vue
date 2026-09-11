@@ -108,7 +108,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, inject } from 'vue'
 import { IconCheckCircleFill, IconCloseCircleFill } from '@arco-design/web-vue/es/icon'
 import { Message } from '@arco-design/web-vue'
 import CategorySelect from '@/components/CategorySelect.vue'
@@ -121,6 +121,9 @@ const props = defineProps({
 
 const emit = defineEmits(['success', 'cancel'])
 
+// 当前选中分类（列表页 provide）：新建时默认选中
+const category = inject('category', '')
+
 // 是否直连模式（协议下拉选择"直连"时）
 const isDirect = computed(() => form.value.proxy_protocol === 'direct')
 
@@ -130,7 +133,7 @@ const form = ref({
   id: '',
   name: '',
   description: '',
-  category: '',
+  category: category.value || '',
   proxy_protocol: 'direct',
   proxy_url: '',
   width: 1280,

@@ -6,12 +6,12 @@
 import { v4 as uuidv4 } from 'uuid'
 
 const MAX_LOOP_GUARD_FAILURES = 2 // 同一工具同一参数连续失败次数 → 阻断循环
-export const STALL_ROUNDS = 4 // 连续无进展轮数 → 提示输出结论
+export const STALL_ROUNDS = 3 // 连续失败/无进展轮数上限 → 提示输出结论并结束（防止死循环）
 
 export const LOOP_GUARD_MSG =
   'blocked: [loop guard] 同一工具调用已连续失败，请停止重试并修正参数或改用其他方式，然后直接输出阶段性结论或询问用户'
 export const STALL_PROMPT_MSG =
-  '提示：已连续多轮没有进展，请基于已有信息输出阶段性结论，或向用户询问下一步操作。'
+  '提示：已连续 3 轮工具调用失败/无进展，请停止重试，基于已有信息输出阶段性结论，或向用户询问下一步操作，不要再调用工具。'
 export const GRACE_PROMPT_MSG =
   '提示：已达到工具调用轮次上限。请基于已完成的工具结果直接输出最终回复，不要再调用工具。'
 

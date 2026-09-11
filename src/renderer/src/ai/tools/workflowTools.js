@@ -31,13 +31,13 @@ export const createWorkflowTools = () => [
   ),
   defineTool(
     'addNode',
-    '在工作流画布中创建一个节点。connectTo 可指定前驱节点ID（可选），创建后自动按端口类型规则连线；config 为节点配置参数，字段按 getNodeConfig 的说明填写，不传则用默认值。',
+    '在工作流画布中创建一个节点。connectTo 指定前驱节点（名称或ID均可，推荐名称），创建后自动按端口类型规则连线；并行创建多个串行节点时，每个新节点的 connectTo 直接写前驱节点名称即可自动成链；config 为节点配置参数，字段按 getNodeConfig 的说明填写，不传则用默认值。',
     {
       type: 'object',
       properties: {
         type: { type: 'string', description: '节点类型，用 listNodeTypes 查询' },
         name: { type: 'string', description: '节点名称' },
-        connectTo: { type: 'string', description: '要连接的前驱节点ID（可选）', default: '' },
+        connectTo: { type: 'string', description: '要连接的前驱节点（名称或ID均可，推荐用节点名称，如「开始流程」），省略则新节点会处于未连接状态', default: '' },
         handleId: { type: 'string', enum: ['next', 'next-false'], description: '分支端口：next（默认，流程主线；对判断节点即条件满足的“是”分支）/ next-false（仅判断节点可用：条件不满足的“否”分支）', default: 'next' },
         config: {
           type: 'object',
@@ -52,8 +52,8 @@ export const createWorkflowTools = () => [
   defineTool('connect', '连接两个已有节点（按节点端口类型规则自动连线，无需指定端口）。', {
     type: 'object',
     properties: {
-      source: { type: 'string', description: '源节点ID（输出方）' },
-      target: { type: 'string', description: '目标节点ID（输入方）' }
+      source: { type: 'string', description: '源节点（输出方）：名称或ID均可' },
+      target: { type: 'string', description: '目标节点（输入方）：名称或ID均可' }
     },
     required: ['source', 'target'],
     additionalProperties: false

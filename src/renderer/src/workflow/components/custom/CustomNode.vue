@@ -272,13 +272,6 @@
 </script>
 
 <style lang="less" scoped>
-  .node-error-msg {
-    padding: 10px;
-    background: rgb(var(--red-1));
-    border-radius: var(--border-radius-small);
-    user-select: text;
-  }
-
   .custom-node {
     display: flex;
     flex-direction: column;

@@ -99,7 +99,15 @@ export const resolveParamRefs = (flowData, vueFlowRef) => {
             if (realPath) {
               return '{{' + realPath.id + '}}'
             }
-            throw new Error(`找不到【${paramPath}】的引用`)
+            // 区分两类错误，给可操作的修正提示（AI 收到后可一次改对，而非盲目重试）
+            if (paramPath.split('.').length > 2) {
+              throw new Error(
+                `参数引用【${paramPath}】格式不正确：只能写 {{节点名称.输出名称}} 整体引用输出，不能对输出内部做索引/取字段/计算（如 {{节点.输出.0.xx}} 不支持）。需要内部数据请先用【提取数据】或【数据处理】节点加工成新输出，再整体引用`
+              )
+            }
+            throw new Error(
+              `找不到输出【${paramPath}】：可用引用只能是同流程节点的输出，格式 {{节点名称.输出名称}}（节点与输出用中文名，可直接抄工作流快照中 outputs 的 refer 字段）`
+            )
           })
         )
       }
@@ -209,7 +217,9 @@ export const quickValidateWorkflow = (store) => {
     errors.push({
       code: 'unconnected',
       nodeIds: unconnected.map((n) => n.id),
-      message: `有未连接的节点：${unconnected.map((n) => `【${n.name}】`).join('、')}`
+      message: `有节点缺少前置连线（未连接）：${unconnected
+        .map((n) => `【${n.name}】`)
+        .join('、')}。`
     })
   }
 
@@ -221,7 +231,7 @@ export const quickValidateWorkflow = (store) => {
       nodeIds: missingInputs.map((i) => i.nodeId),
       message: `节点必填输入未连接：${missingInputs
         .map((i) => `【${i.nodeName}】的【${i.inputName}】`)
-        .join('、')}`
+        .join('、')}。`
     })
   }
 

@@ -66,7 +66,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, onActivated, reactive } from 'vue'
+import { ref, onMounted, onUnmounted, onActivated, reactive, provide } from 'vue'
 import { IconEdit, IconDelete, IconMoreVertical, IconStop, IconExport, IconCopy } from '@arco-design/web-vue/es/icon'
 import { RiChromeLine, RiEyeLine } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
@@ -89,7 +89,7 @@ const loadingMap = reactive({})
 const {
   items: browsers,
   searchKeyword, selectedIds, loading, hasMore, showCopyModal,
-  onCategoryChange, loadMore, refetch,
+  categoryId, onCategoryChange, loadMore, refetch,
   handleCopy, handleCopyConfirm,
   confirmDelete, handleBatchDelete,
   handleExport, handleBatchExport, handleImport
@@ -102,6 +102,9 @@ const {
   moduleConfig: MODULE_CONFIG.browser,
   listErrorMsg: '获取浏览器列表失败'
 })
+
+// 当前选中分类：供新建/编辑弹窗默认选中（Editor 经 inject('category') 读取）
+provide('category', categoryId)
 
 const handleEdit = (env) => { selectedEnv.value = env; showCreateModal.value = true }
 const handleEditorSuccess = () => { showCreateModal.value = false; refetch() }

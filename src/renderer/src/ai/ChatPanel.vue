@@ -12,21 +12,34 @@
 
     <!-- 消息列表：纯消息流平铺（无轮次包裹、无处理过程包裹、无头像） -->
     <div class="chat__messages" ref="messagesContainer" @scroll="onMessagesScroll">
+      <!-- 左侧悬浮轮次导航：hover 向右展开显示各轮用户消息，点击定位 -->
+      <RoundNav
+        v-if="flatMessages.length > 0"
+        class="chat__round-nav"
+        :rounds="rounds"
+        :active-round-id="activeRoundId"
+        @select="scrollToRound"
+      />
       <template v-if="flatMessages.length > 0">
-        <Bubble
+        <div
           v-for="message in flatMessages"
           :key="message.message_id"
-          :tool_calls="message.tool_calls"
-          :tool_cards="message._toolCards"
-          :content="message.content"
-          :reasoning_content="message.reasoning_content"
-          :role="message.role"
-          :tool_calling="message.tool_calling"
-          :loading="message.loading"
-          :attachments="message.attachments"
-          :usage="message._usage"
-          @delete="handleDelete(indexOfMessage(message))"
-        />
+          class="bubble-item"
+          :data-round-id="message.round_id || message.message_id"
+        >
+          <Bubble
+            :tool_calls="message.tool_calls"
+            :tool_cards="message._toolCards"
+            :content="message.content"
+            :reasoning_content="message.reasoning_content"
+            :role="message.role"
+            :tool_calling="message.tool_calling"
+            :loading="message.loading"
+            :attachments="message.attachments"
+            :usage="message._usage"
+            @delete="handleDelete(indexOfMessage(message))"
+          />
+        </div>
       </template>
       <!-- 空状态：AI 欢迎消息 -->
       <div class="message-item message-item--welcome" v-else>
@@ -57,6 +70,7 @@
   import Bubble from './Bubble.vue';
   import Sender from './Sender.vue';
   import ChatHeader from './ChatHeader.vue';
+  import RoundNav from './RoundNav.vue';
   import { buildRoundGroups } from './turnModel';
   import { useFlowStore } from '@/workflow/store';
   import { useAiChat } from './composables/useAiChat';
@@ -173,6 +187,22 @@
   });
   const indexOfMessage = (message) => messages.value.indexOf(message);
 
+  // ── 轮次导航（左侧悬浮）：每个用户消息 = 一轮 ──
+  const rounds = computed(() =>
+    messages.value
+      .filter((m) => m.role === 'user')
+      .map((m) => ({ roundId: m.round_id || m.message_id, content: m.content }))
+  );
+  const activeRoundId = ref('');
+  // 点击轮次：滚动定位到该轮第一条消息
+  const scrollToRound = (roundId) => {
+    activeRoundId.value = roundId;
+    nextTick(() => {
+      const el = messagesContainer.value?.querySelector(`[data-round-id="${roundId}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
   // 会话统计：会话 tokens = 全部 assistant 用量求和；
   // 缓存命中率 = 会话累计 cacheHit / (cacheHit + cacheMiss)——参照 DeepSeek-Reasonix：
   // 分母为命中+未命中（不含其他计费项），两位小数，无缓存明细（分母 ≤ 0）显示 —。
@@ -221,6 +251,7 @@
 
 <style scoped lang="less">
   .chat {
+    position: relative;
     display: flex;
     flex-direction: column;
     width: 520px;

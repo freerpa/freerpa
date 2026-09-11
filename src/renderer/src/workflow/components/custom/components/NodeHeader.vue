@@ -113,6 +113,18 @@
 </script>
 
 <style lang="less" scoped>
+  .node-error-msg {
+    padding: 10px;
+    background: rgb(var(--danger-1));
+    border: 1px solid rgb(var(--danger-3));
+    border-radius: var(--border-radius-small);
+    user-select: text;
+    -webkit-user-select: text;
+    cursor: text;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
   .node-header {
     display: flex;
     align-items: center;
