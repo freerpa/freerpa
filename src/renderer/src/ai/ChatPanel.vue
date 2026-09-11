@@ -75,7 +75,7 @@
     },
   });
 
-  const emit = defineEmits(['close']);
+  const emit = defineEmits(['close', 'loadingChange']);
 
   const flowStore = useFlowStore(props.workflowId);
   const senderRef = ref(null);
@@ -142,6 +142,9 @@
     buildTurn,
     scrollToBottom,
   });
+
+  // AI 会话进行中状态上报：实时驱动工作流编辑页工具栏的 AI 助手图标（immediate 初始化当前值）
+  watch(loading, (v) => emit('loadingChange', v), { immediate: true });
 
   onMounted(() => {
     init();

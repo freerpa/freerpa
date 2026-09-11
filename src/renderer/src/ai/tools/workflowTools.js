@@ -22,7 +22,7 @@ export const createWorkflowTools = () => [
     {
       type: 'object',
       properties: {
-        type: { type: 'string', description: '节点类型（如 workflowStart、httpRequest、workflowIf、plu_ 插件节点）' },
+        type: { type: 'string', description: '节点类型（如 workflowStart、networkHttpRequest、workflowIf、plu_ 插件节点）' },
         detail: { type: 'boolean', description: '是否返回完整字段说明，默认 false（精简概览）', default: false }
       },
       required: ['type'],
@@ -38,7 +38,7 @@ export const createWorkflowTools = () => [
         type: { type: 'string', description: '节点类型，用 listNodeTypes 查询' },
         name: { type: 'string', description: '节点名称' },
         connectTo: { type: 'string', description: '要连接的前驱节点ID（可选）', default: '' },
-        handleId: { type: 'string', enum: ['next', 'next-false'], description: '主流程分支（默认 next）', default: 'next' },
+        handleId: { type: 'string', enum: ['next', 'next-false'], description: '分支端口：next（默认，流程主线；对判断节点即条件满足的“是”分支）/ next-false（仅判断节点可用：条件不满足的“否”分支）', default: 'next' },
         config: {
           type: 'object',
           description: '节点配置参数（字段与取值见 getNodeConfig 的 schema），不传则用默认值',
@@ -88,7 +88,7 @@ export const createWorkflowTools = () => [
     required: ['edgeId'],
     additionalProperties: false
   }),
-  defineTool('getWorkflows', '查询本地保存的工作流列表（用于引用已有工作流）。', {
+  defineTool('getWorkflows', '查询本地保存的工作流列表（用于引用已有工作流；返回内容中节点 config 的密钥类字段已脱敏为 ****）。', {
     type: 'object',
     properties: {
       keyword: { type: 'string', description: '按名称模糊搜索', default: '' },
@@ -97,7 +97,7 @@ export const createWorkflowTools = () => [
     },
     additionalProperties: false
   }),
-  defineTool('getWorkflow', '按 ID 查询单个工作流的详情（节点与连线）。', {
+  defineTool('getWorkflow', '按 ID 查询单个工作流的详情（节点与连线；config 中密钥类字段已脱敏为 ****，如需重新填值请用 updateNode）。', {
     type: 'object',
     properties: { id: { type: 'string', description: '工作流ID' } },
     required: ['id'],

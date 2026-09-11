@@ -41,6 +41,38 @@ export const executeToolCalls = async ({
   let loopGuardBreak = false
   for (const tc of toolCalls) {
     if (tc.toolName === 'finish') {
+      // 完成前先执行运行检查（executors.finish 内含 quickValidateWorkflow）：
+      // 未通过时把修复清单作为 tool 结果注入，让模型修复后再 finish——
+      // 此前短路跳过执行器，完成前检查成为死代码，模型可绕过检查直接标记完成
+      if (typeof executors.finish === 'function') {
+        let finishOutput
+        try {
+          finishOutput = await executors.finish(tc.args || {})
+        } catch (error) {
+          console.error('[AI 工具执行失败] finish', tc.args, error)
+          finishOutput = {
+            ok: false,
+            error: `${error?.message || String(error)}\n  ↳ ${(error?.stack || '').split('\n').slice(1, 4).join('\n  ↳ ')}`
+          }
+        }
+        const fail =
+          finishOutput && (finishOutput.ok === false || (typeof finishOutput === 'string' && finishOutput.startsWith('error')))
+        if (fail) {
+          roundFailed = true
+          const finishMsg = {
+            message_id: uuidv4(),
+            round_id: roundId,
+            role: 'tool',
+            tool_call_id: tc.toolCallId,
+            tool_name: tc.toolName,
+            content: typeof finishOutput === 'string' ? finishOutput : JSON.stringify(finishOutput)
+          }
+          contextMessages.push(finishMsg)
+          messages.value.push(finishMsg)
+          await persistIn(finishMsg)
+          continue // 检查未通过：本轮不结束，让模型修复后重试
+        }
+      }
       finished = true
       break
     }

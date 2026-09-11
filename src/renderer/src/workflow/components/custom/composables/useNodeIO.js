@@ -1,7 +1,7 @@
 import { computed, watch } from 'vue'
 import nodes from '@nodes-path'
 import { parseConfigExpression } from '../../../utils'
-import { resolveDynamicIO } from '../../../resolve-io.js'
+import { resolveDynamicIO, getNodeOutputs } from '../../../resolve-io.js'
 
 /**
  * Composable for node input/output management
@@ -24,7 +24,11 @@ export function useNodeIO(props, flowStore, nodeDefinition, allConfigFieldsWithG
         (node) => node.data.type === 'workflowStart' && node.parentNode === props.id + '-subFlow'
       )
       if (startNode) {
-        startNodeOutputs = (startNode.data.outputs || []).filter((output) => !output.isConfig)
+        // 收起子流程时起始节点未渲染、data.outputs 缺失：按节点定义+配置兜底（含 params 动态输入项），
+        // 保证父节点/上游连接能读到子流程起始节点的输入项
+        const startOutputs =
+          startNode.data?.outputs || getNodeOutputs(startNode, flowStore.vueFlowRef.getNodes, nodes)
+        startNodeOutputs = startOutputs.filter((output) => !output.isConfig)
       }
     }
 

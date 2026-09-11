@@ -34,7 +34,7 @@ export const createDataTableTools = () => [
       properties: {
         name: { type: 'string', description: '数据表名称' },
         description: { type: 'string', description: '数据表描述', default: '' },
-        category_id: { type: 'string', description: '所属分类ID（可选，默认不分类）', default: '' },
+        categoryId: { type: 'string', description: '所属分类ID（可选，默认不分类）', default: '' },
         fields: {
           type: 'array',
           description: '字段定义（至少 1 个）',
@@ -78,7 +78,7 @@ export const createDataTableTools = () => [
             operator: {
               type: 'string',
               enum: ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'like', 'in'],
-              description: '比较操作符'
+              description: '比较操作符（仅支持 eq/ne/gt/gte/lt/lte/like/in 这 8 种，与工作流「数据读取」节点的操作符集合不同）'
             },
             value: { description: '比较值' }
           },
@@ -155,7 +155,7 @@ export const createDataTableExecutors = () => ({
     return toText(res)
   },
   createTable: async (args) => {
-    const { name, description = '', category_id = '', fields = [] } = args || {}
+    const { name, description = '', categoryId = '', fields = [] } = args || {}
     assertArgs(args, ['name'])
     if (!Array.isArray(fields)) throw new Error('fields 必须为数组')
     // fields 至少 1 个且字段 description（中文名）必填——与真实表单一致，空表/缺中文名会生成非法 SQL
@@ -163,7 +163,7 @@ export const createDataTableExecutors = () => ({
     for (const f of fields) {
       if (!f?.name || !f?.description) throw new Error('每个字段必须有 name（英文标识）与 description（中文名）')
     }
-    return toText(await data().createModel({ name, description, category_id, fields }))
+    return toText(await data().createModel({ name, description, category_id: categoryId, fields }))
   },
   deleteTable: async (args) => {
     assertArgs(args, ['id'])
@@ -178,14 +178,14 @@ export const createDataTableExecutors = () => ({
   updateData: async (args) => {
     const { modelId, ids, data: payload } = args || {}
     assertArgs(args, ['modelId'])
-    if (!Array.isArray(ids) || ids.length === 0) throw new Error('ids is required')
+    if (!Array.isArray(ids) || ids.length === 0) throw new Error('ids 为必填参数（非空数组）')
     if (!payload || typeof payload !== 'object') throw new Error('data 必须为对象')
     return toText(await data().updateModelData({ modelId, ids, data: payload }))
   },
   deleteData: async (args) => {
     const { modelId, ids } = args || {}
     assertArgs(args, ['modelId'])
-    if (!Array.isArray(ids) || ids.length === 0) throw new Error('ids is required')
+    if (!Array.isArray(ids) || ids.length === 0) throw new Error('ids 为必填参数（非空数组）')
     return toText(await data().deleteModelData({ modelId, ids }))
   }
 })

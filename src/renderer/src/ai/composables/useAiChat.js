@@ -19,7 +19,7 @@ import {
   getConversations,
   deleteConversation
 } from '@/api/aiModels'
-import { snipContext, sanitizeContext, friendlyAIError, toOpenAiToolCall } from './context'
+import { snipContext, sanitizeContext, friendlyAIError, toOpenAiToolCall, stripUiFields, budgetForModel } from './context'
 import { executeToolCalls, STALL_ROUNDS, STALL_PROMPT_MSG, GRACE_PROMPT_MSG } from './toolLoop'
 import { useFlowStore } from '@/workflow/store'
 import { quickValidateWorkflow } from '@/workflow/engine/validate'
@@ -171,8 +171,9 @@ export const useAiChat = ({ workflowId, tools, executors, buildSystem, buildTurn
   /** 单轮补全：流式增量写回 assistant，结束时 resolve {toolCalls} */
   const runCompletion = (assistant, model) =>
     new Promise((resolve, reject) => {
-      // 提交内容：清洗配对 + 上下文预算；瞬时快照（buildTurn）以 user 消息追加在末尾，不持久化
-      const base = sanitizeContext(snipContext(contextMessages))
+      // 提交内容：剥离 UI 字段 → 上下文预算（按模型窗口）→ 清洗配对；
+      // 瞬时快照（buildTurn）以 user 消息追加在末尾，不持久化
+      const base = sanitizeContext(snipContext(stripUiFields(contextMessages), budgetForModel(model)))
       const messages = buildTurn
         ? [...base, { role: 'user', message_id: `snapshot-${Date.now()}`, content: buildTurn() }]
         : base

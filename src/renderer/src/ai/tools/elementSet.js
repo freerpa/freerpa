@@ -19,7 +19,7 @@ export const createElementSetTools = () => [
       properties: {
         title: { type: 'string', description: '元素集名称' },
         description: { type: 'string', description: '描述', default: '' },
-        category_id: { type: 'string', description: '所属分类ID（可选，默认不分类）', default: '' },
+        categoryId: { type: 'string', description: '所属分类ID（可选，默认不分类）', default: '' },
         elements: {
           type: 'array',
           description: '元素定义（可选）',
@@ -83,7 +83,7 @@ export const createElementSetTools = () => [
 
 export const createElementSetExecutors = () => ({
   createElementSet: async (args) => {
-    const { title, description = '', category_id = '', elements = [] } = args || {}
+    const { title, description = '', categoryId = '', elements = [] } = args || {}
     assertArgs(args, ['title'])
     if (!Array.isArray(elements)) throw new Error('elements 必须为数组')
     // 校验元素/选择器结构（与真实三表结构一致：elements[].selectors[].type/expression）
@@ -93,7 +93,7 @@ export const createElementSetExecutors = () => ({
         throw new Error(`元素「${el.name}」至少需要 1 个 selectors（type 与 expression）`)
       }
     }
-    return toText(await elementSet().createElementSet({ title, description, category_id, elements }))
+    return toText(await elementSet().createElementSet({ title, description, category_id: categoryId, elements }))
   },
   listElementSets: async ({ keyword = '', page = 1, pageSize = 20 } = {}) =>
     toText(await elementSet().getElementSets({ keyword, page, pageSize })),

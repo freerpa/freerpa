@@ -9,11 +9,53 @@
  */
 import nodes from '@nodes-path'
 
+/**
+ * 整句截断：超过上限时优先在最近的结束符（；。！？或换行）处截断，避免把描述腰斩成歧义片段；
+ * 找不到合适结束符时退回硬切。
+ */
+const cutSentence = (text, max) => {
+  const s = String(text || '')
+  if (s.length <= max) return s
+  const slice = s.slice(0, max)
+  const cut = slice.search(/[；。！？\n]/)
+  return cut > 10 ? slice.slice(0, cut + 1) : slice
+}
+
+/** show 表达式 → 可读显示条件（仅翻译常见形态，无法翻译返回 null → 保留 conditional 标记） */
+const translateShow = (expr) => {
+  const s = String(expr || '')
+  let m = s.match(/\$\{(\w+)\}\s*===\s*["']([^"']+)["']/)
+  if (m) return `仅当「${m[1]}」为「${m[2]}」时显示`
+  m = s.match(/\$\{(\w+)\}\s*!==\s*["']([^"']+)["']/)
+  if (m) return `仅当「${m[1]}」不为「${m[2]}」时显示`
+  m = s.match(/\[\s*(["'][^"']+["'](?:\s*,\s*["'][^"']+["'])*)\s*\]\s*\.includes\(\s*\$\{(\w+)\}\s*\)/)
+  if (m) {
+    const vals = [...m[1].matchAll(/["']([^"']+)["']/g)].map((x) => x[1])
+    return `仅当「${m[2]}」取值为 ${vals.join(' / ')} 时显示`
+  }
+  return null
+}
+
+/** 嵌套字段 → JSON 示例模板（给模型可照抄的结构，降低臆造） */
+const sampleOfFields = (fields) =>
+  (fields || []).reduce((acc, f) => {
+    if (!f?.id) return acc
+    if (f.type === 'array' && Array.isArray(f.fields)) acc[f.id] = [sampleOfFields(f.fields)]
+    else if (f.type === 'object' && Array.isArray(f.fields)) acc[f.id] = sampleOfFields(f.fields)
+    else if (f.default !== undefined && f.default !== null && f.default !== '') acc[f.id] = f.default
+    else if (f.type === 'switch') acc[f.id] = false
+    else if (f.type === 'number') acc[f.id] = 0
+    else if (f.type === 'select' && Array.isArray(f.options) && f.options[0]) {
+      acc[f.id] = f.options[0].value ?? f.options[0].label ?? ''
+    } else acc[f.id] = ''
+    return acc
+  }, {})
+
 /** 字段类型（含动态/条件标记）→ AI 友好字段目录 */
 const fieldToCatalog = (field, brief) => {
   const out = {
     name: field.name,
-    description: brief ? (field.description || '').slice(0, 40) : field.description,
+    description: brief ? cutSentence(field.description, 120) : field.description,
     type: field.type
   }
   if (field.required) out.required = true
@@ -24,8 +66,12 @@ const fieldToCatalog = (field, brief) => {
   }
   // 远程动态枚举（remote/remoteMethod）：标记待动态注入，short 与 detail 均提示
   if (field.remote === true) out.dynamic = true
-  // 条件显示字段（show 表达式）：只标记为条件字段，不暴露表达式细节
-  if (field.show && field.show !== 'false') out.conditional = true
+  // 条件显示字段（show 表达式）：常见形态翻译为可读条件，复杂表达式仅标记 conditional
+  if (field.show && field.show !== 'false') {
+    const when = translateShow(field.show)
+    if (when) out.showWhen = when
+    else out.conditional = true
+  }
   if (brief) return out
   // ---- detail 专属 ----
   // 非空默认值（空字符串/空数组/空对象省略，避免无信息量体积）
@@ -34,12 +80,18 @@ const fieldToCatalog = (field, brief) => {
   // 网页元素（type:'selector'）：内嵌元素对象，非字符串（与执行端 selector.js 结构一致）
   if (field.type === 'selector') {
     out.format = '网页元素对象 { name, match_condition, selectors: [{ type, text_subtype, expression }] }，非字符串'
+    out.source = '优先用 listElementSets/getElementSet 复用现有元素；无匹配时按上述结构内嵌'
   }
+  // 动态 ID 类字段：告知取值来源，避免模型臆造
+  if (field.type === 'browser') out.source = '值需从浏览器环境列表获取（浏览器管理模块），不要臆造 ID'
+  if (field.type === 'model') out.source = '值需用 listTables 查询数据表 ID，不要臆造'
   if (field.fields && field.fields.length > 0) {
     out.fields = field.fields.reduce(
       (all, item) => ({ ...all, [item.id]: fieldToCatalog(item, brief) }),
       {}
     )
+    // 嵌套结构示例：array 给「一个元素的示例」，object 给「对象示例」
+    out.example = field.type === 'array' ? [sampleOfFields(field.fields)] : sampleOfFields(field.fields)
   }
   return out
 }
@@ -71,18 +123,18 @@ export const configToCatalog = (config = [], brief = false) =>
     return all
   }, {})
 
-/** 端口（inputs/outputs）→ 目录描述；动态端口（type:'dynamic'）标注 dataPath 驱动字段 */
+/** 端口（inputs/outputs）→ 目录描述；动态端口（type:'dynamic'）标注驱动字段 */
 export const handlesToCatalog = (handles = [], brief = false) =>
   handles.reduce((all, handle) => {
     if (!handle?.id) return all
     all[handle.id] = {
       name: handle.name,
-      description: brief ? (handle.description || '').slice(0, 40) : handle.description,
+      description: brief ? cutSentence(handle.description, 120) : handle.description,
       type: handle.type,
       ...(handle.required ? { required: true } : {}),
       // 动态 IO（dataPath）：端口由配置字段动态生成，模型应关注驱动字段
       ...(handle.type === 'dynamic' && handle.dataPath
-        ? { dynamic: true, dataPath: handle.dataPath }
+        ? { dynamic: true, dataPath: handle.dataPath, drivenBy: `由配置字段「${handle.dataPath}」动态生成` }
         : {})
     }
     return all
@@ -95,7 +147,7 @@ export const handlesToCatalog = (handles = [], brief = false) =>
 const nodeToMeta = (def, brief) => ({
   type: def.type,
   name: def.name,
-  description: (def.description || '').slice(0, brief ? 80 : 200),
+  description: cutSentence(def.description, brief ? 160 : 400),
   subFlow: !!def.subFlow,
   version: def._version || 'V1',
   inputs: handlesToCatalog(def.inputs, brief),
@@ -125,7 +177,7 @@ export const buildNodeMeta = (type, { detail = false } = {}) => {
 // ---- 模型目录（system prompt 注入的节点精简描述） ----
 
 /**
- * 节点分类（categories）→ 精简模型目录数组（只含 type/名称/描述前 80 字符，
+ * 节点分类（categories）→ 精简模型目录数组（只含 type/名称/整句截断的描述，
  * 供 system prompt 注入；config 字段明细由 getNodeConfig 工具按需查询，避免 prompt 膨胀）
  * 返回 [{ group, nodes: [{ type, name, description }] }]
  */
@@ -135,6 +187,6 @@ export const buildNodeCatalog = (categories) =>
     nodes: (nodes || []).map((node) => ({
       type: node.type,
       name: node.name,
-      description: (node.description || '').slice(0, 80)
+      description: cutSentence(node.description, 120)
     }))
   }))

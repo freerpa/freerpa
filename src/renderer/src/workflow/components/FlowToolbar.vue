@@ -180,8 +180,13 @@
           />
         </template>
       </a-popover>
-      <a-tooltip content="AI助手">
-        <a-button type="text" size="small" @click="$emit('toggleChat')">
+      <a-tooltip :content="chatLoading ? 'AI助手（工作中）' : 'AI助手'">
+        <a-button
+          type="text"
+          size="small"
+          :class="{ 'chat-loading-btn': chatLoading }"
+          @click="$emit('toggleChat')"
+        >
           <template #icon><icon-robot size="20" /></template>
         </a-button>
       </a-tooltip>
@@ -315,6 +320,13 @@ const columns = [
     key: 'time'
   }
 ]
+defineProps({
+  // AI 会话进行中：驱动 AI 助手图标状态
+  chatLoading: {
+    type: Boolean,
+    default: false
+  }
+})
 defineEmits(['execute', 'stop', 'toggleChat'])
 </script>
 
@@ -338,6 +350,24 @@ defineEmits(['execute', 'stop', 'toggleChat'])
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
+}
+// AI 会话进行中：图标主题色 + 呼吸脉冲，让用户实时感知 AI 正在工作
+.chat-loading-btn {
+  :deep(.arco-icon) {
+    color: rgb(var(--primary-6));
+    animation: chat-loading-pulse 1.2s ease-in-out infinite;
+  }
+}
+@keyframes chat-loading-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
 }
 :deep(.arco-table-cell) {
   padding: 2px 0 0 10px;

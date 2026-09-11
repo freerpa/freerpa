@@ -10,7 +10,7 @@ import { defineTool } from './defineTool.js'
 
 // 工具结果转文本：兼容两种返回形态——
 // 1) env:* 统一 {code:200,data} / {code:400,message} 包装；
-// 2) browserLocal:createBrowser 返回裸 id 字符串、getMajorVersionList 返回裸 JSON（handleCrud 不包装，原逻辑会把成功结果误判为 error）
+// 2) browserLocal:createBrowser 返回裸 id 字符串（handleCrud 不包装，原逻辑会把成功结果误判为 error）
 const toText = (res) => {
   if (res && typeof res === 'object' && 'code' in res) {
     return limitText(res.code === 200 ? (res.data ?? res.message ?? res) : `error: ${res.message || JSON.stringify(res)}`)
@@ -30,8 +30,8 @@ export const createBrowserTools = () => [
       properties: {
         name: { type: 'string', description: '浏览器环境名称' },
         description: { type: 'string', description: '描述', default: '' },
-        category_id: { type: 'string', description: '所属分类ID（可选，默认不分类）', default: '' },
-        proxy_url: { type: 'string', description: '代理地址，可选' }
+        categoryId: { type: 'string', description: '所属分类ID（可选，默认不分类）', default: '' },
+        proxyUrl: { type: 'string', description: '代理地址，可选' }
       },
       required: ['name'],
       additionalProperties: false
@@ -66,10 +66,11 @@ export const createBrowserTools = () => [
 
 export const createBrowserExecutors = () => ({
   createBrowser: async (args) => {
-    const { name, description = '', category_id = '', proxy_url = '' } = args || {}
+    const { name, description = '', categoryId = '', proxyUrl = '' } = args || {}
     assertArgs(args, ['name'])
     const browserLocal = window.electronAPI.browserLocal
-    return toText(await browserLocal.createBrowser({ name, description, category_id, proxy_url }))
+    // 模型侧统一 camelCase，回写后端时转换回 category_id/proxy_url
+    return toText(await browserLocal.createBrowser({ name, description, category_id: categoryId, proxy_url: proxyUrl }))
   },
   openBrowser: async (args) => toText(await env().openBrowser(args || {})),
   closeBrowser: async (args) => {

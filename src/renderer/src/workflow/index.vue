@@ -8,7 +8,7 @@
     @mouseleave="isFocus = false"
   >
     <FlowCanvas ref="flowRef" />
-    <FlowToolbar @toggleChat="toggleChat" />
+    <FlowToolbar @toggleChat="toggleChat" :chat-loading="aiLoading" />
     <div
       class="chat-container"
       @mouseenter="aiFocus = true"
@@ -19,6 +19,7 @@
         :workflowId="workflowId"
         :visible="aiVisible"
         @close="aiVisible = false"
+        @loading-change="aiLoading = $event"
       />
     </div>
   </div>
@@ -206,6 +207,8 @@ onUnmounted(() => {
 
 const aiVisible = ref(false)
 const aiFocus = ref(false)
+// AI 会话进行中状态（ChatPanel 实时上报），驱动工具栏 AI 助手图标
+const aiLoading = ref(false)
 const toggleChat = () => {
   aiVisible.value = !aiVisible.value
 }

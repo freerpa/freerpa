@@ -6,6 +6,7 @@
 import { ref } from 'vue'
 import { categories } from '@nodes-path'
 import { buildNodeCatalog } from './tools/schema'
+import { maskSensitive } from './tools/guard'
 import { HARD_RULES, OPERATION_RULES } from './rules'
 
 /**
@@ -17,7 +18,7 @@ import { HARD_RULES, OPERATION_RULES } from './rules'
 export const createPromptContext = ({ workflowId, flowStore }) => {
   const memories = ref([])
 
-  /** 轻量记忆：加载工作流偏好（每轮随快照注入） */
+  /** 轻量记忆：加载工作流偏好（每轮随快照注入；主进程已按 updated_at 倒序返回，取最近 3 条） */
   const loadMemories = async () => {
     try {
       memories.value = (await window.electronAPI.ai.getMemories(workflowId)) || []
@@ -26,12 +27,16 @@ export const createPromptContext = ({ workflowId, flowStore }) => {
     }
   }
 
-  /** 瞬时工作流快照（每轮 user turn 注入）：只含节点骨架 + 输出摘要 + 连线关系，
-   *  不注入 config 全量（避免 prompt 膨胀与敏感泄露）；配置详情按需用 getNodeConfig/getWorkflow 查询 */
+  /** 瞬时工作流快照（每轮 user turn 注入）：节点骨架 + 输出摘要 + 脱敏后的 config 当前值 + 连线关系
+   *  - config 注入脱敏副本（maskSensitive 打码密钥类字段），让模型修改节点配置时能读到已填值，
+   *    不必每次 getWorkflow 查询；敏感字段不泄露
+   *  - edges 附 source/target 节点名，模型无需在 nodes 列表里反查 id → 名称 */
   const buildTurn = () => {
     const vueFlow = flowStore.vueFlowRef
+    const nodes = vueFlow?.getNodes || []
+    const nodeNameOf = (id) => nodes.find((n) => n.id === id)?.data?.name || id
     const workflow = {
-      nodes: (vueFlow?.getNodes || []).map((node) => ({
+      nodes: nodes.map((node) => ({
         id: node.id,
         name: node.data.name,
         type: node.data.type,
@@ -41,13 +46,17 @@ export const createPromptContext = ({ workflowId, flowStore }) => {
           name: o.name,
           id: o.id,
           type: o.type
-        }))
+        })),
+        // config 当前值（脱敏）：修改/核对配置时直接可用
+        config: maskSensitive(node.data.config || {})
       })),
       edges: (vueFlow?.getEdges || []).map((edge) => ({
         id: edge.id,
         source: edge.source,
+        sourceName: nodeNameOf(edge.source),
         sourceHandle: edge.sourceHandle,
         target: edge.target,
+        targetName: nodeNameOf(edge.target),
         targetHandle: edge.targetHandle
       }))
     }
@@ -75,7 +84,7 @@ export const createPromptContext = ({ workflowId, flowStore }) => {
       '3. 不确定如何继续时，向用户说明情况并询问下一步。',
       '4. 任务需要多个步骤时，在单次回复中同时发起多个工具调用（多个 tool_calls），一次性完成一组相关动作（如连续创建多个节点、创建配套数据表/浏览器/元素集），不要一次只做一个动作反复往返。',
       '5. 文字尽量简洁：工具执行过程不做冗长复述（工具结果已展示在界面）；只在每轮用一句话说明当前动作，最终汇总用要点列出结果；不要复述用户请求、不要输出重复的思考过程。',
-      '6. 网页元素（浏览器节点 config 里的 selector 字段）使用策略：常规先复用现有元素集（listElementSets 查看、getElementSet 取出元素对象直接作为 selector 字段值）；无匹配时内嵌元素对象 {name, match_condition, selectors:[{type, expression}]} 写进 selector 字段；仅同一组元素会被多个工作流长期复用时才 createElementSet。',
+      '6. 网页元素（节点 config 的 selector 字段）使用顺序：先用 listElementSets 查现有元素集，有匹配则 getElementSet 取出元素对象直接复用；无匹配则内嵌 {name, match_condition, selectors:[{type, expression}]}；仅同一组元素被多个工作流长期复用时才 createElementSet。',
       '请根据用户意图使用工具完成任务，完成后调用 finish。'
     ].join('\n')
   }

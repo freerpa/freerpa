@@ -11,7 +11,7 @@ export const limitText = (value) => {
   const head = Math.floor(MAX_OUTPUT * 0.7)
   const tail = MAX_OUTPUT - head
   const omitted = text.length - MAX_OUTPUT
-  return `${text.slice(0, head)}…[truncated ${omitted} bytes — 需要完整数据请缩小查询范围或加条件过滤]…${text.slice(-tail)}`
+  return `${text.slice(0, head)}…[truncated ${omitted} bytes — 如需完整数据，请缩小查询范围（加条件过滤/减小分页）后重新查询]…${text.slice(-tail)}`
 }
 
 /** 敏感字段匹配（apiKey/password/token/secret 等；ChatPanel.vue 快照与 workflow.js 返回脱敏共用） */
@@ -35,11 +35,11 @@ export const maskSensitive = (config) => {
   return out
 }
 
-/** 必填参数校验：缺失/空值抛错（错误消息进入模型上下文，统一英文格式） */
+/** 必填参数校验：缺失/空值抛错（错误消息进入模型上下文，与整体中文风格一致） */
 export const assertArgs = (args = {}, keys) => {
   keys.forEach((key) => {
     if (args[key] === undefined || args[key] === null || args[key] === '') {
-      throw new Error(`${key} is required`)
+      throw new Error(`${key} 为必填参数`)
     }
   })
 }
