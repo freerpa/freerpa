@@ -1,5 +1,5 @@
 <template>
-  <div class="round-nav" @mouseenter="open = true" @mouseleave="open = false">
+  <div v-if="rounds.length > 1" class="round-nav" @mouseenter="open = true" @mouseleave="open = false">
     <!-- 默认窄条：每一轮一个灰色小圆点 -->
     <div class="round-nav__dots">
       <div

@@ -97,6 +97,30 @@ export const autoConnect = async (
       }
     })
   }
+
+  // any 类型输出兜底连线：any 可连任意类型（如全局变量读取节点的动态输出），
+  // 若目标节点还有未连接的数据输入，把 source 的 any 输出补连上去，保证变量值真正流入下游
+  if (sourceNode && targetNode) {
+    const srcTypes = (o) => (typeof o.type === 'string' ? [o.type] : (o.type || []))
+    const anyOutput = (sourceNode.data.outputs || []).find((o) => srcTypes(o).includes('any'))
+    if (anyOutput) {
+      const connectableInput = targetInputs.find(
+        (input) =>
+          !specialDataTypes.includes(input.type) &&
+          !vueFlowRef.getEdges.some((e) => e.target === targetNode.id && e.targetHandle === input.id)
+      )
+      if (connectableInput) {
+        const edge = createConnection({
+          source: sourceNode.id,
+          target: targetNode.id,
+          sourceHandle: anyOutput.id,
+          targetHandle: connectableInput.id
+        })
+        if (edge && edge.source && edge.target) edges.push(edge)
+      }
+    }
+  }
+
   // 把已有边浇铸为组合键 Set，O(1) 判重（原 `edges.filter(!isConnected)` 内嵌 find 为 O(边数²)）
   const existingKeySet = new Set(
     vueFlowRef.getEdges.map(
