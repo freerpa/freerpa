@@ -111,13 +111,19 @@ export const autoLayout = (vueFlowRef) => {
   saveHistory()
   nextTick(() => {
     setTimeout(() => {
-      vueFlowRef.fitView({
-        padding: 0.05,
-        includeHiddenNodes: false,
-        maxZoom: 1
-      })
-      // 调整父节点大小
-      adjustParentSize(vueFlowRef.getNodes, vueFlowRef)
+      // 异步收尾段：此处异常发生在 addNode 等调用方 return 之后，无法被调用方 try/catch 捕获，
+      // 曾表现为"工具返回成功但画布异常/节点不可见且无报错"——包一层捕获并打印，避免静默失败
+      try {
+        vueFlowRef.fitView({
+          padding: 0.05,
+          includeHiddenNodes: false,
+          maxZoom: 1
+        })
+        // 调整父节点大小
+        adjustParentSize(vueFlowRef.getNodes, vueFlowRef)
+      } catch (error) {
+        console.error('[autoLayout] 布局收尾失败:', error)
+      }
     }, 100)
   })
 }

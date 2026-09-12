@@ -143,6 +143,11 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     return result
   }
 
+  // AI 改动后自动静默保存到数据库：force 跳过 isSaved 短路——AI 改动后 saveHistory 是 100ms debounce，
+  // 此刻 nowHistoryId 尚未更新，isSaved 可能仍为 true，不 force 会导致「改动了却不落库」，刷新即丢失；
+  // 保存失败由 saveWorkflow 内部打日志（silent 不弹窗），工具结果不受影响
+  const autoSave = () => flowStore.saveWorkflow({ silent: true, force: true })
+
   /** 节点引用解析：优先节点 ID，否则按节点名称查找（AI 并行创建多个节点时用名称连接，避免依赖事后才返回的 ID） */
   const resolveNodeRef = (ref) => {
     const vf = vueFlowRef.value
@@ -220,6 +225,7 @@ export const createWorkflowExecutors = ({ workflowId }) => {
   }
 
   executors.addNode = async ({ type, name, connectTo, handleId, config } = {}) => {
+    console.info('[AI addNode] 开始', { type, name, connectTo, handleId, config })
     if (!type) throw new Error('type 必填（用 listNodeTypes 查询可用类型）')
     if (!name) throw new Error('name 必填')
     const nodeDef = nodes[type]
@@ -229,6 +235,12 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     if (flowStore.isExecuting) {
       return { ok: false, error: '当前工作流正在执行，暂不能添加节点' }
     }
+    console.info('[AI addNode] 画布状态', {
+      nodeCount: vf.getNodes.length,
+      edgeCount: vf.getEdges.length,
+      isExecuting: flowStore.isExecuting,
+      workflowId
+    })
     const initNodeData = JSON.parse(getInitNodeData(type) || '{}')
     if (!initNodeData.type) throw new Error(`节点类型 ${type} 初始化失败`)
     initNodeData.name = name
@@ -280,6 +292,14 @@ export const createWorkflowExecutors = ({ workflowId }) => {
       }
     }
     vf.addNodes([newNode])
+    console.info('[AI addNode] 已添加节点', {
+      id: newNode.id,
+      type,
+      name: initNodeData.name,
+      parentNode: newNode.parentNode,
+      nodeCount: vf.getNodes.length,
+      subFlow: !!nodeDef.subFlow
+    })
     // 子流程节点（subFlow: true，如 workflowLoop）：补建子流程容器 + 容器内起始节点 + 容器连线。
     // 画布手动添加由 useNodeCrud.addSubFlowNode 完成；AI 直连 Vue Flow 实例缺此步骤会导致
     // 容器内 workflowStart 缺失，子流程 view.vue 读 startNode.data 崩溃（Cannot read properties of undefined）
@@ -367,7 +387,16 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     // 否则 autoLayout 遍历到未渲染节点可能读 null/undefined 崩溃
     await nextTick()
     autoLayout(vf)
-    return attachValidation({ ok: true, data: { id: newNode.id, status: 'created' } })
+    const result = attachValidation({ ok: true, data: { id: newNode.id, status: 'created' } })
+    console.info('[AI addNode] 完成', {
+      id: newNode.id,
+      type,
+      name: initNodeData.name,
+      nodeCount: vf.getNodes.length,
+      result
+    })
+    await autoSave()
+    return result
   }
 
   executors.connect = async ({ source, target }) => {
@@ -384,7 +413,9 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     }
     // 规则化连线：端口按节点 outputs/inputs 类型匹配自动计算（与画布拖拽一致）。
     // 预检流程线合法性：source/target 必须同一流程（跨容器连线非法，直接给可读错误，避免生成坏边后崩溃）
-    const mainEdge = { source, target, sourceHandle: 'next', targetHandle: 'prev' }
+    // ⚠ 必须用解析后的节点 ID 而非模型传入的原始字符串：validateConnection 内部按 el.id 查找节点，
+    // 模型传名称时（resolveNodeRef 已确认存在）会被当成 ID 找不到 → 误报「父容器不同/没有前置输入」
+    const mainEdge = { source: sourceNode.id, target: targetNode.id, sourceHandle: 'next', targetHandle: 'prev' }
     if (!validateConnection(mainEdge)) {
       const sn = sourceNode.data?.name || source
       const tn = targetNode.data?.name || target
@@ -395,6 +426,7 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     await nextTick()
     autoConnect(vueFlowRef.value, createConnection, sourceNode, targetNode, 'next')
     autoLayout(vueFlowRef.value)
+    await autoSave()
     return attachValidation({ ok: true, data: { status: 'connected' } })
   }
 
@@ -405,6 +437,7 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     if (name) node.data.name = String(name)
     mergeConfig(node.data.config, config, nodeFields(node.data.type))
     flowStore?.onNodesChange([{ id: nodeId, type: 'data' }])
+    await autoSave()
     return attachValidation({ ok: true, data: { id: nodeId, status: 'updated' } })
   }
 
@@ -429,6 +462,7 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     vf.removeNodes(nodeId, true, true)
     await nextTick()
     autoLayout(vf)
+    await autoSave()
     return attachValidation({ ok: true, data: { id: nodeId, status: 'deleted' } })
   }
 
@@ -436,6 +470,7 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     if (!edgeId) throw new Error('edgeId 必填')
     await vueFlowRef.value?.removeEdges([edgeId])
     autoLayout(vueFlowRef.value)
+    await autoSave()
     return attachValidation({ ok: true, data: { id: edgeId, status: 'deleted' } })
   }
 

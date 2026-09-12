@@ -84,6 +84,14 @@ export const executeToolCalls = async ({
       const t0 = performance.now()
       output = await handler(tc.args || {})
       durationMs = Math.round(performance.now() - t0)
+      // 成功/失败统一打印调用轨迹（失败已在 catch 打印堆栈，这里补成功与返回值，便于对照模型实际调用）
+      console.info(
+        `[AI 工具执行] ${tc.toolName}`,
+        JSON.stringify(tc.args || {}),
+        '→',
+        typeof output === 'string' ? output.slice(0, 500) : JSON.stringify(output)?.slice(0, 500),
+        `${durationMs}ms`
+      )
     } catch (error) {
       // 统一为结构化失败结果（与执行器返回的 {ok:false} 一致），供模型自纠；
       // 同时打印完整堆栈到 Console——工具失败常被这里吞掉，保留堆栈才能定位根因

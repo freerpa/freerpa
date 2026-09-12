@@ -153,8 +153,21 @@ export const useFlowStore = (id) =>
 
     const saveIng = ref(false)
     // 保存工作流
-    const saveWorkflow = async () => {
-      if (isSaved.value || saveIng.value) {
+    // 参数：{ silent } 静默保存（不弹「保存成功」，AI 工具自动保存场景）；{ force } 强制保存
+    // （跳过 isSaved 短路——AI 改动后 saveHistory 是 100ms debounce，此刻 nowHistoryId 尚未更新，
+    //   isSaved 可能仍为 true 导致「改动了却不保存」）
+    const saveWorkflow = async ({ silent = false, force = false } = {}) => {
+      if (saveIng.value) {
+        if (!force) return
+        // force：等待上一次保存完成再继续，避免并发全量写库乱序（旧快照覆盖新改动）
+        let waited = 0
+        while (saveIng.value && waited < 2000) {
+          await new Promise((r) => setTimeout(r, 30))
+          waited += 30
+        }
+        if (saveIng.value) return // 超时放弃，避免无限等待
+      }
+      if (!force && isSaved.value) {
         return
       }
       saveIng.value = true
@@ -172,9 +185,14 @@ export const useFlowStore = (id) =>
           graph: elements
         })
         savedHistoryId.value = nowHistoryId.value
-        Message.success('保存成功')
+        if (!silent) Message.success('保存成功')
       } catch (error) {
-        Message.error(`保存失败: ${error.message}`)
+        if (silent) {
+          // AI 自动保存失败不打断对话，但要留痕便于排查（否则刷新后改动丢失且无任何线索）
+          console.error(`[自动保存] 工作流 ${id} 保存失败:`, error)
+        } else {
+          Message.error(`保存失败: ${error.message}`)
+        }
       } finally {
         saveIng.value = false
       }
