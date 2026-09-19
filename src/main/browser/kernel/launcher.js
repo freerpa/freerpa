@@ -11,6 +11,7 @@ import { promisify } from 'util'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { getBundledKernelBinaryPath, getPlatform, stripKernelQuarantine } from './paths'
+import { createProxyRelay } from '../utils/proxy-relay'
 
 const execAsync = promisify(exec)
 
@@ -77,6 +78,18 @@ const createLaunchError = (err = {}) => {
 }
 
 /**
+ * 代理地址是否带认证凭据（user:pass）
+ */
+const hasProxyAuth = (proxy) => {
+  try {
+    const url = new URL(proxy)
+    return !!(url.username || url.password)
+  } catch {
+    return false
+  }
+}
+
+/**
  * 启动随包内置的 fingerprint-chromium 内核
  */
 export const launchKernel = async (options = {}) => {
@@ -127,8 +140,20 @@ export const launchKernel = async (options = {}) => {
   if (headless) args.push('--headless=new')
   args.push(`--window-size=${width},${height}`)
 
-  if (proxy) {
-    args.push(`--proxy-server=${proxy.replace(/\/\/.+:.+@/, '//')}`, '--disable-non-proxied-udp')
+  // 带认证代理：Chromium --proxy-server 不支持内嵌凭据（有头弹认证框 / 无头直接失败），
+  // 经本地无认证中转代理注入凭据；无认证代理直接透传
+  let relay = null
+  let proxyServer = proxy
+  if (proxy && hasProxyAuth(proxy)) {
+    relay = await createProxyRelay(proxy)
+    proxyServer = `http://127.0.0.1:${relay.port}`
+    console.log(`[proxy-relay] 代理带认证 → 本地中转 ${proxyServer}（上游 ${proxy.replace(/\/\/[^/@]+@/, '//***@')}）`)
+  } else if (proxy) {
+    console.log(`[proxy-relay] 代理无认证 → 直接透传 --proxy-server=${proxy}`)
+  }
+
+  if (proxyServer) {
+    args.push(`--proxy-server=${proxyServer}`, '--disable-non-proxied-udp')
   }
 
   if (timezone) args.push(`--timezone=${timezone}`)
@@ -151,11 +176,17 @@ export const launchKernel = async (options = {}) => {
     })
   })
 
-  childProcess.on('error', (err) => console.error('启动内核失败:', err))
-  childProcess.on('exit', (code) => console.log(`内核进程退出, code: ${code}`))
+  childProcess.on('error', (err) => { console.error('启动内核失败:', err); relay?.close() })
+  childProcess.on('exit', (code) => { console.log(`内核进程退出, code: ${code}`); relay?.close() })
 
   const id = uuidv4()
-  const wsEndpoint = await waitForCdpReady(cdpPort, 30000)
+  let wsEndpoint
+  try {
+    wsEndpoint = await waitForCdpReady(cdpPort, 30000)
+  } catch (e) {
+    relay?.close()
+    throw e
+  }
 
-  return { process: childProcess, port: cdpPort, wsEndpoint, id, userDataDir, headless }
+  return { process: childProcess, port: cdpPort, wsEndpoint, id, userDataDir, headless, relay }
 }

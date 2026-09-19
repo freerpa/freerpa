@@ -75,6 +75,7 @@
             placeholder="用户名:密码@地址:端口"
             allow-clear
             :disabled="isDirect"
+            @blur="handleProxyBlur"
           >
           </a-input>
           <a-button
@@ -112,6 +113,7 @@ import { ref, computed, onMounted, nextTick, inject } from 'vue'
 import { IconCheckCircleFill, IconCloseCircleFill } from '@arco-design/web-vue/es/icon'
 import { Message } from '@arco-design/web-vue'
 import CategorySelect from '@/components/CategorySelect.vue'
+import { normalizeProxy } from '@/utils/proxyFormat'
 
 const { browserLocal: browserAPI } = window.electronAPI
 
@@ -155,6 +157,16 @@ const handleProtocolChange = () => {
   } else {
     form.value.proxy_url = form.value.proxy_url.replace(/^(https?|socks[45]):\/\//, '')
   }
+}
+
+// 输入框失焦：自动把常见代理格式格式化为 user:pass@地址:端口，并同步识别到的协议头
+const handleProxyBlur = () => {
+  if (isDirect.value) return
+  const raw = form.value.proxy_url
+  if (!raw || !raw.trim()) return
+  const { address, scheme } = normalizeProxy(raw)
+  form.value.proxy_url = address
+  if (scheme) form.value.proxy_protocol = `${scheme}://`
 }
 
 // 一键检测代理
