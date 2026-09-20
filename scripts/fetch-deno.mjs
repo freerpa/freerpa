@@ -11,7 +11,7 @@ import path from 'path'
 import AdmZip from 'adm-zip'
 
 // ═══════════ 版本与平台映射 ═══════════
-const DENO_VERSION = process.env.DENO_VERSION || '2.9.5'
+const DENO_VERSION = process.env.DENO_VERSION || '2.9.7'
 
 // 下载源（依次尝试）：DENO_MIRROR 环境变量可覆盖（如 https://registry.npmmirror.com/-/binary/deno）
 const MIRRORS = (process.env.DENO_MIRROR
