@@ -3,10 +3,11 @@
  */
 import path from 'node:path'
 import { URL } from 'node:url'
+import fs from 'node:fs'
 
 const execute = async (node, context) => {
   const { inputs } = node
-  const { sendNodeEvent, complete, fs } = context
+  const { sendNodeEvent, complete } = context
 
   
   let video = inputs.video

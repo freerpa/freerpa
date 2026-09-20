@@ -3,10 +3,11 @@
  */
 
 import path from 'node:path'
+import fs from 'node:fs'
 
 const execute = async (node, context) => {
   const { config } = node
-  const { complete, fs } = context
+  const { complete } = context
   const { deleteType, filePath, dirPath, force } = config
   let deletePath = deleteType === 'file' ? filePath : dirPath
   //如果路径不存在直接完成

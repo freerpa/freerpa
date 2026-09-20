@@ -1,10 +1,11 @@
 /**
  * @file: 文件状态节点执行器
  */
+import fs from 'node:fs'
 
 const execute = async (node, context) => {
   const { inputs } = node
-  const { complete, fs } = context
+  const { complete } = context
 
   
   // 获取文件路径

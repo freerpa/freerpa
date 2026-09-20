@@ -2,6 +2,7 @@
  * @file: 文件选择节点执行器
  */
 import path from 'path'
+import fs from 'node:fs'
 import { page_eval } from '@pageEval'
 // MIME类型映射
 const mimeTypes = {
@@ -56,7 +57,7 @@ const getMimeType = (fileName) => {
 
 const execute = async (node, context) => {
   const { inputs, config } = node
-  const { complete, fs } = context
+  const { complete } = context
 
   // 遍历文件夹获取所有文件路径
   const getAllFiles = (dirPath) => {
@@ -107,7 +108,7 @@ const execute = async (node, context) => {
     }
     return filePaths
   }
-  
+
   const page = inputs.page
   const { selector, forceDrop = false } = config
   // 获取所有需要处理的文件路径
@@ -115,7 +116,7 @@ const execute = async (node, context) => {
   const filePaths = getFilePaths(inputs.filePath)
   // 处理上传按钮
   const handleUploadButton = async (uploadButton, targetFiles) => {
-    
+
     if (!uploadButton) {
       throw new Error(`未找到上传按钮: ${selector}`)
     }
@@ -141,7 +142,7 @@ const execute = async (node, context) => {
 
   // 模拟文件拖放
   const handleDrop = async (dropZone, targetFiles) => {
-    
+
     if (!dropZone) {
       throw new Error(`拖放区域未找到: ${selector}`)
     }

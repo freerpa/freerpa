@@ -2,10 +2,11 @@
  * @file: 视频预览节点执行器
  */
 import { URL } from 'node:url'
+import fs from 'node:fs'
 
 const execute = async (node, context) => {
   const { inputs } = node
-  const { sendNodeEvent, complete, fs } = context
+  const { sendNodeEvent, complete } = context
 
   
   let audio = inputs.audio

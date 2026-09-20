@@ -2,10 +2,11 @@
  * @file: 打开目录节点执行器
  */
 import { shell } from 'electron'
+import fs from 'node:fs'
 
 const execute = async (node, context) => {
   const { config } = node
-  const { complete, fs } = context
+  const { complete } = context
   const { dirPath } = config
 
   

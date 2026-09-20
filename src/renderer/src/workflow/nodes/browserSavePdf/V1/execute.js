@@ -2,6 +2,7 @@
  * @file: 保存PDF节点执行器
  */
 import path from 'path'
+import fs from 'node:fs'
 import { page_eval } from '@pageEval'
 const execute = async (node, context) => {
   const {
@@ -10,8 +11,8 @@ const execute = async (node, context) => {
     fileName = ''
   } = node.config
   const page = node.inputs.page
-  const { complete, fs } = context
-  
+  const { complete } = context
+
   const _filePath = path.join(filePath, fileName + ".pdf")
   const realPath = path.join(fs.realpathSync(filePath), fileName + ".pdf")
   for (const exclude of excludes) {

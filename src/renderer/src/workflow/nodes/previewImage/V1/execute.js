@@ -3,10 +3,11 @@
  */
 
 import { Buffer } from 'node:buffer' // deno/node 显式导入，避免 ESM 内引用未定义全局 Buffer
+import fs from 'node:fs'
 
 const execute = async (node, context) => {
   const { inputs } = node
-  const { sendNodeEvent, complete, fs } = context
+  const { sendNodeEvent, complete } = context
 
   
   let image = inputs.image

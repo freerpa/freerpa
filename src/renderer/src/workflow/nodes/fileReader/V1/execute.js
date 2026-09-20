@@ -3,6 +3,7 @@
  */
 import readline from 'readline'
 import iconv from 'iconv-lite'
+import fs from 'node:fs'
 import { Buffer } from 'node:buffer' // deno ESM 无全局 Buffer，需显式导入
 
 // 全量读取大小上限（超过提示改用按行读取，防止大文件 OOM）
@@ -10,7 +11,7 @@ const MAX_FULL_READ = 50 * 1024 * 1024
 
 const execute = async (node, context) => {
   const { config } = node
-  const { complete, fs } = context
+  const { complete } = context
   const { filePath, encoding, readMode, startLine, endLine } = config
   // 检查文件是否存在
   if (!fs.existsSync(filePath)) {

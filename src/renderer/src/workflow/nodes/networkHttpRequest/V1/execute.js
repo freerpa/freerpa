@@ -4,8 +4,9 @@
 import axios from 'axios'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 import { SocksProxyAgent } from 'socks-proxy-agent'
+import fs from 'node:fs'
 const execute = async ({ config }, context) => {
-  
+
   const {
     url,
     method,
@@ -17,7 +18,7 @@ const execute = async ({ config }, context) => {
     timeout,
     proxyUrl
   } = config
-  const { complete, fs } = context
+  const { complete } = context
 
   // 使用网络监听的请求信息
   let finalUrl = url

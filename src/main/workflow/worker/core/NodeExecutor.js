@@ -1,7 +1,6 @@
 import { EventEmitter } from 'node:events'
 import { bridge } from '../bridge.js'
 import { loadNodeExecutor } from './nodeLoader.js'
-import afs from './afs.js'
 import { safeInspectToJSON } from './safeInspectToJSON.js'
 
 class NodeExecutor extends EventEmitter {
@@ -172,7 +171,6 @@ class NodeExecutor extends EventEmitter {
       ...this.context,
       nodeId: this.node.id,
       wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-      fs: new afs(),
       global: this.context.engine.global,
       getOutputs: () => this.getOutputs(),
       setOutputs: (outputs) => this.setOutputs(outputs),

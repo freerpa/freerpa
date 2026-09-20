@@ -2,10 +2,11 @@
  * @file: 工作簿创建节点执行器
  */
 import Excel from 'exceljs'
+import fs from 'node:fs'
 const execute = async (node, context) => {
   
   const { createType, filePath } = node.config
-  const { complete, fs } = context
+  const { complete } = context
   const workbook = new Excel.Workbook()
   let worksheet = workbook.addWorksheet('Sheet1')
   if (createType === 'file') {

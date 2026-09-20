@@ -2,14 +2,15 @@
  * @file: 文件写入节点执行器
  */
 import iconv from 'iconv-lite'
+import fs from 'node:fs'
 import { safeWriteFileSync } from '@/common'
 
 const execute = async (node, context) => {
   const { config } = node
-  const { complete, fs } = context
+  const { complete } = context
   const { filePath, encoding, writeMode, appendLineBreak } = config
 
-  
+
   // 准备写入内容
   let writeContent = config.content
 
@@ -31,13 +32,13 @@ const execute = async (node, context) => {
     // 检查文件是否存在
     if (!fs.existsSync(filePath)) {
       // 如果文件不存在，创建文件
-      safeWriteFileSync(fs, filePath, '')
+      safeWriteFileSync(filePath, '')
     }
     // 追加模式
     fs.appendFileSync(filePath, buffer)
   } else {
     // 覆盖模式
-    safeWriteFileSync(fs, filePath, buffer)
+    safeWriteFileSync(filePath, buffer)
   }
 
   // 返回结果

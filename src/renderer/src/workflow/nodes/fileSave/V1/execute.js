@@ -2,6 +2,7 @@
  * @file: 文件保存节点执行器
  */
 import path from 'path'
+import fs from 'node:fs'
 import { Buffer } from 'node:buffer' // deno ESM 无全局 Buffer，需显式导入
 import mime from 'mime-types'
 import axios from 'axios'
@@ -12,7 +13,7 @@ const execute = async (node, context) => {
   const { config } = node
   const { filePath, fileName, overwrite } = config
   const { content } = node.inputs
-  const { onBeforeDestroy, complete, fs } = context
+  const { onBeforeDestroy, complete } = context
 
   let finalFileName = fileName
 
@@ -138,7 +139,7 @@ const execute = async (node, context) => {
     if (!finalFileName) {
       finalFileName = fileName || getFileName(content)
     }
-    const fileDirPath = getCorrectDirectorySync(fs, filePath)
+    const fileDirPath = getCorrectDirectorySync(filePath)
 
     // 保存文件
     let savePath = path.join(fileDirPath, finalFileName)
@@ -155,7 +156,7 @@ const execute = async (node, context) => {
 
     // 保存文件
     try {
-      safeWriteFileSync(fs, savePath, processedContent)
+      safeWriteFileSync(savePath, processedContent)
       // 使用 complete 方法返回结果并继续执行
     } catch (error) {
       savePath = ''

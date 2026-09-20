@@ -3,6 +3,8 @@
  * openBrowser：内核由主进程启动（RPC），puppeteer 连接与页面操作在 worker 本地。
  */
 import path from 'node:path'
+import fs from 'node:fs'
+import fsp from 'node:fs/promises'
 import puppeteer, { Page, ElementHandle } from 'puppeteer-core'
 import { bridge } from './bridge.js'
 import { mountFinder } from './selector.js'
@@ -62,7 +64,7 @@ export const processParams = (params, data) => {
 }
 
 // ═══════════ 文件安全写入 ═══════════
-export const safeWriteFileSync = (fs, filePath, data) => {
+export const safeWriteFileSync = (filePath, data) => {
   try {
     const dirPath = path.dirname(filePath)
     if (!fs.existsSync(dirPath)) {
@@ -77,7 +79,7 @@ export const safeWriteFileSync = (fs, filePath, data) => {
 }
 
 // 同步获取路径对应目录（文件返回父目录，目录返回自身）
-export const getCorrectDirectorySync = (fs, targetPath) => {
+export const getCorrectDirectorySync = (targetPath) => {
   try {
     const stats = fs.statSync(targetPath)
     return stats.isDirectory() ? targetPath : path.dirname(targetPath)
@@ -92,11 +94,11 @@ export { getHttpServer } from './core/http-server.js'
 
 /**
  * fileCopy / fileMove 公共执行器（operation: 'copy' | 'move'）
- * overwrite 语义统一：目标已存在且未开启覆盖时显式报错（此前 fileCopy 的 overwrite 因 afs copy 忽略参数而失效）
+ * 全部使用原生 node:fs API；overwrite 语义统一：目标已存在且未开启覆盖时显式报错
  */
 const executeFileTransfer = async (node, context, operation) => {
   const { config } = node
-  const { complete, fs } = context
+  const { complete } = context
   const typeKey = operation === 'copy' ? 'copyType' : 'moveType'
   const { [typeKey]: transferType, sourcePath, sourceDirPath, targetPath, overwrite } = config
 
@@ -113,17 +115,22 @@ const executeFileTransfer = async (node, context, operation) => {
   const isDirectory = sourceStats.isDirectory()
   const targetDir = isDirectory ? realTargetPath : path.dirname(realTargetPath)
   if (!fs.existsSync(targetDir)) {
-    await fs.mkdir(targetDir, { recursive: true })
+    await fsp.mkdir(targetDir, { recursive: true })
   }
   // 目标已存在且不允许覆盖 → 显式报错
   if (fs.existsSync(realTargetPath) && !overwrite) {
     throw new Error(`目标已存在且未开启覆盖: ${realTargetPath}`)
   }
-  // 复制 / 移动
+  // 复制 / 移动（移动优先 rename，跨设备失败时回退 复制+删除）
   if (operation === 'copy') {
-    await fs.copy(realSourcePath, realTargetPath)
+    await fsp.cp(realSourcePath, realTargetPath, { recursive: true })
   } else {
-    await fs.move(realSourcePath, realTargetPath)
+    try {
+      await fsp.rename(realSourcePath, realTargetPath)
+    } catch {
+      await fsp.cp(realSourcePath, realTargetPath, { recursive: true })
+      await fsp.rm(realSourcePath, { recursive: true, force: true })
+    }
   }
   // 返回结果
   complete({

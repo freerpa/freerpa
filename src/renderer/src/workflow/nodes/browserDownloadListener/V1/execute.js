@@ -1,10 +1,11 @@
 /**
  * @file: 下载监听节点执行器
  */
+import fs from 'node:fs'
 
 const execute = async (node, context) => {
   const { inputs, config } = node
-  const { next, complete, onBeforeDestroy, fs, sendNodeEvent } = context
+  const { next, complete, onBeforeDestroy, sendNodeEvent } = context
   const page = inputs.page
   const { savePath, isContinuous } = config
 

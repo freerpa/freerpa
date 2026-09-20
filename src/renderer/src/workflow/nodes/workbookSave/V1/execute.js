@@ -2,10 +2,11 @@
  * @file: 工作薄保存节点执行器
  */
 import path from 'path'
+import fs from 'node:fs'
 const execute = async (node, context) => {
   const { filePath, fileName, overwrite } = node.config
   const { worksheet } = node.inputs
-  const { complete, fs } = context
+  const { complete } = context
   const _filePath = path.join(filePath, fileName + '.xlsx')
   const realPath = path.join(fs.realpathSync(filePath), fileName + '.xlsx')
 

@@ -3,6 +3,7 @@
  */
 
 import path from 'path'
+import fs from 'node:fs'
 import { minimatch } from 'minimatch'
 
 // 递归遍历目录
@@ -146,7 +147,7 @@ const sortResults = (results, sortBy, sortOrder) => {
 
 const execute = async (node, context) => {
   const { config } = node
-  const { complete, fs } = context
+  const { complete } = context
 
   
   const {
