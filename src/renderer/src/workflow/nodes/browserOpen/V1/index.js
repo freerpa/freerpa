@@ -40,14 +40,7 @@ export default {
           required: true,
           description: '选择要启动的浏览器运行环境（包含浏览器内核配置与可用代理，仅“内置浏览器”模式使用）',
           quickConfig: true,
-          show: '${browser} === "builtin"',
-          onChange: async (val, formData) => {
-            if (!val) return
-            const env = await window.electronAPI.browserLocal.getBrowser(val)
-            if (env?.proxy_url && !formData.proxyUrl) {
-              formData.proxyUrl = env.proxy_url
-            }
-          }
+          show: '${browser} === "builtin"'
         },
         {
           id: 'proxyUrl',

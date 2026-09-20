@@ -9,7 +9,7 @@
       @click="isMonitoring = !isMonitoring"
     >
       <template #icon><icon-desktop /></template>
-      查看页面
+      查看浏览器画面
     </a-button>
   </div>
   <a-modal
