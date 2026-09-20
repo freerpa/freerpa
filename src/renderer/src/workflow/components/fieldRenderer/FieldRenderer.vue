@@ -1,87 +1,82 @@
 <template>
-  <a-config-provider :size="layout === 'horizontal' ? 'mini' : 'small'">
-    <a-form
-      ref="formRef"
-      :model="formData"
-      :rules="formRules"
-      @submit="handleSubmit"
-      :layout="layout"
-      auto-label-width
-      :disabled="isExecuting && !allowExecutingEdit"
-    >
-      <template
-        v-for="field in expFields.filter((f) => (f.onlyQuick && isQuickConfig) || !f.onlyQuick)"
-        :key="field.id"
+  <a-form
+    ref="formRef"
+    :model="formData"
+    :rules="formRules"
+    @submit="handleSubmit"
+    :layout="layout"
+    auto-label-width
+    :disabled="isExecuting && !allowExecutingEdit"
+  >
+    <template v-for="field in expFields.filter((f) => (f.onlyQuick && isQuickConfig) || !f.onlyQuick)" :key="field.id">
+      <a-form-item
+        :field="field.id"
+        :rules="field.rules"
+        :validate-trigger="field.validateTrigger || ['change', 'blur']"
+        :class="{
+          'arco-form-item-code': field.type === 'code' && !isQuickConfig,
+          'no-label': field.nolabel,
+        }"
       >
-        <a-form-item
-          :field="field.id"
-          :rules="field.rules"
-          :validate-trigger="field.validateTrigger || ['change', 'blur']"
-          :class="{
-            'arco-form-item-code': field.type === 'code' && !isQuickConfig,
-            'no-label': field.nolabel,
-          }"
-        >
-          <template #label>
-            <a-space :size="2" v-if="!field.nolabel">
-              <a-tooltip v-if="field.description">
-                <template #content>
-                  <div v-html="field.description.replace(/\n/g, '<br />')"></div>
-                </template>
-                <span>
-                  <icon-question-circle />
-                </span>
-              </a-tooltip>
-              <span v-if="field.name" class="label">{{ field.name }}</span>
-              <ParamRefer
-                :field="field"
-                @onSelect="selectParamRefer(field.id, $event)"
-                :show-trigger="false"
-                :all-types="true"
-              >
-                <a-tooltip content="引用其他节点的输出">
-                  <div class="param-ref">
-                    <icon-code-block />
-                  </div>
-                </a-tooltip>
-              </ParamRefer>
-            </a-space>
-          </template>
-          <component
-            class="no-wheel no-drag"
-            :is="getFieldComponent(field.type)"
-            v-model="formData[field.id]"
-            :field="field"
-            v-bind="field.props"
-            v-if="!isParamRefer(formData[field.id])"
-            @click.stop
-          />
-          <a-tag
-            v-else
-            class="param-tag"
-            :class="{ disabled: isExecuting && !allowExecutingEdit }"
-            :closable="!isExecuting && !allowExecutingEdit"
-            @close="clearParamRefe(field.id)"
-          >
-            <a-popover>
-              <a-space :size="2" class="content">
-                <span><icon-common /></span>
-                {{ getRefer(formData[field.id]).slice(2, -2) }}
-              </a-space>
+        <template #label>
+          <a-space :size="2" v-if="!field.nolabel">
+            <a-tooltip v-if="field.description">
               <template #content>
-                {{ getRefer(formData[field.id]).slice(2, -2) }}
+                <div v-html="field.description.replace(/\n/g, '<br />')"></div>
               </template>
-            </a-popover>
-          </a-tag>
-        </a-form-item>
-      </template>
-    </a-form>
-  </a-config-provider>
+              <span>
+                <icon-question-circle />
+              </span>
+            </a-tooltip>
+            <span v-if="field.name" class="label">{{ field.name }}</span>
+            <ParamRefer
+              :field="field"
+              @onSelect="selectParamRefer(field.id, $event)"
+              :show-trigger="false"
+              :all-types="true"
+            >
+              <a-tooltip content="引用其他节点的输出">
+                <div class="param-ref">
+                  <icon-code-block />
+                </div>
+              </a-tooltip>
+            </ParamRefer>
+          </a-space>
+        </template>
+        <component
+          class="no-wheel no-drag"
+          :is="getFieldComponent(field.type)"
+          v-model="formData[field.id]"
+          :field="field"
+          v-bind="field.props"
+          v-if="!isParamRefer(formData[field.id])"
+          @click.stop
+        />
+        <a-tag
+          v-else
+          class="param-tag"
+          :class="{ disabled: isExecuting && !allowExecutingEdit }"
+          :closable="!isExecuting && !allowExecutingEdit"
+          @close="clearParamRefe(field.id)"
+        >
+          <a-popover>
+            <a-space :size="2" class="content">
+              <span><icon-common /></span>
+              {{ getRefer(formData[field.id]).slice(2, -2) }}
+            </a-space>
+            <template #content>
+              {{ getRefer(formData[field.id]).slice(2, -2) }}
+            </template>
+          </a-popover>
+        </a-tag>
+      </a-form-item>
+    </template>
+  </a-form>
 </template>
 
 <script setup>
   import { IconQuestionCircle, IconCodeBlock, IconCommon } from '@arco-design/web-vue/es/icon';
-  import { ref, computed, watch, provide, inject } from 'vue';
+  import { ref, computed, provide, inject } from 'vue';
   import ParamRefer from './components/ParamRefer.vue';
   import fieldRenders from './index.js';
   import {

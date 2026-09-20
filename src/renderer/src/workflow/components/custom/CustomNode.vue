@@ -83,22 +83,28 @@
         :validate-connection="validateConnection"
         :need-connects="flowStore.needConnects"
       />
+      <a-config-provider size="mini">
+        <!-- Quick config -->
+        <div class="quick-config" :class="{ preview: isPreview }" v-if="quickConfigFields.length">
+          <FieldRenderer
+            ref="quickConfigRef"
+            v-model="nodeConfig"
+            :fields="quickConfigFields"
+            :disabled="isExecuting"
+            :is-quick-config="true"
+          />
+        </div>
 
-      <!-- Quick config -->
-      <div class="quick-config" :class="{ preview: isPreview }" v-if="quickConfigFields.length">
-        <FieldRenderer
-          ref="quickConfigRef"
-          v-model="nodeConfig"
-          :fields="quickConfigFields"
-          :disabled="isExecuting"
-          :is-quick-config="true"
-        />
-      </div>
-
-      <!-- Node view (async component) -->
-      <div @click.stop class="execute-view no-wheel no-drag no-pan" :class="{ preview: isPreview }" v-if="nodeView">
-        <component :is="nodeView" :node="{ id: props.id, ...props.data }" :node-status="nodeStatus" ref="nodeViewRef" />
-      </div>
+        <!-- Node view (async component) -->
+        <div @click.stop class="execute-view no-wheel no-drag no-pan" :class="{ preview: isPreview }" v-if="nodeView">
+          <component
+            :is="nodeView"
+            :node="{ id: props.id, ...props.data }"
+            :node-status="nodeStatus"
+            ref="nodeViewRef"
+          />
+        </div>
+      </a-config-provider>
     </div>
 
     <!-- Sub-flow toggle -->
