@@ -1,7 +1,7 @@
 /**
  * @file: FreeRpaFs — 文件系统访问层（worker 版）
- * 相对路径重定向到权限主目录（roots[0]），绝对路径保持原样；
- * 越权写由 deno 权限模型兜底拦截（write 权限仅含配置 roots）。
+ * 节点传参均为绝对路径，仅做路径归一化；
+ * 越权读写由 deno 权限模型兜底拦截（权限仅含配置 roots）。
  * 基于 node:fs（不引入 fs-extra/graceful-fs），补充节点用到的扩展方法。
  */
 import fs from 'node:fs'
@@ -32,22 +32,17 @@ const extensions = {
 const fse = Object.assign({}, fs, extensions)
 
 class FreeRpaFs {
-  constructor(roots = []) {
-    const root = path.resolve(roots[0] || '')
-    this.root = root
-    return this._createProxy(root)
+  constructor() {
+    return this._createProxy()
   }
 
-  _createProxy(root) {
+  _createProxy() {
     return new Proxy(fse, {
       get: (target, prop) => {
-        if (prop === 'allowedRoot') {
-          return root
-        }
         if (typeof target[prop] !== 'function') {
           return target[prop]
         }
-        // 包装方法：首个路径参数重定向（拷贝/移动类方法处理第二个参数）
+        // 包装方法：路径参数统一归一化（拷贝/移动类方法处理第二个参数）
         return (...args) => {
           const hasDestPath = [
             'copy', 'copySync', 'move', 'moveSync', 'copyFile', 'copyFileSync',
@@ -55,21 +50,15 @@ class FreeRpaFs {
             'ensureSymlink', 'ensureSymlinkSync'
           ].includes(prop)
           if (typeof args[0] === 'string') {
-            args[0] = this._getSafePath(root, args[0])
+            args[0] = path.normalize(args[0])
           }
           if (typeof args[1] === 'string' && hasDestPath) {
-            args[1] = this._getSafePath(root, args[1])
+            args[1] = path.normalize(args[1])
           }
           return target[prop](...args)
         }
       }
     })
-  }
-
-  // 相对路径 → 主目录内绝对路径；绝对路径原样返回
-  _getSafePath(root, src) {
-    const normalizedPath = src.replace(/^[a-zA-Z]:/, '')
-    return path.isAbsolute(normalizedPath) ? path.normalize(normalizedPath) : path.resolve(root, normalizedPath)
   }
 }
 

@@ -172,7 +172,7 @@ class NodeExecutor extends EventEmitter {
       ...this.context,
       nodeId: this.node.id,
       wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-      fs: new afs(this.context.engine.ioRoots),
+      fs: new afs(),
       global: this.context.engine.global,
       getOutputs: () => this.getOutputs(),
       setOutputs: (outputs) => this.setOutputs(outputs),
