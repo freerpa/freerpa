@@ -181,9 +181,13 @@ async function doOpen(env, options) {
       page = pages[0] || await browser.newPage()
       closePage = async () => { try { await page.close() } catch { /* 已关闭 */ } }
     }
+    let closed = false
     return {
       page,
       close: async () => {
+        // 幂等：无论被节点销毁钩子触发、还是节点初始化异常路径重复调用，都只真正释放一次
+        if (closed) return
+        closed = true
         await closePage()
         try { browser.disconnect() } catch { /* 已断开 */ }
         await bridge.rpc('browser.release', { envId: env?.id })

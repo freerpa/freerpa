@@ -63,8 +63,8 @@ export default {
           type: 'checkbox',
           default: [],
           options: [
-            { label: '无头模式', value: '--headless=new' },
             { label: '静音模式', value: '--mute-audio' },
+            { label: '无界面模式', value: '--headless=new' },
             { label: '禁止图片', value: '--blink-settings=imagesEnabled=false' },
             { label: '自定义参数', value: '--custom-arg' },
           ],
