@@ -53,14 +53,6 @@ export const bootstrap = async () => {
   // 首次启动写入最安全默认权限（含预置 FREERPA-DATA 目录）；已有配置则跳过
   ensureDefaultPermissions()
 
-  // 日活/使用统计上报（静默失败，不影响主流程）
-  try {
-    const { initStats } = await import('../stats/index.js')
-    await initStats(appDb)
-  } catch {
-    // 统计上报失败不阻塞启动
-  }
-
   app.on('second-instance', () => {
     try {
       if (global.mainWindow) {
@@ -80,6 +72,13 @@ export const bootstrap = async () => {
 
   // 系统托盘（后台运行入口：单击展开状态小窗 / 右键菜单退出）
   createTray()
+
+  // 日活/使用统计上报（静默失败，不影响主流程）。
+  // ⚠ 必须在窗口创建之后触发且**不阻塞启动**：其内部包含本地 GEO 网络查询（多平台依次重试，最长 10s），
+  // 若放在 createWindow 之前 await，会把冷启动整体拖慢数秒。
+  import('../stats/index.js')
+    .then(({ initStats }) => initStats(appDb))
+    .catch(() => {})
 
   // 退出拦截（生产模式：Dock 右键 Quit / Cmd+Q / 菜单退出 / 托盘退出统一入口）：
   // 不直接退出，恢复主窗口并触发渲染端确认框（与托盘「退出软件」一致），确认后走 app.exit(0)。
