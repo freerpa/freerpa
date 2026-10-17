@@ -14,6 +14,7 @@ const CHANNELS = {
   createEngine: 'flowEventBus:createEngine',
   startFlow: 'flowEventBus:startFlow',
   stopFlow: 'flowEventBus:stopFlow',
+  destroyEngine: 'flowEventBus:destroyEngine',
   cleanup: 'flowEventBus:cleanup'
 }
 
@@ -44,6 +45,16 @@ export const register = () => {
   ipcMain.handle(CHANNELS.stopFlow, async (event, flowId) => {
     try {
       await manager.stopFlow(flowId)
+      return { success: true }
+    } catch (error) {
+      return { success: false, message: error.message }
+    }
+  })
+
+  // 销毁单个执行实例（批量实例面板的停止/删除；入参 flowId）
+  ipcMain.handle(CHANNELS.destroyEngine, async (event, flowId) => {
+    try {
+      await manager.destroyInstance(flowId)
       return { success: true }
     } catch (error) {
       return { success: false, message: error.message }

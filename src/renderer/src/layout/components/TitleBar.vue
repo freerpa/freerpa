@@ -25,7 +25,7 @@
           >
             <template v-if="tab.type === 'workflow'">
               <div class="tab-icon">
-                <icon-loading v-if="tab.store.workflowStatus === 'running'" />
+                <icon-loading v-if="tab.store.workflowStatus === 'running' || isBatchLive(id)" />
                 <icon-check-circle-fill v-else-if="tab.store.workflowStatus === 'completed'" />
                 <icon-exclamation-circle-fill v-else-if="tab.store.workflowStatus === 'error'" />
                 <icon-branch v-else />
@@ -118,6 +118,7 @@
 
   import { useStore } from '@/store/index';
   import { useFlowStore } from '@/workflow/store';
+  import { getRunner } from '@/workflow/batch/BatchRunner';
   import { storeToRefs } from 'pinia';
   import { Message } from '@arco-design/web-vue';
   import pkg from '../../../../../package.json';
@@ -184,6 +185,9 @@
   const { platform, openedTabs, activeTab } = storeToRefs(store);
   const { switchTab } = store;
 
+  // 该工作流是否存在未结束的多线程（状态为模块级单例，读 rows 保持响应式）
+  const isBatchLive = (id) => getRunner(id).hasLive;
+
   const { window: windowAPI } = window.electronAPI;
 
   const isFullscreen = ref(false);
@@ -218,6 +222,12 @@
   };
   // 关闭工作流编辑器
   const closeWorkflow = async (tab) => {
+    // 多线程执行中：标签进入 loading 且禁止关闭（线程独立于页面存活，但仍阻止误关闭）
+    if (isBatchLive(tab.id)) {
+      Message.warning('当前工作流正在执行中，请先停止工作流');
+      switchTab(tab.id);
+      return;
+    }
     const { isExecuting, isSaved, saveWorkflow, reset } = useFlowStore(tab.id);
     const close = async (isSave = false) => {
       closeIng.value = true;

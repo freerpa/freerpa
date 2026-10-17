@@ -34,7 +34,7 @@ export const getHttpServer = async (global) => {
   })
 
   // 默认端口：engine.global.networkServerPort（主进程经 init 注入，设置中心可配；未注入时回退默认 9264）
-  const listenPort = global?.networkServerPort || 9264
+  const listenPort = global?.networkServerPort ?? 9264
   await new Promise((resolve, reject) => {
     server.once('error', reject)
     // 指定端口被占用时 listen 抛 EADDRINUSE（提示用户更换默认端口）

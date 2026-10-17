@@ -22,7 +22,8 @@ class WorkflowExecutor extends EventEmitter {
     }
     // 本地网络服务默认端口（主进程 init 注入，设置中心可配）：挂 global 供 http-server.js 创建共享服务时监听，
     // 执行器无需感知端口（getHttpServer 返回的 server 对象自带 .port）
-    this.global.networkServerPort = options.networkServerPort || 9264
+    // 用 ?? 而非 ||：isolated 实例注入 0（OS 随机端口）时必须保留，否则 N 个实例都抢 9264 → EADDRINUSE
+    this.global.networkServerPort = options.networkServerPort ?? 9264
     this.debug = options.debug || false
     this.isSubFlow = options.isSubFlow || false
     this.ioRoots = options.ioRoots || []

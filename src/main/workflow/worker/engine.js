@@ -18,7 +18,8 @@ bridge.onInvoke('init', ({ flowId: fid, nodesRoot, ioRoots: roots, pluginRoots: 
   ioRoots = roots || []
   pluginRoots = proots || []
   devPluginDirs = devDirs || []
-  networkServerPort = nsp || 0
+  // ?? 而非 ||：isolated 实例注入 0 表示由 OS 分配随机端口，不能被折叠成默认值
+  networkServerPort = nsp ?? 0
   setNodesRoot(nodesRoot)
   return true
 })
@@ -28,7 +29,11 @@ bridge.onInvoke('createEngine', async ({ workflow }) => {
   flowId = workflow.id
   const engine = await WorkflowManager.createEngine({ ...workflow, ioRoots, pluginRoots, devPluginDirs, networkServerPort })
   engine.on('stateChange', (state, error) => {
-    bridge.sendEvent(`flowEventBus:stateChange:${flowId}`, { state, error })
+    // Error 对象跨 worker→宿主→主进程→渲染进程结构化克隆不可靠，统一归一为可读字符串
+    bridge.sendEvent(`flowEventBus:stateChange:${flowId}`, {
+      state,
+      error: error ? error.message || String(error) : null
+    })
     if (['completed', 'stopped', 'error'].includes(state)) {
       engine.removeAllListeners()
       WorkflowManager.removeEngine(flowId)

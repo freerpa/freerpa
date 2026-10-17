@@ -46,6 +46,12 @@ async function handleMain(msg) {
         out({ type: MSG.RESULT, id: msg.id, ok: true })
         return
       }
+      // 销毁单个工作流 Worker（批量实例删除/停止时立即释放引擎，无需等待终态延迟回收）
+      if (msg.method === 'destroyWorker') {
+        await destroyWorker(msg.flowId)
+        out({ type: MSG.RESULT, id: msg.id, ok: true })
+        return
+      }
       forward(msg)
       break
     case MSG.RPC_RESULT:
@@ -57,8 +63,21 @@ async function handleMain(msg) {
 // 转发消息到对应工作流 Worker
 function forward(msg) {
   const entry = workers.get(msg.flowId)
-  if (!entry) return
-  entry.worker.postMessage(msg)
+  if (entry) {
+    entry.worker.postMessage(msg)
+    return
+  }
+  // worker 已不存在（终态后已自动销毁 / 宿主重启）：invoke 必须回错误响应。
+  // 静默丢弃会让主进程 EngineHost.invoke 的 Promise 永久悬挂（批量实例「停止后重跑」会卡住）。
+  // rpcResult 是回给 worker 的响应，worker 已不存在则无需处理。
+  if (msg.type === MSG.INVOKE) {
+    out({
+      type: MSG.RESULT,
+      id: msg.id,
+      ok: false,
+      error: `工作流执行实例已结束: ${msg.flowId}`
+    })
+  }
 }
 
 async function createWorker({ flowId, permissions }) {

@@ -71,6 +71,7 @@ import WorkflowInfoEditor from './components/WorkflowInfoEditor.vue'
 import RecycleBin from '@/components/RecycleBin.vue'
 import CopyCountModal from '@/components/CopyCountModal.vue'
 import { useFlowStore } from '@/workflow/store'
+import { getRunner } from '@/workflow/batch/BatchRunner'
 import { useStore } from '@/store'
 import { storeToRefs } from 'pinia'
 import { MODULE_CONFIG } from '@/utils/importer'
@@ -160,7 +161,11 @@ const getFlowStore = (id) => {
   }
   return s
 }
-const getStatus = (id) => getFlowStore(id)?.workflowStatus || 'idle'
+// 批量（多线程）执行中时，列表状态同样显示「执行中」（与标题栏标签一致）
+const getStatus = (id) => {
+  const status = getFlowStore(id)?.workflowStatus || 'idle'
+  return getRunner(id).hasLive && status !== 'running' ? 'running' : status
+}
 const getStatusText = (id) => ({ idle: '未执行', running: '执行中', error: '执行失败', completed: '执行完成', stopping: '停止中', stopped: '已停止' }[getStatus(id)] || '未执行')
 const getStatusColor = (id) => ({ idle: 'gray', running: 'blue', error: 'red', completed: 'green', stopping: 'blue', stopped: 'gray' }[getStatus(id)] || 'gray')
 const getNoticeNum = (id) => getFlowStore(id)?.noticeNum || 0

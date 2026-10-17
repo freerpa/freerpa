@@ -15,7 +15,28 @@ import { dbConnect, dbQuery, dbClose, dbCloseAll } from '../db-manager.js'
 
 // 浏览器内核归属：flowId → Set<envId>（仅允许工作流释放自己打开的环境引用）
 const openedBrowsers = new Map()
-export const clearFlowBrowsers = (flowId) => openedBrowsers.delete(flowId)
+
+// 批量执行实例（isolated）：同一浏览器环境共用同一内核、共享数据目录与登录态，不复制内核
+const isolatedFlows = new Set()
+export const markIsolatedFlow = (flowId) => {
+  if (flowId) isolatedFlows.add(flowId)
+}
+export const isIsolatedFlow = (flowId) => isolatedFlows.has(flowId)
+
+/**
+ * 清理指定 flow 的浏览器归属记录，并兜底释放其中仍未释放的内核引用。
+ * - 正常终态：节点销毁钩子已在终态上报前 await browser.release，集合已空（无副作用）。
+ * - worker 被强制销毁（批量实例停止/删除）或 worker 异常：来不及 browser.release，此处兜底释放，避免内核与引用计数泄漏。
+ * - 释放后的 envId 从集合移除 → 迟到/重复的 browser.release 成为幂等空操作（见 browserRelease）。
+ * - 清理即取消 isolated 登记（该实例生命周期已结束，重跑会以新实例 id 重新登记）。
+ */
+export const clearFlowBrowsers = (flowId) => {
+  isolatedFlows.delete(flowId)
+  const envIds = openedBrowsers.get(flowId)
+  if (!envIds) return
+  openedBrowsers.delete(flowId)
+  for (const envId of envIds) decrementRef(envId).catch(() => {})
+}
 
 // 同 envId 并发启动去重（进行中的 launchKernel 共享，避免重复启动内核）
 const browserOpenPending = new Map()
@@ -27,6 +48,14 @@ const trackOpen = (flowId, envId) => {
   }
 }
 
+/** 该 envId 是否仍被其他工作流/实例持有（其他 flowId 的归属记录里存在） */
+const isEnvHeldByOthers = (flowId, envId) => {
+  for (const [fid, envIds] of openedBrowsers) {
+    if (fid !== flowId && envIds.has(envId)) return true
+  }
+  return false
+}
+
 // ═══════════ 浏览器：内核启动/复用（页面操作在 worker 内 puppeteer） ═══════════
 async function browserOpen(args, host, flowId) {
   const { env, options } = args[0] || {}
@@ -34,12 +63,15 @@ async function browserOpen(args, host, flowId) {
   const envId = env?.id
   const randomFingerprint = !!env?.random_fingerprint
 
-  // 已打开则复用现有内核（worker 内创建独立 BrowserContext）
-  // 随机指纹例外：不复用上次实例，先关闭旧实例再全新启动（保证每次打开都是全新的浏览器）
+  // 已打开则复用现有内核（worker 内创建独立 BrowserContext / 独立窗口）
+  // 随机指纹例外：编辑器单次执行（非 isolated）时每次全新 → 先关闭旧实例再启动；
+  // 批量实例（isolated）同一环境共用同一内核，绝不 kill（否则 N 个实例互相关闭内核）
+  const isolated = isIsolatedFlow(flowId)
   if (envId) {
     const existing = getBrowserInstance(envId)
     if (existing) {
-      if (randomFingerprint) {
+      // 仍有其他工作流/实例在用同一内核时不 kill（否则会把别人的浏览器一起关掉）
+      if (randomFingerprint && !isolated && !isEnvHeldByOthers(flowId, envId)) {
         await killBrowserProcess(envId)
       } else {
         incrementRef(envId)
@@ -97,14 +129,15 @@ async function doLaunch(env, options) {
 }
 
 // worker 内关闭页面后释放引用（ref 归零自动杀内核）
-// 归属校验：运行中（记录未清理）必须匹配本工作流打开过的 envId；终态后记录已清 → 放行（避免清理竞态导致 ref 泄漏、内核残留）
+// 归属校验：必须匹配本工作流打开过的 envId；
+// 归属记录已被 clearFlowBrowsers 清理（该实例已结束、引用已兜底释放）→ 幂等空操作，避免重复 decrement 提前关闭他人仍在使用的内核
 async function browserRelease(args, host, flowId) {
   const { envId } = args[0] || {}
   if (!envId) return true
-  if (flowId && openedBrowsers.has(flowId) && !openedBrowsers.get(flowId).has(envId)) {
-    throw new Error(`无权释放浏览器引用: ${envId}`)
-  }
-  openedBrowsers.get(flowId)?.delete(envId)
+  const envIds = openedBrowsers.get(flowId)
+  if (!envIds) return true
+  if (!envIds.has(envId)) throw new Error(`无权释放浏览器引用: ${envId}`)
+  envIds.delete(envId)
   await decrementRef(envId)
   return true
 }

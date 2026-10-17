@@ -16,7 +16,7 @@
               flowStore.vueFlowRef.fitView({
                 padding: 0.05,
                 includeHiddenNodes: false,
-                maxZoom: 1
+                maxZoom: 1,
               })
             "
           >
@@ -25,25 +25,14 @@
         </a-tooltip>
       </a-button-group>
       <a-tooltip content="自动布局(K)">
-        <a-button
-          type="text"
-          size="small"
-          @click="autoLayout(flowStore.vueFlowRef)"
-          :disabled="isExecuting"
-        >
+        <a-button type="text" size="small" @click="autoLayout(flowStore.vueFlowRef)" :disabled="isExecuting">
           <template #icon><RiDashboardLine size="20" /></template>
         </a-button>
       </a-tooltip>
     </a-space>
     <a-divider direction="vertical" />
     <a-space>
-      <a-button
-        type="primary"
-        size="small"
-        @click="saveWorkflow"
-        :disabled="isSaved"
-        :loading="saveIng"
-      >
+      <a-button type="primary" size="small" @click="saveWorkflow" :disabled="isSaved" :loading="saveIng">
         <template #icon><icon-save /></template>
         保存
       </a-button>
@@ -52,7 +41,9 @@
           <div>
             <p>调试模式: {{ debug ? '已开启' : '已关闭' }}</p>
             <p v-if="debug">
-              节点右上角【小虫子】查看调试信息<br>影响性能和稳定性！非调试请勿开启！
+              节点右上角【小虫子】查看调试信息
+              <br />
+              影响性能和稳定性！非调试请勿开启！
             </p>
           </div>
         </template>
@@ -75,17 +66,21 @@
           <template #icon><icon-play-circle /></template>
           {{ isExecuting ? formattedDuration : '执行' }}
         </a-button>
-        <a-button
-          type="primary"
-          status="danger"
-          size="small"
-          @click="flowStore.engine.stop()"
-          :disabled="!isExecuting"
-        >
+        <a-button type="primary" status="danger" size="small" @click="flowStore.engine.stop()" :disabled="!isExecuting">
           <template #icon><icon-pause-circle /></template>
           停止
         </a-button>
       </a-button-group>
+      <a-tooltip content="批量执行工作流">
+        <a-button type="text" size="small" @click="emit('toggleBatch')">
+          <template #icon>
+            <span class="batch-icon" :class="{ 'batch-icon--live': batchLive }">
+              <icon-unordered-list class="batch-icon__base" size="20" />
+              <icon-loading v-if="batchLive" class="batch-icon__spin" />
+            </span>
+          </template>
+        </a-button>
+      </a-tooltip>
     </a-space>
     <a-divider direction="vertical" />
     <a-space>
@@ -110,11 +105,13 @@
     </a-space>
     <a-divider direction="vertical" />
     <a-space>
-
       <a-popover trigger="click" :duration="100" position="top">
         <template #title>
           <div class="noticeTitle">
-            <span><icon-notification /> &nbsp;通知中心</span>
+            <span>
+              <icon-notification />
+              &nbsp;通知中心
+            </span>
             <a-space>
               <a-checkbox v-model="playAudio">通知声音</a-checkbox>
               <a-button type="text" size="small" @click="notices = []">
@@ -135,12 +132,7 @@
             <template #type="{ record }">
               <span
                 :style="{ backgroundColor: noticeTypes[record.type].color }"
-                style="
-                  color: white;
-                  padding: 2px 4px;
-                  border-radius: var(--border-radius-small);
-                  font-size: 10px;
-                "
+                style="color: white; padding: 2px 4px; border-radius: var(--border-radius-small); font-size: 10px"
               >
                 {{ noticeTypes[record.type].text || record.type }}
               </span>
@@ -175,18 +167,11 @@
           添加节点
         </a-button>
         <template #content>
-          <NodeList
-            :disabled="isExecuting"
-          />
+          <NodeList :disabled="isExecuting" />
         </template>
       </a-popover>
       <a-tooltip :content="chatLoading ? 'AI助手（工作中）' : 'AI助手'">
-        <a-button
-          type="text"
-          size="small"
-          :class="{ 'chat-loading-btn': chatLoading }"
-          @click="$emit('toggleChat')"
-        >
+        <a-button type="text" size="small" :class="{ 'chat-loading-btn': chatLoading }" @click="$emit('toggleChat')">
           <template #icon><icon-robot size="20" /></template>
         </a-button>
       </a-tooltip>
@@ -195,181 +180,211 @@
 </template>
 
 <script setup>
-import {
-  IconFullscreen,
-  IconSave,
-  IconPlayCircle,
-  IconPauseCircle,
-  IconUndo,
-  IconRedo,
-  IconPlus,
-  IconMinus,
-  IconMessage,
-  IconNotification,
-  IconDelete,
-  IconBug,
-  IconRobot
-} from '@arco-design/web-vue/es/icon'
-import { RiDashboardLine } from '@remixicon/vue'
-import NodeList from './NodeList.vue'
-import IconSwitch from './custom/components/IconSwitch.vue'
-import { useFlowStore } from '../store'
-import { inject, computed, ref, watch } from 'vue'
-import { storeToRefs } from 'pinia'
-import { autoLayout } from '../utils'
-import { v4 as uuidv4 } from 'uuid'
-const workflowId = inject('workflowId')
-const flowStore = useFlowStore(workflowId)
-const { isExecuting, isSaved, saveIng, debug, noticeNum, notices, playAudio } =
-  storeToRefs(flowStore)
-import { debounce } from 'lodash-es'
-const saveWorkflow = debounce(() => {
-  flowStore.saveWorkflow()
-}, 300)
-const duration = ref(0)
-const formattedDuration = computed(() => {
-  const minutes = Math.floor(duration.value / 60)
-  const seconds = duration.value % 60
-  return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`
-})
-let timer = null
-// 监听执行状态
-watch(isExecuting, (val) => {
-  if (val) {
-    // 开始执行时记录时间
-    timer = setInterval(() => {
-      duration.value = duration.value + 1
-    }, 1000)
-  } else {
-    // 停止执行时计算持续时间
-    clearInterval(timer)
-    duration.value = 0
-  }
-})
-// 添加注释
-const addComment = () => {
-  //获取屏幕中心点
-  const screenCenter = {
-    x: window.innerWidth / 2,
-    y: (window.innerHeight - 40) / 2
-  }
-  // 转换为工作流坐标
-  const position = flowStore.vueFlowRef.screenToFlowCoordinate(screenCenter)
-  flowStore.vueFlowRef.removeSelectedNodes()
-  flowStore.vueFlowRef.addNodes([
-    {
-      id: 'node-' + uuidv4(),
-      type: 'comment',
-      selectable: true,
-      focusable: true,
-      deletable: true,
-      position: {
-        x: position.x - 150,
-        y: position.y - 105
-      },
-      selected: true,
-      zIndex: -1,
-      data: {
-        type: 'comment',
-        name: '注释',
-        inputs: [],
-        outputs: [],
-        config: {} // 初始化空配置
-      }
+  import {
+    IconFullscreen,
+    IconSave,
+    IconPlayCircle,
+    IconPauseCircle,
+    IconUndo,
+    IconRedo,
+    IconPlus,
+    IconMinus,
+    IconMessage,
+    IconNotification,
+    IconDelete,
+    IconBug,
+  IconRobot,
+  IconUnorderedList,
+  IconLoading
+} from '@arco-design/web-vue/es/icon';
+  import { RiDashboardLine } from '@remixicon/vue';
+  import NodeList from './NodeList.vue';
+  import IconSwitch from './custom/components/IconSwitch.vue';
+  import { useFlowStore } from '../store';
+  import { getRunner } from '../batch/BatchRunner';
+  import { inject, computed, ref, watch } from 'vue';
+  import { storeToRefs } from 'pinia';
+  import { autoLayout } from '../utils';
+  import { v4 as uuidv4 } from 'uuid';
+  const workflowId = inject('workflowId');
+  const flowStore = useFlowStore(workflowId);
+  const { isExecuting, isSaved, saveIng, debug, noticeNum, notices, playAudio } = storeToRefs(flowStore);
+  import { debounce } from 'lodash-es';
+  const saveWorkflow = debounce(() => {
+    flowStore.saveWorkflow();
+  }, 300);
+  const duration = ref(0);
+  // 批量（多线程）执行中：批量执行图标叠加 loading 动画（按钮保持可点击，便于随时打开面板查看/停止线程）
+  const batchLive = computed(() => getRunner(workflowId).hasLive);
+  const formattedDuration = computed(() => {
+    const minutes = Math.floor(duration.value / 60);
+    const seconds = duration.value % 60;
+    return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  });
+  let timer = null;
+  // 监听执行状态
+  watch(isExecuting, (val) => {
+    if (val) {
+      // 开始执行时记录时间
+      timer = setInterval(() => {
+        duration.value = duration.value + 1;
+      }, 1000);
+    } else {
+      // 停止执行时计算持续时间
+      clearInterval(timer);
+      duration.value = 0;
     }
-  ])
-}
-const noticeTypes = {
-  success: {
-    text: '成功',
-    color: 'rgb(var(--success-6))'
-  },
-  error: {
-    text: '错误',
-    color: 'rgb(var(--danger-6))'
-  },
-  warning: {
-    text: '警告',
-    color: 'rgb(var(--warning-6))'
-  },
-  default: {
-    text: '默认',
-    color: 'var(--color-text-2)'
-  }
-}
-// 表格列
-const columns = [
-  {
-    title: '类型',
-    dataIndex: 'type',
-    width: 40,
-    align: 'center',
-    key: 'type',
-    slotName: 'type'
-  },
-  {
-    title: '内容',
-    dataIndex: 'content',
-    key: 'content',
-    slotName: 'content'
-  },
-  {
-    title: '时间',
-    dataIndex: 'time',
-    width: 100,
-    key: 'time'
-  }
-]
-defineProps({
-  // AI 会话进行中：驱动 AI 助手图标状态
-  chatLoading: {
-    type: Boolean,
-    default: false
-  }
-})
-defineEmits(['execute', 'stop', 'toggleChat'])
+  });
+  // 添加注释
+  const addComment = () => {
+    //获取屏幕中心点
+    const screenCenter = {
+      x: window.innerWidth / 2,
+      y: (window.innerHeight - 40) / 2,
+    };
+    // 转换为工作流坐标
+    const position = flowStore.vueFlowRef.screenToFlowCoordinate(screenCenter);
+    flowStore.vueFlowRef.removeSelectedNodes();
+    flowStore.vueFlowRef.addNodes([
+      {
+        id: 'node-' + uuidv4(),
+        type: 'comment',
+        selectable: true,
+        focusable: true,
+        deletable: true,
+        position: {
+          x: position.x - 150,
+          y: position.y - 105,
+        },
+        selected: true,
+        zIndex: -1,
+        data: {
+          type: 'comment',
+          name: '注释',
+          inputs: [],
+          outputs: [],
+          config: {}, // 初始化空配置
+        },
+      },
+    ]);
+  };
+  const noticeTypes = {
+    success: {
+      text: '成功',
+      color: 'rgb(var(--success-6))',
+    },
+    error: {
+      text: '错误',
+      color: 'rgb(var(--danger-6))',
+    },
+    warning: {
+      text: '警告',
+      color: 'rgb(var(--warning-6))',
+    },
+    default: {
+      text: '默认',
+      color: 'var(--color-text-2)',
+    },
+  };
+  // 表格列
+  const columns = [
+    {
+      title: '类型',
+      dataIndex: 'type',
+      width: 40,
+      align: 'center',
+      key: 'type',
+      slotName: 'type',
+    },
+    {
+      title: '内容',
+      dataIndex: 'content',
+      key: 'content',
+      slotName: 'content',
+    },
+    {
+      title: '时间',
+      dataIndex: 'time',
+      width: 100,
+      key: 'time',
+    },
+  ];
+  defineProps({
+    // AI 会话进行中：驱动 AI 助手图标状态
+    chatLoading: {
+      type: Boolean,
+      default: false,
+    },
+  });
+  const emit = defineEmits(['execute', 'stop', 'toggleChat', 'toggleBatch']);
 </script>
 
 <style lang="less" scoped>
-.flow-toolbar {
-  display: flex;
-  align-items: center;
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 4px;
-  background: var(--color-bg-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-small);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-.noticeTitle {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-// AI 会话进行中：图标主题色 + 呼吸脉冲，让用户实时感知 AI 正在工作
-.chat-loading-btn {
-  :deep(.arco-icon) {
-    color: rgb(var(--primary-6));
-    animation: chat-loading-pulse 1.2s ease-in-out infinite;
+  .flow-toolbar {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 4px;
+    background: var(--color-bg-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-small);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
-}
-@keyframes chat-loading-pulse {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
+  .noticeTitle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
   }
-  50% {
-    opacity: 0.45;
-    transform: scale(0.82);
+  // AI 会话进行中：图标主题色 + 呼吸脉冲，让用户实时感知 AI 正在工作
+  .chat-loading-btn {
+    :deep(.arco-icon) {
+      color: rgb(var(--primary-6));
+      animation: chat-loading-pulse 1.2s ease-in-out infinite;
+    }
   }
-}
-:deep(.arco-table-cell) {
-  padding: 2px 0 0 10px;
-}
+  @keyframes chat-loading-pulse {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.45;
+      transform: scale(0.82);
+    }
+  }
+  // 批量（多线程）执行中：批量执行图标叠加 loading（底层图标淡化 + 上层旋转 loading）
+  .batch-icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    &__base {
+      transition: opacity 0.2s;
+    }
+    &--live &__base {
+      opacity: 0.25;
+    }
+    &__spin {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      font-size: 20px;
+      color: rgb(var(--primary-6));
+      animation: batch-icon-spin 0.9s linear infinite;
+    }
+  }
+  @keyframes batch-icon-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  :deep(.arco-table-cell) {
+    padding: 2px 0 0 10px;
+  }
 </style>

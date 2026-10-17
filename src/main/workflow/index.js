@@ -6,7 +6,7 @@ import EngineHost from './host/index.js'
 import { buildDenoPermissions, getPermissions } from './permissions.js'
 import { getPluginRoot, getDevPlugins } from '../plugin/store.js'
 import { get } from '../store/index.js'
-import { clearFlowBrowsers } from './host/rpc-handlers.js'
+import { clearFlowBrowsers, markIsolatedFlow } from './host/rpc-handlers.js'
 
 /** 同时运行工作流数量上限。
  * ⚠ 与 worker 侧 src/main/workflow/worker/core/WorkflowManager.js 的 WORKFLOW_LIMIT 保持一致（跨进程无法共享常量）
@@ -38,14 +38,21 @@ export const manager = {
       throw new Error(`同时运行的工作流数量超过限制：${MAX_RUNNING} 个`)
     }
     const flowId = workflow.id
+    // 批量执行实例：登记为 isolated（浏览器同环境共用内核、本地网络服务改用 OS 随机端口）
+    const isolated = !!workflow.isolated
+    if (isolated) markIsolatedFlow(flowId)
     const effective = getPermissions()
     // 插件目录随 init 注入 worker（同 nodesRoot 机制），并自动并入读权限白名单
     const pluginRoots = [getPluginRoot()]
     const devPluginDirs = getDevPlugins().map((r) => r.path).filter(Boolean)
     // 本地网络服务默认端口（user-preferences.networkServer.port；未配置默认 9264）
+    // isolated 实例传 0：每个实例一个 worker，固定端口必然 EADDRINUSE，改由 OS 分配随机端口
     const networkServer = get('networkServer') || {}
-    const networkServerPort =
-      Number.isInteger(networkServer.port) && networkServer.port > 0 ? networkServer.port : 9264
+    const networkServerPort = isolated
+      ? 0
+      : Number.isInteger(networkServer.port) && networkServer.port > 0
+        ? networkServer.port
+        : 9264
 
     // 1. 创建 Worker（deno.permissions 描述符按生效权限生成）
     await EngineHost.createWorker(flowId, buildDenoPermissions(effective, infraReadPaths(EngineHost, pluginRoots, devPluginDirs)))
@@ -71,6 +78,21 @@ export const manager = {
   /** 停止工作流 */
   stopFlow: async (flowId) => {
     return await EngineHost.invoke('stopFlow', {}, flowId)
+  },
+
+  /**
+   * 销毁单个执行实例（批量实例「停止/删除」）：立即销毁其 Worker 并释放资源。
+   * 与 stopFlow（正常停止，节点销毁钩子会逐一释放浏览器引用）不同，本方法用于强制回收。
+   */
+  destroyInstance: async (flowId) => {
+    // 先兜底释放该实例仍未释放的浏览器内核引用（Worker 强制销毁来不及走 browser.release）
+    clearFlowBrowsers(flowId)
+    EngineHost.runningFlows.delete(flowId)
+    try {
+      await EngineHost.invoke('destroyWorker', {}, flowId)
+    } catch {
+      /* Worker 已不存在（终态后已自动销毁）或宿主已退出 */
+    }
   },
 
   /** 清理：销毁全部工作流 Worker + 清理浏览器归属记录（保留宿主进程，后续自动复用） */

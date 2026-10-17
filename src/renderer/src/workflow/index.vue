@@ -8,7 +8,11 @@
     @mouseleave="isFocus = false"
   >
     <FlowCanvas ref="flowRef" />
-    <FlowToolbar @toggleChat="toggleChat" :chat-loading="aiLoading" />
+    <FlowToolbar
+      @toggleChat="toggleChat"
+      @toggleBatch="toggleBatch"
+      :chat-loading="aiLoading"
+    />
     <div
       class="chat-container"
       @mouseenter="aiFocus = true"
@@ -22,6 +26,15 @@
         @loading-change="aiLoading = $event"
       />
     </div>
+    <!-- 批量执行实例列表：与 AI 面板互斥；面板不持有实例生命周期（不停止/不销毁） -->
+    <div
+      class="batch-container"
+      @mouseenter="batchFocus = true"
+      @mouseleave="batchFocus = false"
+      :style="{ right: batchVisible ? '20px' : '-480px' }"
+    >
+      <BatchPanel :workflowId="workflowId" @close="batchVisible = false" />
+    </div>
   </div>
 </template>
 
@@ -29,6 +42,7 @@
 import { ref, onMounted, onUnmounted, provide, inject } from 'vue'
 import FlowCanvas from './components/FlowCanvas.vue'
 import FlowToolbar from './components/FlowToolbar.vue'
+import BatchPanel from './components/BatchPanel.vue'
 import ChatPanel from '@/ai/ChatPanel.vue'
 import { storeToRefs } from 'pinia'
 import { useFlowStore } from './store'
@@ -178,7 +192,7 @@ provide('isFocus', isFocus)
 
 // 注册键盘事件监听
 const removeKeyDownEventListener = addKeyDownEventListener((e) => {
-  if (props.visible && isFocus.value && !aiFocus.value) {
+  if (props.visible && isFocus.value && !aiFocus.value && !batchFocus.value) {
     handleKeyDown(e)
     if (!e.repeat) {
       handleKeyDownOnce(e)
@@ -188,7 +202,7 @@ const removeKeyDownEventListener = addKeyDownEventListener((e) => {
 
 // 注册键盘事件监听
 const removeKeyUpEventListener = addKeyUpEventListener((e) => {
-  if (props.visible && isFocus.value && !aiFocus.value) {
+  if (props.visible && isFocus.value && !aiFocus.value && !batchFocus.value) {
     handleKeyUp(e)
   }
 }, props.workflowId)
@@ -211,6 +225,15 @@ const aiFocus = ref(false)
 const aiLoading = ref(false)
 const toggleChat = () => {
   aiVisible.value = !aiVisible.value
+  if (aiVisible.value) batchVisible.value = false // 与批量面板互斥
+}
+
+// 批量执行实例列表（数据在模块级 BatchRunner 中，面板关闭不影响实例运行）
+const batchVisible = ref(false)
+const batchFocus = ref(false)
+const toggleBatch = () => {
+  batchVisible.value = !batchVisible.value
+  if (batchVisible.value) aiVisible.value = false // 与 AI 面板互斥
 }
 </script>
 
@@ -226,6 +249,17 @@ const toggleChat = () => {
 }
 
 .chat-container {
+  position: absolute;
+  bottom: 80px;
+  height: calc(100vh - 150px);
+  z-index: 1000;
+  overflow: hidden;
+  transition: right 0.3s ease-in-out;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  border-radius: var(--border-radius-small);
+}
+
+.batch-container {
   position: absolute;
   bottom: 80px;
   height: calc(100vh - 150px);
