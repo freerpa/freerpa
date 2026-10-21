@@ -40,6 +40,7 @@
         @edgeMouseEnter="edgeMouseEnter"
         @edgeMouseLeave="edgeMouseLeave"
         @paneMouseEnter="edgeMouseLeave"
+        @pane-ready="onPaneReadyHandler"
         @edgeDoubleClick="edgeDoubleClick"
         @wheel="onCanvasWheel"
         @click="dispatchMouseDown"
@@ -242,48 +243,55 @@ const onDrop = async (event) => {
 
 const loading = ref(true)
 
+let paneReadyHandled = false
+
+/** 画布就绪后加载工作流图（只执行一次） */
+const onPaneReadyHandler = async () => {
+  if (paneReadyHandled) return
+  paneReadyHandled = true
+  const result = await workflowAPI.getWorkflow(workflowId)
+  if (result && result.graph) {
+    let elements
+    try { elements = typeof result.graph === 'string' ? JSON.parse(result.graph) : result.graph } catch { elements = result.graph }
+    result.elements = elements
+  }
+
+  const { off: offNodesInitialized } = vueFlowRef.value.onNodesInitialized(() => {
+    offNodesInitialized()
+    setTimeout(() => {
+      vueFlowRef.value.fitView({
+        padding: 0.05,
+        includeHiddenNodes: false,
+        maxZoom: 1
+      })
+      initialized.value = true
+      loading.value = false
+      setTimeout(() => {
+        saveHistory()
+      }, 10)
+    }, 10)
+  })
+  // 删除节点style 保持自动调整大小
+  if (result.elements && result.elements.nodes.length > 0) {
+    vueFlowRef.value.fromObject(result.elements)
+    // 兼容旧工作流：确保所有节点都有 version 字段，缺失时默认 V1
+    nextTick(() => {
+      const nodes = vueFlowRef.value.getNodes
+      nodes.forEach((node) => {
+        if (!node.data.version) {
+          node.data.version = 'V1'
+        }
+      })
+    })
+  } else {
+    addStartNode()
+  }
+}
+
 onMounted(async () => {
   await nextTick()
-  // 初始化工作流
-  vueFlowRef.value.onPaneReady(async () => {
-    const result = await workflowAPI.getWorkflow(workflowId)
-    if (result && result.graph) {
-      let elements
-      try { elements = typeof result.graph === 'string' ? JSON.parse(result.graph) : result.graph } catch { elements = result.graph }
-      result.elements = elements
-    }
-
-    const { off: offNodesInitialized } = vueFlowRef.value.onNodesInitialized(() => {
-      offNodesInitialized()
-      setTimeout(() => {
-        vueFlowRef.value.fitView({
-          padding: 0.05,
-          includeHiddenNodes: false,
-          maxZoom: 1
-        })
-        initialized.value = true
-        loading.value = false
-        setTimeout(() => {
-          saveHistory()
-        }, 10)
-      }, 10)
-    })
-    // 删除节点style 保持自动调整大小
-    if (result.elements && result.elements.nodes.length > 0) {
-      vueFlowRef.value.fromObject(result.elements)
-      // 兼容旧工作流：确保所有节点都有 version 字段，缺失时默认 V1
-      nextTick(() => {
-        const nodes = vueFlowRef.value.getNodes
-        nodes.forEach((node) => {
-          if (!node.data.version) {
-            node.data.version = 'V1'
-          }
-        })
-      })
-    } else {
-      addStartNode()
-    }
-  })
+  // 兜底：paneReady 事件可能早于本回调注册（Vue Flow 用 1ms 定时器派发，主线程繁忙时会错过）
+  vueFlowRef.value.onPaneReady(onPaneReadyHandler)
 })
 
 

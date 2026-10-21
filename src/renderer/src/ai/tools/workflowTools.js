@@ -9,7 +9,7 @@
 import { defineTool } from './defineTool.js'
 
 export const createWorkflowTools = () => [
-  defineTool('listNodeTypes', '列出当前可用的所有节点类型（type 与名称），用于确定创建节点时 type 取值。', {
+  defineTool('listNodeTypes', '列出当前可用的所有节点类型（type 与名称），用于确定创建节点时 type 取值。注意：type=workflowStart（开始流程）由系统自动创建，不可手动添加，也不出现在可添加列表中。', {
     type: 'object',
     properties: {
       keyword: { type: 'string', description: '按名称/类型模糊搜索，可选', default: '' }
@@ -31,7 +31,7 @@ export const createWorkflowTools = () => [
   ),
   defineTool(
     'addNode',
-    '在工作流画布中创建一个节点。connectTo 指定前驱节点（名称或ID均可，推荐名称），创建后自动按端口类型规则连线；并行创建多个串行节点时，每个新节点的 connectTo 直接写前驱节点名称即可自动成链；config 为节点配置参数，字段按 getNodeConfig 的说明填写，不传则用默认值。',
+    '在工作流画布中创建一个节点。connectTo 指定前驱节点（名称或ID均可，推荐名称），创建后自动按端口类型规则连线；并行创建多个串行节点时，每个新节点的 connectTo 直接写前驱节点名称即可自动成链；config 为节点配置参数，字段按 getNodeConfig 的说明填写，不传则用默认值。注意：workflowStart（开始流程）由系统自动创建，不可手动添加，传入该类型会直接返回已有开始节点。',
     {
       type: 'object',
       properties: {

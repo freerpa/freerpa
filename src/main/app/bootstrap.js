@@ -17,6 +17,8 @@ import { register as dbInfoRegisterIPC } from '../data/dbIpc'
 import { register as pluginRegisterIPC } from '../plugin/ipc'
 import { registerPluginScheme, registerPluginProtocol } from '../plugin/protocol'
 import { register as aiRegisterIPC } from '../ai'
+import { register as mcpRegisterIPC } from '../mcp/ipc'
+import { startMcpBridge, stopMcpBridge } from '../mcp/bridge'
 import { stopStats } from '../stats/index.js'
 import { killAllBrowsers } from '../browser/manager.js'
 
@@ -102,6 +104,7 @@ export const bootstrap = async () => {
   // 任何退出路径（app.exit / 正常退出）都会触发 will-quit：清理统计上报定时器
   app.on('will-quit', () => {
     stopStats()
+    stopMcpBridge().catch(() => {})
     // 兜底：无论经何种退出路径，都尽量关闭已打开的浏览器进程（正常路径 window-close 已处理，此处覆盖其余路径）
     killAllBrowsers().catch(() => {})
   })
@@ -114,7 +117,13 @@ export const bootstrap = async () => {
   dbInfoRegisterIPC()
   pluginRegisterIPC()
   aiRegisterIPC()
+  mcpRegisterIPC()
   registerIPC()
+
+  // MCP 本地桥接：窗口创建后异步启动，不阻塞冷启动（设置中心可关闭）
+  startMcpBridge().catch((e) => {
+    console.error('[MCP] 启动失败:', e?.message || e)
+  })
 
   // 所有窗口关闭：生产模式保持后台常驻（主窗口与小窗均为隐藏语义，托盘常驻）；
   // 开发模式窗口关闭即退出（配合 close 放行，点关闭按钮 = 直接退出）

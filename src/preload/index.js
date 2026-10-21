@@ -232,6 +232,37 @@ contextBridge.exposeInMainWorld('electronAPI', {
   permissions: {
     getDefaults: () => ipcRenderer.invoke('permissions:getDefaults')
   },
+  // MCP 服务（本地 HTTP 桥接由主进程管理，外部程序通过 stdio shim 接入）
+  mcp: {
+    getStatus: () => ipcRenderer.invoke('mcp:getStatus'),
+    setSettings: (patch) => ipcRenderer.invoke('mcp:setSettings', patch),
+    getConfig: () => ipcRenderer.invoke('mcp:getConfig'),
+    listTools: () => ipcRenderer.invoke('mcp:listTools'),
+    getAudit: (limit) => ipcRenderer.invoke('mcp:getAudit', limit),
+    regenerateToken: () => ipcRenderer.invoke('mcp:regenerateToken'),
+    /**
+     * 注册执行委托：主进程 sendToRendererAsync('mcp:exec') 请求渲染端执行，
+     * handler 返回 Promise，这里负责回传 { ok, data|error }。
+     */
+    onExec: (handler) => {
+      const listener = async (_event, payload = {}) => {
+        const responseId = payload.responseId
+        try {
+          const data = await handler(payload)
+          ipcRenderer.send(`mcp:exec:response:${responseId}`, { ok: true, data })
+        } catch (e) {
+          ipcRenderer.send(`mcp:exec:response:${responseId}`, {
+            ok: false,
+            error: e?.message || String(e)
+          })
+        }
+      }
+      ipcRenderer.on('mcp:exec', listener)
+      return () => ipcRenderer.removeListener('mcp:exec', listener)
+    },
+    /** 运行状态回报（starting/running/completed/stopped/error） */
+    sendRunEvent: (payload) => ipcRenderer.send('mcp:runEvent', payload)
+  },
   plugin: {
     list: () => ipcRenderer.invoke('plugin:list'),
     get: (pluginId) => ipcRenderer.invoke('plugin:get', pluginId),

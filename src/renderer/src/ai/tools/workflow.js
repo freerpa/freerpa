@@ -256,6 +256,23 @@ export const createWorkflowExecutors = ({ workflowId }) => {
         initNodeData.parentNode = fromNode.parentNode
       }
     }
+    // 开始节点由系统自动创建（空流程首次打开画布时补齐，子流程容器创建时也会补建），
+    // 外部 Agent 重复添加会让同一流程出现多个起点；这里直接返回已有节点，不再新建
+    if (type === 'workflowStart') {
+      const exists = vf.getNodes.find(
+        (n) => n.parentNode === initNodeData.parentNode && n.data?.type === 'workflowStart'
+      )
+      if (exists) {
+        return attachValidation({
+          ok: true,
+          data: {
+            id: exists.id,
+            status: 'exists',
+            note: '开始节点由系统自动创建，无需手动添加（已返回现有节点）'
+          }
+        })
+      }
+    }
     // workflowEnd 查重（与画布 useNodeCrud 行为一致）
     if (type === 'workflowEnd') {
       const exists = vf.getNodes.some(
@@ -277,8 +294,9 @@ export const createWorkflowExecutors = ({ workflowId }) => {
       position: { x: 0, y: 0 },
       parentNode: initNodeData.parentNode,
       selectable: true,
-      deletable: true,
-      focusable: true,
+      // 开始节点不可删除（与画布行为一致）
+      deletable: initNodeData.type !== 'workflowStart',
+      focusable: initNodeData.type !== 'workflowStart',
       data: {
         type: initNodeData.type,
         name: initNodeData.name,
@@ -451,7 +469,13 @@ export const createWorkflowExecutors = ({ workflowId }) => {
       return { ok: false, error: '当前工作流正在执行，暂不能删除节点' }
     }
     if (node.data?.type === 'workflowStart') {
-      return { ok: false, error: '开始节点不允许删除（已保留）' }
+      // 流程必须保留至少一个开始节点；存在多个时允许删除多余的（用于清理历史数据）
+      const starts = vf.getNodes.filter(
+        (n) => n.parentNode === node.parentNode && n.data?.type === 'workflowStart'
+      )
+      if (starts.length <= 1) {
+        return { ok: false, error: '开始节点不允许删除（每个流程必须保留一个开始节点）' }
+      }
     }
     // 删除关联边 + 节点（与画布 handleNodeDelete 一致，但不依赖 FlowCanvas 组件 ref——
     // 组件 ref 快照在 AI 面板先挂载时可能为 null，flowRef.value 会直接报「null 的 value」）

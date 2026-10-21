@@ -18,6 +18,10 @@
           <template #icon><RiServerLine /></template>
           网络服务
         </a-menu-item>
+        <a-menu-item key="mcp">
+          <template #icon><RiRobot3Line /></template>
+          MCP 服务
+        </a-menu-item>
         <a-menu-item key="data">
           <template #icon><RiDatabase2Line /></template>
           数据库
@@ -39,6 +43,7 @@
       <ShortcutManager v-if="activeTab === 'shortcut'" />
       <ModelManager v-if="activeTab === 'ai'" />
       <NetworkServerManager v-if="activeTab === 'network'" />
+      <McpManager v-if="activeTab === 'mcp'" />
       <VersionManager v-if="activeTab === 'version'" />
     </div>
   </div>
@@ -56,6 +61,7 @@
     RiCommandLine,
     RiRobot2Line,
     RiServerLine,
+    RiRobot3Line,
     RiInformationLine,
   } from '@remixicon/vue';
   import PluginManager from './components/PluginManager.vue';
@@ -64,6 +70,7 @@
   import ShortcutManager from './components/ShortcutManager.vue';
   import ModelManager from './components/ModelManager.vue';
   import NetworkServerManager from './components/NetworkServerManager.vue';
+  import McpManager from './components/McpManager.vue';
   import VersionManager from './components/VersionManager.vue';
 
   // initialTab：设置中心打开时指定的初始选项卡（如「去安装」→ 插件管理）
@@ -75,7 +82,7 @@
   });
 
   const activeTab = ref(
-    ['plugin', 'ai', 'security', 'network', 'data', 'shortcut', 'version'].includes(props.initialTab)
+    ['plugin', 'ai', 'security', 'network', 'mcp', 'data', 'shortcut', 'version'].includes(props.initialTab)
       ? props.initialTab
       : 'plugin'
   );

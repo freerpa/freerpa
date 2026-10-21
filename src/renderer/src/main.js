@@ -7,6 +7,7 @@ import router from './router'
 import App from './App.vue'
 import { loadPluginNodes } from '@/workflow/nodes'
 import { confirmExit } from '@/utils/confirmExit'
+import { registerMcpExecutor } from './mcp'
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -21,3 +22,6 @@ window.electronAPI.window.onRequestExit(() => confirmExit())
 
 // 预加载本地插件节点注册（plu_<插件id>），供节点面板/工作流加载使用
 loadPluginNodes()
+
+// MCP 执行委托：主进程桥接把工作流执行 / Agent 工具调用转交渲染端执行
+registerMcpExecutor()

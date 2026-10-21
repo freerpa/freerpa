@@ -255,11 +255,22 @@ export function useNodeCrud({ vueFlowRef, isExecuting, clipboard, createConnecti
     const affectedParents = new Set()
     elementsToDelete.forEach((el) => {
       if (el.id.startsWith('node-')) {
-        // 开始节点不允许删除,清空配置
+        // 每个流程（主流程/子流程容器）必须保留一个开始节点；
+        // 存在多个（历史数据或外部工具误加）时允许删除多余的以便清理
         if (el.data.type === 'workflowStart') {
-          el.data.config = {}
-          // 起始节点保留但取消选中：全选删除后不应残留选中状态（避免配置抽屉弹开）
-          el.selected = false
+          const starts = vueFlowRef.value.getNodes.filter(
+            (node) => node.parentNode === el.parentNode && node.data?.type === 'workflowStart'
+          )
+          if (starts.length <= 1) {
+            el.data.config = {}
+            // 起始节点保留但取消选中：全选删除后不应残留选中状态（避免配置抽屉弹开）
+            el.selected = false
+          } else {
+            nodeIds.push(el.id)
+            if (el.parentNode?.includes('subFlow')) {
+              affectedParents.add(el.parentNode)
+            }
+          }
         } else {
           nodeIds.push(el.id)
           if (el.parentNode?.includes('subFlow')) {
