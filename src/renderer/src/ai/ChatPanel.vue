@@ -11,7 +11,7 @@
     />
 
     <!-- 消息列表：纯消息流平铺（无轮次包裹、无处理过程包裹、无头像） -->
-    <div class="chat__messages" ref="messagesContainer" @scroll="onMessagesScroll">
+    <div ref="messagesContainer" class="chat__messages" @scroll="onMessagesScroll">
       <!-- 左侧悬浮轮次导航：hover 向右展开显示各轮用户消息，点击定位 -->
       <RoundNav
         v-if="flatMessages.length > 0"
@@ -37,14 +37,15 @@
             :loading="message.loading"
             :attachments="message.attachments"
             :usage="message._usage"
+            :created-at="message._ts || message.created_at"
             @delete="handleDelete(indexOfMessage(message))"
           />
         </div>
       </template>
       <!-- 空状态：AI 欢迎消息 -->
-      <div class="message-item message-item--welcome" v-else>
-        <div class="assistant-content">
-          <div class="bubble bubble--assistant">
+      <div v-else class="message-item message-item--welcome">
+        <div class="assistant-block">
+          <div class="welcome-text">
             <p>你好，我已连接工作流引擎，可以帮你设计、编辑和运行自动化工作流。</p>
             <p>请描述你的自动化需求，我会通过思考、调用工具逐步为你生成可执行的工作流配置。</p>
           </div>
@@ -61,12 +62,12 @@
     </div>
 
     <!-- 底部输入区 -->
-    <Sender ref="senderRef" class="chat__sender" @send="handleSend" @cancel="handleCancel" :loading="loading" />
+    <Sender ref="senderRef" class="chat__sender" :loading="loading" @send="handleSend" @cancel="handleCancel" />
   </div>
 </template>
 
 <script setup>
-  import { ref, computed, nextTick, onMounted, watch } from 'vue';
+  import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
   import Bubble from './Bubble.vue';
   import Sender from './Sender.vue';
   import ChatHeader from './ChatHeader.vue';
@@ -148,6 +149,7 @@
     send,
     cancel,
     removeMessage,
+    disposeAll,
   } = useAiChat({
     workflowId: props.workflowId,
     tools,
@@ -163,6 +165,10 @@
   onMounted(() => {
     init();
     loadMemories();
+  });
+
+  onBeforeUnmount(() => {
+    disposeAll();
   });
 
   const handleSend = (payload) => send(payload);
@@ -285,24 +291,17 @@
     }
   }
 
-  // 空状态欢迎消息（与 Bubble 助手消息样式一致）
+  // 空状态欢迎消息（与助手正文一致的纯文本排版，无气泡底色）
   .message-item--welcome {
     display: flex;
-    gap: 12px;
-    .assistant-content {
+    .assistant-block {
       flex: 1;
       max-width: 100%;
     }
-    .bubble--assistant {
-      background: #f0f0f2;
-      border: 1px solid #e5e5e8;
-      border-radius: var(--border-radius-small);
-      border-bottom-left-radius: var(--border-radius-small);
-      padding: 12px 16px;
+    .welcome-text {
       font-size: 14px;
-      line-height: 1.6;
-      color: #333;
-      max-width: 100%;
+      line-height: 1.72;
+      color: #111114;
       p {
         margin: 0;
       }

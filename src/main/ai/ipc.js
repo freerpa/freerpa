@@ -49,6 +49,7 @@ import {
   clearMessages,
   getMemories
 } from './messages.js'
+import { loadEvents, appendEvents, deleteConversationEvents, migrateConversation } from './events.js'
 
 const activeRequests = new Map()
 
@@ -84,8 +85,23 @@ export const register = () => {
     createConversation(workflowId, title)
   )
   ipcMain.handle('ai:getConversations', (_e, { workflowId }) => getConversations(workflowId))
-  ipcMain.handle('ai:deleteConversation', (_e, { workflowId, conversationId }) =>
-    deleteConversation(workflowId, conversationId)
+  ipcMain.handle('ai:deleteConversation', async (_e, { workflowId, conversationId }) => {
+    await deleteConversationEvents(workflowId, conversationId)
+    await deleteConversation(workflowId, conversationId)
+  })
+
+  // ---- 会话事件（append-only 事实日志） ----
+  ipcMain.handle('ai:eventsLoad', (_e, { workflowId, conversationId }) =>
+    loadEvents(workflowId, conversationId)
+  )
+  ipcMain.handle('ai:eventsAppend', (_e, { workflowId, conversationId, events }) =>
+    appendEvents(workflowId, conversationId, events)
+  )
+  ipcMain.handle('ai:eventsDelete', (_e, { workflowId, conversationId }) =>
+    deleteConversationEvents(workflowId, conversationId)
+  )
+  ipcMain.handle('ai:eventsMigrate', (_e, { workflowId, conversationId }) =>
+    migrateConversation(workflowId, conversationId)
   )
 
   // ---- 聊天记录 ----

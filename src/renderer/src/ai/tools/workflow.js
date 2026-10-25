@@ -84,16 +84,23 @@ const coerceValue = (value, field) => {
   return value
 }
 
-/** 容错合并 config：只取节点字段定义中存在的字段，按类型转换，忽略未知字段 */
+/**
+ * 容错合并 config：只取节点字段定义中存在的字段，按类型转换，忽略未知字段。
+ * 返回被忽略的字段名列表——回执给模型，让它在下一轮用正确字段 ID 修正，而不是静默丢弃后继续错下去。
+ */
 const mergeConfig = (targetConfig, input, fields) => {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) return targetConfig
+  const ignored = []
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return ignored
   Object.keys(input).forEach((key) => {
     const field = fields[key]
-    if (!field) return // 未知字段：忽略（模型填错不报错）
+    if (!field) {
+      ignored.push(key)
+      return
+    }
     const value = coerceValue(input[key], field)
     if (value !== undefined) targetConfig[key] = value
   })
-  return targetConfig
+  return ignored
 }
 
 /** 工作流数据脱敏：graph（JSON 字符串或对象）中 nodes 的 data.config 敏感字段打码（脱敏实现见 guard.js） */
@@ -178,6 +185,92 @@ export const createWorkflowExecutors = ({ workflowId }) => {
   /** 取节点 config 扁平字段定义（用于容错合并） */
   const nodeFields = (type) => flattenConfigFields(nodes[type]?.config)
 
+  /**
+   * 单个节点的配置问题（创建/更新后立即回执）：必填缺失 + 枚举取值非法。
+   * 只检查无条件显示的字段（show 条件未满足的字段不参与），参数引用值跳过枚举校验。
+   * 让模型在当轮就能修正，而不是等到 finish 才被拒绝。
+   */
+  const nodeConfigIssues = (node) => {
+    const issues = []
+    const groups = nodes[node?.data?.type]?.config || []
+    for (const group of groups) {
+      for (const field of group.fields || []) {
+        if (!field?.id || field.show !== undefined) continue
+        const value = node.data?.config?.[field.id]
+        const isRefer = typeof value === 'string' && value.includes('{{')
+        if (field.required) {
+          const empty = value === undefined || value === null || (typeof value === 'string' && value.trim() === '')
+          if (empty) issues.push(`缺少必填配置「${field.name || field.id}」(字段ID: ${field.id})`)
+        }
+        if (Array.isArray(value) && Array.isArray(field.fields)) {
+          value.forEach((item, index) => {
+            for (const sub of field.fields) {
+              if (!sub?.required || sub.show !== undefined) continue
+              const subValue = item?.[sub.id]
+              const subEmpty = subValue === undefined || subValue === null || String(subValue).trim() === ''
+              if (subEmpty) {
+                issues.push(`「${field.name || field.id}」第 ${index + 1} 项缺少必填的「${sub.name || sub.id}」`)
+              }
+            }
+          })
+        }
+        if (Array.isArray(field.options) && field.options.length > 0 && !isRefer) {
+          const allowed = field.options.map((o) => o?.value ?? o?.label).filter((v) => v !== undefined)
+          const invalid =
+            value !== undefined &&
+            value !== null &&
+            value !== '' &&
+            !allowed.some((option) => String(option) === String(value))
+          if (invalid) {
+            issues.push(
+              `「${field.name || field.id}」取值 ${JSON.stringify(value)} 不在可选范围（${allowed
+                .slice(0, 8)
+                .join(' / ')}）`
+            )
+          }
+        }
+      }
+    }
+    return issues
+  }
+
+  /**
+   * 必填配置项检查（finish 前拦截）：只检查无条件显示的必填字段，
+   * 避免把 `show` 条件未满足的字段误判为缺失；数组字段同时检查每一项的必填子字段。
+   */
+  const collectMissingRequiredConfig = () => {
+    const vf = vueFlowRef.value
+    const issues = []
+    for (const node of vf?.getNodes || []) {
+      const groups = nodes[node.data?.type]?.config || []
+      for (const group of groups) {
+        for (const field of group.fields || []) {
+          if (!field?.required || field.show !== undefined) continue
+          const value = node.data?.config?.[field.id]
+          const isEmpty = value === undefined || value === null || value === ''
+          if (isEmpty) {
+            issues.push(`节点【${node.data?.name || node.id}】的必填配置「${field.name || field.id}」未填写`)
+            continue
+          }
+          if (Array.isArray(value) && Array.isArray(field.fields)) {
+            value.forEach((item, index) => {
+              field.fields.forEach((sub) => {
+                if (!sub?.required || sub.show !== undefined) return
+                const subValue = item?.[sub.id]
+                if (subValue === undefined || subValue === null || String(subValue).trim() === '') {
+                  issues.push(
+                    `节点【${node.data?.name || node.id}】的「${field.name || field.id}」第 ${index + 1} 项缺少必填的「${sub.name || sub.id}」`
+                  )
+                }
+              })
+            })
+          }
+        }
+      }
+    }
+    return issues
+  }
+
   executors.listNodeTypes = async ({ keyword = '' } = {}) => {
     const kw = String(keyword || '').trim().toLowerCase()
     const list = Object.keys(nodes)
@@ -244,7 +337,7 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     const initNodeData = JSON.parse(getInitNodeData(type) || '{}')
     if (!initNodeData.type) throw new Error(`节点类型 ${type} 初始化失败`)
     initNodeData.name = name
-    mergeConfig(initNodeData.config, config, nodeFields(type))
+    const ignoredConfig = mergeConfig(initNodeData.config, config, nodeFields(type))
     // connectTo 指定前驱节点时，新节点必须与前驱同级（同一主流程/子流程），
     // 否则 autoConnect 会生成跨容器非法连线，导致后续 autoLayout/渲染读 null 崩溃
     if (connectTo) {
@@ -263,14 +356,30 @@ export const createWorkflowExecutors = ({ workflowId }) => {
         (n) => n.parentNode === initNodeData.parentNode && n.data?.type === 'workflowStart'
       )
       if (exists) {
-        return attachValidation({
+        // 开始节点不会新建，但传入的 config 必须生效：模型常用 addNode(workflowStart, config)
+        // 配置「配置项/输入项」，此前直接返回 exists 会把 config 静默丢弃
+        const startIgnored = mergeConfig(exists.data.config, config, nodeFields(type))
+        let startWarning = ''
+        if (config && Object.keys(config).length > 0) {
+          flowStore?.onNodesChange([{ id: exists.id, type: 'data' }])
+          await autoSave()
+        }
+        const result = attachValidation({
           ok: true,
           data: {
             id: exists.id,
+            name: exists.data?.name,
+            type,
             status: 'exists',
-            note: '开始节点由系统自动创建，无需手动添加（已返回现有节点）'
+            note: '开始节点由系统自动创建，无需手动添加（config 已写入现有节点）'
           }
         })
+        if (startIgnored.length > 0) {
+          result.data.ignoredConfig = startIgnored
+          startWarning = `配置字段 ${startIgnored.join('、')} 在该节点中不存在，已忽略。请调用 getNodeConfig(type="workflowStart") 核对字段ID后重试。`
+          result.warning = result.warning ? `${result.warning}；${startWarning}` : startWarning
+        }
+        return result
       }
     }
     // workflowEnd 查重（与画布 useNodeCrud 行为一致）
@@ -405,7 +514,23 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     // 否则 autoLayout 遍历到未渲染节点可能读 null/undefined 崩溃
     await nextTick()
     autoLayout(vf)
-    const result = attachValidation({ ok: true, data: { id: newNode.id, status: 'created' } })
+    const result = attachValidation({
+      ok: true,
+      data: { id: newNode.id, name: initNodeData.name, type, status: 'created' }
+    })
+    // 配置字段纠正回执：模型填错字段 ID 时不再静默丢弃，而是明确告诉它正确做法
+    if (ignoredConfig.length > 0) {
+      result.data.ignoredConfig = ignoredConfig
+      const message = `配置字段 ${ignoredConfig.join('、')} 在该节点中不存在，已忽略。请调用 getNodeConfig(type="${type}") 核对字段ID后，用 updateNode 修正。`
+      result.warning = result.warning ? `${result.warning}；${message}` : message
+    }
+    // 当前节点配置问题回执：必填缺失 / 枚举值非法，当轮就能修正
+    const configIssues = nodeConfigIssues(newNode)
+    if (configIssues.length > 0) {
+      result.data.configIssues = configIssues
+      const message = `节点【${initNodeData.name}】配置待完善：${configIssues.join('；')}。请调用 getNodeConfig(type="${type}") 核对后用 updateNode 补全。`
+      result.warning = result.warning ? `${result.warning}；${message}` : message
+    }
     console.info('[AI addNode] 完成', {
       id: newNode.id,
       type,
@@ -450,21 +575,42 @@ export const createWorkflowExecutors = ({ workflowId }) => {
 
   executors.updateNode = async ({ nodeId, name, config } = {}) => {
     if (!nodeId) throw new Error('nodeId 必填')
-    const node = vueFlowRef.value?.getNode(nodeId)
-    if (!node) throw new Error(`节点 ${nodeId} 不存在`)
+    // nodeId 同时支持节点ID与节点名称（模型经常只记得名称）
+    const node = resolveNodeRef(nodeId)
+    if (!node) {
+      const current = (vueFlowRef.value?.getNodes || []).map((n) => `${n.data?.name}(id:${n.id})`).join('、')
+      throw new Error(`节点 ${nodeId} 不存在（可用节点名称或ID；当前画布节点：${current}）`)
+    }
     if (name) node.data.name = String(name)
-    mergeConfig(node.data.config, config, nodeFields(node.data.type))
-    flowStore?.onNodesChange([{ id: nodeId, type: 'data' }])
+    const ignoredConfig = mergeConfig(node.data.config, config, nodeFields(node.data.type))
+    flowStore?.onNodesChange([{ id: node.id, type: 'data' }])
     await autoSave()
-    return attachValidation({ ok: true, data: { id: nodeId, status: 'updated' } })
+    const result = attachValidation({
+      ok: true,
+      data: { id: node.id, name: node.data.name, status: 'updated' }
+    })
+    if (ignoredConfig.length > 0) {
+      result.data.ignoredConfig = ignoredConfig
+      const message = `配置字段 ${ignoredConfig.join('、')} 在该节点中不存在，已忽略。请调用 getNodeConfig(type="${node.data.type}") 核对字段ID后重试。`
+      result.warning = result.warning ? `${result.warning}；${message}` : message
+    }
+    // 当前节点配置问题回执：必填缺失 / 枚举值非法，当轮就能修正
+    const configIssues = nodeConfigIssues(node)
+    if (configIssues.length > 0) {
+      result.data.configIssues = configIssues
+      const message = `节点【${node.data.name}】配置待完善：${configIssues.join('；')}。请调用 getNodeConfig(type="${node.data.type}") 核对后修正。`
+      result.warning = result.warning ? `${result.warning}；${message}` : message
+    }
+    return result
   }
 
   executors.deleteNode = async ({ nodeId }) => {
     if (!nodeId) throw new Error('nodeId 必填')
     const vf = vueFlowRef.value
     if (!vf) throw new Error('画布尚未就绪，请稍等片刻再试')
-    const node = vf.getNode(nodeId)
-    if (!node) throw new Error(`节点 ${nodeId} 不存在（请用 getWorkflow 或画布快照确认节点ID）`)
+    const node = resolveNodeRef(nodeId)
+    if (!node) throw new Error(`节点 ${nodeId} 不存在（可用节点名称或ID；请用 getWorkflow 或画布快照确认）`)
+    const id = node.id
     if (flowStore.isExecuting) {
       return { ok: false, error: '当前工作流正在执行，暂不能删除节点' }
     }
@@ -479,15 +625,15 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     }
     // 删除关联边 + 节点（与画布 handleNodeDelete 一致，但不依赖 FlowCanvas 组件 ref——
     // 组件 ref 快照在 AI 面板先挂载时可能为 null，flowRef.value 会直接报「null 的 value」）
-    const relatedEdges = vf.getEdges.filter((e) => e.source === nodeId || e.target === nodeId)
+    const relatedEdges = vf.getEdges.filter((e) => e.source === id || e.target === id)
     if (relatedEdges.length > 0) {
       vf.removeEdges(relatedEdges.map((e) => e.id))
     }
-    vf.removeNodes(nodeId, true, true)
+    vf.removeNodes(id, true, true)
     await nextTick()
     autoLayout(vf)
     await autoSave()
-    return attachValidation({ ok: true, data: { id: nodeId, status: 'deleted' } })
+    return attachValidation({ ok: true, data: { id, status: 'deleted' } })
   }
 
   executors.deleteEdge = async ({ edgeId }) => {
@@ -514,11 +660,13 @@ export const createWorkflowExecutors = ({ workflowId }) => {
   executors.finish = async () => {
     // 完成前强制检测：工作流未通过运行检查时拒绝 finish，返回修复清单让模型修复后再完成
     const { ok, errors } = quickValidateWorkflow(flowStore)
-    if (!ok) {
+    const configIssues = collectMissingRequiredConfig()
+    if (!ok || configIssues.length > 0) {
+      const issues = [...errors.map((e) => e.message), ...configIssues]
       return {
         ok: false,
-        error: `工作流尚未通过运行检查，请先修复以下问题再调用 finish：\n${errors
-          .map((e) => `- ${e.message}`)
+        error: `工作流尚未通过运行检查，请先修复以下问题再调用 finish：\n${issues
+          .map((message) => `- ${message}`)
           .join('\n')}`
       }
     }

@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events'
 import ExecutorManager from './ExecutorManager.js'
 import { isParamRefer, getRefer, paramReferRegex } from './paramRefer.js'
+import { bridge } from '../bridge.js'
 
 class WorkflowExecutor extends EventEmitter {
   constructor(options) {
@@ -56,12 +57,19 @@ class WorkflowExecutor extends EventEmitter {
 
     this.executorManager = new ExecutorManager(this)
     this.state = 'pending'
-    this.runningCount = 0 // 运行中（running/retrying）执行器计数：归零后延迟复核即全部完成，替代 250ms 轮询
-    this.completeTimer = null // 完成判定复核计时器（计数归零后延迟一窗口，等待 next() 启动的后续节点）
+    this.completeTimer = null // 完成判定复核计时器（运行节点清空后延迟一窗口，等待 next() 启动的后续节点）
     this.startInputs = options.startInputs || {}
     this.nodeOutputs = options.nodeOutputs || {}
     this.nodeExecuteTime = {}
     this.nodeErrorCount = {}
+    // 运行中的节点集合：既用于完成判定（集合为空 = 全部完成），也用于 worker 级异常定位失败节点。
+    // 用集合而非计数，避免 retrying → running 的重复累加导致流程永不完成
+    this.runningNodeIds = new Set()
+    // 正在执行的错误处理计数：处理期间不做“全部完成”判定，避免 error 与 completed 竞态
+    this.errorHandlingCount = 0
+    // 正在销毁流程（停止/结束）：销毁钩子会关闭浏览器等资源，正在执行的节点会被中断，
+    // 这类中断（如 CDP 的 Target closed）属于主动终止的预期结果，不能再上报为节点错误
+    this.finalizing = false
 
     this._boundHandleNodeStateChange = this._handleNodeStateChange.bind(this)
   }
@@ -70,33 +78,98 @@ class WorkflowExecutor extends EventEmitter {
     return this._nodeMap.get(nodeId)
   }
 
-  _handleNodeStateChange({ state }) {
+  _handleNodeStateChange({ nodeId, state, error }) {
+    // 主动终止/结束流程期间：节点被资源释放中断，不上报错误
+    if (this.finalizing) return
     // 引擎已终态（completed/error/stopped）后忽略节点状态事件
     if (['completed', 'error', 'stopped'].includes(this.state)) return
-    // error/stopped 由 executeNode 的 catch（_handleNodeError）与 stop() 处理，此处不做完成判定
-    if (state === 'error' || state === 'stopped') return
 
-    // 计数仅随运行态变化：进入 running/retrying +1，成功 success -1；initialized/pending 等中间态不参与
-    // （否则 start 节点初始化瞬间计数归零会误判完成）
+    // 维护运行中节点集合：既用于完成判定，也供 worker 级未捕获异常定位失败节点。
+    // retrying → running 重复进入集合无副作用（Set 去重），避免计数重复累加
+    if (nodeId) {
+      if (state === 'running' || state === 'retrying') this.runningNodeIds.add(nodeId)
+      else this.runningNodeIds.delete(nodeId)
+    }
+
+    // 节点报错统一在状态事件处处理：覆盖执行器内部同步抛错、next() 输出校验失败、
+    // 以及异步回调里自行 setState('error') 三类路径。executeNode 的 catch 通过
+    // errorHandledByEvent 去重，避免同一错误被处理两次。
+    if (state === 'error') {
+      const executor = this.executorManager.get(nodeId)
+      if (executor) executor.errorHandledByEvent = true
+      if (this.nodeErrorCount && !['error', 'stopped', 'completed'].includes(this.state)) {
+        const node = this._findNode(nodeId)
+        const detail = typeof error === 'string' ? error : error?.message || '节点执行失败'
+        const nodeError = new Error(`节点【${node?.name || nodeId}】执行失败：${detail}`)
+        this._runNodeErrorHandler(nodeId, null, nodeError).catch(() => {})
+      } else {
+        // 节点已退出运行态：若错误被“忽略/跳转”且没有后续节点，仍需正常判定完成
+        this._checkCompleted()
+      }
+      return
+    }
+    if (state === 'stopped') return
+
+    // 集合仅随运行态变化：running/retrying 加入，success 移除；initialized/pending 等中间态不参与
+    // （否则 start 节点初始化瞬间集合为空会误判完成）
     if (state === 'running' || state === 'retrying') {
-      this.runningCount++
-    } else if (state === 'success') {
-      this.runningCount = Math.max(0, this.runningCount - 1)
-    } else {
+      const executor = this.executorManager.get(nodeId)
+      if (executor) executor.errorHandledByEvent = false
+    } else if (state !== 'success') {
       return
     }
 
-    if (this.runningCount === 0 && this.state === 'running') {
-      // 延迟复核：给 next() fire-and-forget 启动的后续节点一个进入 running 的窗口，避免误判
-      clearTimeout(this.completeTimer)
-      this.completeTimer = setTimeout(() => {
-        this.completeTimer = null
-        if (this.runningCount === 0 && this.state === 'running') {
-          this.cleanup('completed')
-          console.error('所有节点执行完成') // 走 stderr，避免污染 stdout JSON 行协议
-        }
-      }, 100)
+    this._checkCompleted()
+  }
+
+  /** 统一的节点错误处理入口：处理期间暂停完成判定，处理结束后再复核（retry/ignore 后仍能正常完成） */
+  async _runNodeErrorHandler(nodeId, prevNodeId, error) {
+    this.errorHandlingCount++
+    try {
+      await this._handleNodeError(nodeId, prevNodeId, error)
+    } finally {
+      this.errorHandlingCount = Math.max(0, this.errorHandlingCount - 1)
+      this._checkCompleted()
     }
+  }
+
+  /** 运行中计数归零后延迟复核：给 next() fire-and-forget 启动的后续节点进入 running 的窗口 */
+  _checkCompleted() {
+    if (this.errorHandlingCount > 0) return
+    if (this.runningNodeIds.size !== 0 || this.state !== 'running') return
+    clearTimeout(this.completeTimer)
+    this.completeTimer = setTimeout(() => {
+      this.completeTimer = null
+      if (this.runningNodeIds.size === 0 && this.state === 'running') {
+        this.cleanup('completed')
+        console.error('所有节点执行完成') // 走 stderr，避免污染 stdout JSON 行协议
+      }
+    }, 100)
+  }
+
+  /** worker 级未捕获异常/未处理 rejection 上报：附带正在运行的节点名，避免“执行失败但无节点报错” */
+  reportError(error) {
+    if (this.finalizing) return
+    if (!this.nodeErrorCount || ['error', 'stopped', 'completed'].includes(this.state)) return
+    const detail = error?.message || String(error || '未知异常')
+    const running = [...(this.runningNodeIds || [])]
+      .map((id) => this._findNode(id)?.name || id)
+      .filter(Boolean)
+    const message = running.length
+      ? `执行异常（运行中的节点：${running.join('、')}）：${detail}`
+      : `执行异常：${detail}`
+    const wrapped = new Error(message)
+    // 先把运行中的节点标记为 error：worker 级异常没有走节点状态事件，不补发时画布上看不到任何节点报错
+    for (const id of this.runningNodeIds) {
+      try {
+        bridge.sendEvent(`flowEventBus:nodeStatus:${this.id}:${id}`, { state: 'error', error: message })
+      } catch {
+        // 事件通道不可用时忽略，终态上报仍会带上失败节点名
+      }
+    }
+    // 先同步上报终态（worker 可能因未捕获异常被终止，异步销毁钩子来不及完成）
+    this.setState('error', wrapped)
+    this.cleanup('error', wrapped).catch(() => {})
   }
 
   setState(state, error = null) {
@@ -229,15 +302,41 @@ class WorkflowExecutor extends EventEmitter {
       executor.setInputs(this.getInputs(nodeId, prevNodeId))
       await executor.execute()
     } catch (error) {
-      console.error('执行节点失败:', error)
+      // 主动终止/结束流程时，销毁钩子已关闭浏览器等资源，正在执行的节点被中断属于预期结果：
+      // 直接忽略，不再上报节点错误（否则点击停止会看到“Target closed”之类的红色节点报错）
+      if (this.finalizing) return
+      const nodeName = node?.name || nodeId
+      const detail = error?.message || String(error)
+      const nodeError = detail.startsWith(`节点【${nodeName}】`)
+        ? error
+        : new Error(`节点【${nodeName}】执行失败：${detail}`)
+      console.error('执行节点失败:', nodeError)
       // 终态后（cleanup 已把 nodeErrorCount 置 null）仍可能有 fire-and-forget 链上的节点出错：
       // 直接忽略，避免访问 null 抛 TypeError → unhandled rejection，导致该节点错误状态无法上报
       if (!this.nodeErrorCount || ['error', 'stopped', 'completed'].includes(this.state)) {
         return
       }
+      // 同一次错误已由 stateChange 事件统一处理（含 ignore/retry/specify/stop 决策），此处不重复处理
+      const executor = this.executorManager.get(nodeId)
+      if (executor?.errorHandledByEvent) {
+        executor.errorHandledByEvent = false
+        return
+      }
+      // 兜底标记节点错误：错误发生在执行器建立/初始化之前（配置解析、执行器创建失败）时没有
+      // stateChange 事件，画布上不会出现任何节点报错，这里补发节点错误状态便于定位
+      if (!executor || executor.state !== 'error') {
+        try {
+          bridge.sendEvent(`flowEventBus:nodeStatus:${this.id}:${nodeId}`, {
+            state: 'error',
+            error: nodeError.message
+          })
+        } catch {
+          // 事件通道不可用时忽略，终态上报仍会带上失败节点名
+        }
+      }
       this.nodeErrorCount[nodeId] = this.nodeErrorCount[nodeId] || 0
       try {
-        await this._handleNodeError(nodeId, prevNodeId, error)
+        await this._runNodeErrorHandler(nodeId, prevNodeId, nodeError)
       } catch {
         // _handleNodeError 已 cleanup('error') 并决定终态；吞掉其二次抛出，
         // 避免 next() fire-and-forget 链上的 executeNode rejection 变成 unhandled rejection
@@ -344,6 +443,10 @@ class WorkflowExecutor extends EventEmitter {
   }
 
   async executeSubFlow(masterNodeId, startInputs) {
+    // 父流程已进入终止流程（停止/结束）：不再创建新的子流程引擎。
+    // 否则循环类节点在父流程销毁后仍会继续下一轮，新建子引擎（finalizing 为 false）会在
+    // 已被关闭的浏览器上执行并把子节点标红，出现“点了停止反而报错”的观感
+    if (this.finalizing) return
     const subFlowNodeId = masterNodeId + '-subFlow'
     const childNodes = structuredClone(
       this.allNodes.filter((n) => n.parentNode === subFlowNodeId)
@@ -425,18 +528,22 @@ class WorkflowExecutor extends EventEmitter {
   async retryFlow() {
     this.setState('retrying')
 
+    // 重启前同样会执行节点销毁钩子（关闭浏览器/页面），在跑节点被中断属于预期，不上报错误
+    this.finalizing = true
     for (const subFlow of this.subFlows.values()) {
       await subFlow.stop()
     }
     this.subFlows.clear()
 
     await this.executorManager.cleanup()
+    // 清理完成后允许新一轮执行正常上报错误
+    this.finalizing = false
 
     clearTimeout(this.completeTimer)
     this.completeTimer = null
 
     this.executorManager = new ExecutorManager(this)
-    this.runningCount = 0
+    this.runningNodeIds.clear()
     this.nodeErrorCount = {}
     this.nodeExecuteTime = {}
     this.nodeOutputs = {}
@@ -453,6 +560,8 @@ class WorkflowExecutor extends EventEmitter {
   async cleanup(status = 'stopped', error = null) {
     // 结束流程：先触发各节点销毁钩子（关闭已打开的浏览器）、子流程停止，最后上报终态。
     // 各步独立 try/catch：任一步异常都不能跳过后续销毁钩子或终态上报，否则会"浏览器没关、错误信息丢失"。
+    // 置位 finalizing：此后节点因资源释放被中断（Target closed 等）一律视为主动终止，不上报节点错误
+    this.finalizing = true
     try {
       for (const subFlow of this.subFlows.values()) {
         await subFlow.stop()
@@ -469,7 +578,8 @@ class WorkflowExecutor extends EventEmitter {
     }
     clearTimeout(this.completeTimer)
     this.completeTimer = null
-    this.runningCount = 0
+    this.runningNodeIds.clear()
+    this.errorHandlingCount = 0
 
     if (!this.isSubFlow) {
       this.allNodes = null

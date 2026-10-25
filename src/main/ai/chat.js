@@ -186,9 +186,15 @@ export const streamChat = async ({ provider, modelId, messages, tools, system, s
         // 参数流式增量（部分 provider 只发 delta 不发完整 input）：透传给 renderer 实时拼接展示
         onChunk?.({ type: 'tool-arg', toolCallId: part.toolCallId, arg: part.inputTextDelta || '' })
         break
-      case 'error':
-        // errorText 可能为空（个别 provider 行为），兜底给出可读信息，避免错误 message 为空
-        throw new Error(part.errorText || '模型流式响应中断')
+      case 'error': {
+        // AI SDK v7 的流错误 part 形状是 { type:'error', error: unknown }（没有 errorText 字段），
+        // 之前读 part.errorText 永远为空，导致所有供应商错误都被兜底成"模型流式响应中断"，
+        // 真实原因（404 模型不存在、400 参数错误、401 密钥无效等）被吞掉。
+        // 直接抛出原始错误，交由 ipc.js 的 describeError 带上 statusCode/responseBody 展示
+        const err = part.error
+        if (err instanceof Error) throw err
+        throw new Error(typeof err === 'string' ? err : err?.message || '模型流式响应中断')
+      }
       case 'finish':
         finishReason = part.finishReason || ''
         break

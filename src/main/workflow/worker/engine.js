@@ -12,6 +12,27 @@ let pluginRoots = []
 let devPluginDirs = []
 let networkServerPort = 0
 
+// 兜底捕获 worker 内的未处理 rejection / 未捕获异常：
+// 这类异常若直接终止 worker，宿主只能上报“worker 异常退出”，渲染端看不到任何节点报错；
+// 先带运行中节点信息上报 error 终态，便于界面直接定位失败原因
+const reportUncaught = (label, error) => {
+  const detail = error?.message || String(error || '未知异常')
+  console.error(`[workflow worker] ${label}:`, error)
+  try {
+    WorkflowManager.getEngine(flowId)?.reportError(new Error(`${label}：${detail}`))
+  } catch (e) {
+    console.error('[workflow worker] 上报异常失败:', e)
+  }
+}
+self.addEventListener('unhandledrejection', (event) => {
+  reportUncaught('未处理的异步异常', event.reason)
+  event.preventDefault?.()
+})
+self.addEventListener('error', (event) => {
+  reportUncaught('未捕获的异常', event.error || event.message)
+  event.preventDefault?.()
+})
+
 // 初始化：宿主创建 Worker 后第一个命令（注入工作流配置）
 bridge.onInvoke('init', ({ flowId: fid, nodesRoot, ioRoots: roots, pluginRoots: proots, devPluginDirs: devDirs = [], networkServerPort: nsp = 0 }) => {
   flowId = fid

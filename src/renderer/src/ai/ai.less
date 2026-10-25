@@ -1,5 +1,5 @@
 /**
- * AI 公共样式（chat.vue 全局引入，供 Bubble / Sender / ResourcePicker / chat 复用）
+ * AI 公共样式（chat.vue 全局引入，供 Bubble / Sender / ReferenceMenu / chat 复用）
  * 圆角统一 var(--border-radius-small)
  */
 
@@ -20,46 +20,6 @@
   }
   :deep(svg) {
     flex-shrink: 0;
-  }
-}
-
-/* 面板（思考折叠块 / 工具调用卡片） */
-.ai-panel {
-  background: #f0f0f2;
-  border: 1px solid #e5e5e8;
-  border-radius: var(--border-radius-small);
-  overflow: hidden;
-  margin-bottom: 4px;
-
-  .ai-panel-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    cursor: default;
-
-    &__left {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: #6b7280;
-      min-width: 0;
-    }
-  }
-
-  .ai-panel-body {
-    padding: 8px 12px 12px;
-    font-size: 12px;
-    color: #6b7280;
-    line-height: 1.6;
-    border-top: 1px solid rgba(229, 229, 232, 0.6);
-    user-select: text;
-    /* 思考过程：纯文本，保留换行 */
-    .reasoning-text {
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
   }
 }
 
@@ -138,27 +98,46 @@
   }
 }
 
-/* 气泡底部操作（hover 显示） */
+/* 消息底部操作（hover 显示）——对齐 dsh msg-meta__btn：22px 透明图标按钮 */
 .ai-bubble-actions {
   display: flex;
-  gap: 4px;
-  margin-top: 4px;
+  gap: 2px;
+  margin-top: 0;
   opacity: 0;
   transition: opacity 0.15s ease;
 
   .ai-bubble-action {
-    height: 24px;
-    padding: 0 6px;
-    color: #6b7280;
-    border-radius: var(--border-radius-small);
-    transition: color 0.15s ease, background 0.15s ease;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    box-shadow: none;
+    color: #a1a1aa;
+    transition: color 0.12s ease, background 0.12s ease;
     &:hover {
       color: #111114;
-      background: #f0f0f2;
+      background: rgba(17, 17, 20, 0.06);
     }
     &.ai-bubble-action--danger:hover {
       color: #ef4444;
     }
+  }
+}
+
+/* Arco secondary 按钮默认底色/边框需要显式覆盖 */
+.message-item .ai-bubble-actions .ai-bubble-action {
+  background: transparent;
+  color: #a1a1aa;
+
+  &:hover {
+    color: #111114;
+    background: rgba(17, 17, 20, 0.06);
+  }
+  &.ai-bubble-action--danger:hover {
+    color: #ef4444;
   }
 }
 

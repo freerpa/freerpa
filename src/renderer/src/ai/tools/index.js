@@ -41,6 +41,7 @@ const TOOL_LABELS = {
   getWorkflow: '查看工作流',
   finish: '完成任务',
   // 浏览器
+  listBrowsers: '查看浏览器列表',
   createBrowser: '创建浏览器',
   openBrowser: '打开浏览器',
   closeBrowser: '关闭浏览器',

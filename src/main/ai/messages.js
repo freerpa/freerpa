@@ -8,6 +8,7 @@
 import { initDatabase } from '../data/db.js'
 import { v4 as uuidv4 } from 'uuid'
 import { ensureTables } from './messages-migrate.js'
+import { ensureEventTables } from './events-migrate.js'
 
 const TABLE = 'ai_chat_messages'
 const CONV_TABLE = 'ai_conversations'
@@ -58,30 +59,87 @@ export const createConversation = async (workflowId, title = '新对话') => {
   return { id, workflowId, title, createdAt: new Date().toLocaleString() }
 }
 
-/** 会话列表（按更新时间倒序，展示标题取首条 user 消息前缀） */
+/** 会话列表（按更新时间倒序，展示标题优先取事件日志的首条 user 消息，兼容旧消息表） */
 export const getConversations = async (workflowId) => {
   const db = await initDatabase()
   await ensureTables(db)
-  const rows = await db.all(
-    `SELECT c.*,
-       (SELECT COUNT(*) FROM ${TABLE} m WHERE m.workflow_id = c.workflow_id AND m.conversation_id = c.id) AS message_count,
-       (SELECT m.content FROM ${TABLE} m WHERE m.workflow_id = c.workflow_id AND m.conversation_id = c.id AND m.role = 'user' ORDER BY m.id ASC LIMIT 1) AS first_user
-     FROM ${CONV_TABLE} c
-     WHERE c.workflow_id = ?
-     ORDER BY c.updated_at DESC`,
-    workflowId
-  )
-  // 兼容旧数据：历史消息存在 conversation_id='default' 但未建会话记录，虚拟展示
-  if (!rows.some((r) => r.id === 'default')) {
-    const firstUser = await db.get(
-      `SELECT content FROM ${TABLE} WHERE workflow_id = ? AND conversation_id = 'default' AND role = 'user' ORDER BY id ASC LIMIT 1`,
+  await ensureEventTables(db)
+  let rows
+  try {
+    rows = await db.all(
+      `SELECT c.*,
+         CASE WHEN (SELECT COUNT(*) FROM ai_session_events e
+                    WHERE e.workflow_id = c.workflow_id AND e.conversation_id = c.id) > 0
+           THEN (SELECT COUNT(*) FROM ai_session_events e
+                 WHERE e.workflow_id = c.workflow_id AND e.conversation_id = c.id
+                   AND e.type IN ('user/message', 'assistant/message')
+                   AND (e.type = 'assistant/message'
+                        OR COALESCE(json_extract(e.data, '$.source'), 'user') NOT IN ('runtime-context', 'agent-inject')))
+           ELSE (SELECT COUNT(*) FROM ${TABLE} m
+                 WHERE m.workflow_id = c.workflow_id AND m.conversation_id = c.id)
+         END AS message_count,
+         COALESCE(
+           (SELECT json_extract(e.data, '$.message.content') FROM ai_session_events e
+            WHERE e.workflow_id = c.workflow_id AND e.conversation_id = c.id AND e.type = 'user/message'
+            ORDER BY e.seq ASC LIMIT 1),
+           (SELECT m.content FROM ${TABLE} m
+            WHERE m.workflow_id = c.workflow_id AND m.conversation_id = c.id AND m.role = 'user'
+            ORDER BY m.id ASC LIMIT 1)
+         ) AS first_user
+       FROM ${CONV_TABLE} c
+       WHERE c.workflow_id = ?
+       ORDER BY c.updated_at DESC`,
       workflowId
     )
-    if (firstUser) {
-      const stat = await db.get(
-        `SELECT COUNT(*) AS cnt, MAX(created_at) AS last_at FROM ${TABLE} WHERE workflow_id = ? AND conversation_id = 'default'`,
+  } catch (error) {
+    // 极旧 SQLite 无 JSON1 时回退旧查询，不影响会话列表
+    console.warn('会话列表事件查询失败，回退旧消息表:', error)
+    rows = await db.all(
+      `SELECT c.*,
+         (SELECT COUNT(*) FROM ${TABLE} m WHERE m.workflow_id = c.workflow_id AND m.conversation_id = c.id) AS message_count,
+         (SELECT m.content FROM ${TABLE} m WHERE m.workflow_id = c.workflow_id AND m.conversation_id = c.id AND m.role = 'user' ORDER BY m.id ASC LIMIT 1) AS first_user
+       FROM ${CONV_TABLE} c
+       WHERE c.workflow_id = ?
+       ORDER BY c.updated_at DESC`,
+      workflowId
+    )
+  }
+  // 兼容旧数据：历史消息存在 conversation_id='default' 但未建会话记录，虚拟展示
+  if (!rows.some((r) => r.id === 'default')) {
+    let firstUser = null
+    try {
+      firstUser = await db.get(
+        `SELECT json_extract(data, '$.message.content') AS content FROM ai_session_events
+         WHERE workflow_id = ? AND conversation_id = 'default' AND type = 'user/message'
+         ORDER BY seq ASC LIMIT 1`,
         workflowId
       )
+    } catch {
+      /* 无 JSON1 时忽略，走旧表 */
+    }
+    if (!firstUser) {
+      firstUser = await db.get(
+        `SELECT content FROM ${TABLE} WHERE workflow_id = ? AND conversation_id = 'default' AND role = 'user' ORDER BY id ASC LIMIT 1`,
+        workflowId
+      )
+    }
+    if (firstUser?.content) {
+      let stat = null
+      try {
+        stat = await db.get(
+          `SELECT COUNT(*) AS cnt, MAX(created_at) AS last_at FROM ai_session_events
+           WHERE workflow_id = ? AND conversation_id = 'default' AND type IN ('user/message', 'assistant/message')`,
+          workflowId
+        )
+      } catch {
+        /* 忽略 */
+      }
+      if (!stat?.cnt) {
+        stat = await db.get(
+          `SELECT COUNT(*) AS cnt, MAX(created_at) AS last_at FROM ${TABLE} WHERE workflow_id = ? AND conversation_id = 'default'`,
+          workflowId
+        )
+      }
       rows.push({
         id: 'default',
         title: firstUser.content.slice(0, 30),

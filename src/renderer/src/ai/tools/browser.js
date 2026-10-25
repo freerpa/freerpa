@@ -23,8 +23,21 @@ const toText = (res) => {
 
 export const createBrowserTools = () => [
   defineTool(
+    'listBrowsers',
+    '列出已配置的浏览器环境（id/名称/代理等）。浏览器类节点（如「打开浏览器」的 envId 配置）必须从这里取真实 ID，禁止臆造；没有合适环境时再用 createBrowser 创建。',
+    {
+      type: 'object',
+      properties: {
+        keyword: { type: 'string', description: '按名称搜索，可选', default: '' },
+        page: { type: 'number', description: '页码，默认 1', default: 1 },
+        pageSize: { type: 'number', description: '每页数量，默认 20，最大 50', default: 20 }
+      },
+      additionalProperties: false
+    }
+  ),
+  defineTool(
     'createBrowser',
-    '创建浏览器环境（浏览器管理中的实例，搭建工作流需要浏览器时先创建再 openBrowser）。浏览器内核已随客户端内置分发，无需指定内核版本。',
+    '创建浏览器环境（浏览器管理中的实例，搭建工作流需要浏览器时先创建再 openBrowser；返回值即环境 ID）。浏览器内核已随客户端内置分发，无需指定内核版本。',
     {
       type: 'object',
       properties: {
@@ -37,7 +50,7 @@ export const createBrowserTools = () => [
       additionalProperties: false
     }
   ),
-  defineTool('openBrowser', '打开一个浏览器环境（复用已存在环境或创建新会话）。', {
+  defineTool('openBrowser', '打开一个浏览器环境（复用已存在环境或创建新会话）。envId 必须来自 listBrowsers 或 createBrowser 的返回值。', {
     type: 'object',
     properties: {
       envId: { type: 'string', description: '浏览器环境ID（复用已有环境会话目录）' },
@@ -65,6 +78,11 @@ export const createBrowserTools = () => [
 ]
 
 export const createBrowserExecutors = () => ({
+  listBrowsers: async ({ keyword = '', page = 1, pageSize = 20 } = {}) => {
+    const size = Math.min(Math.max(Number(pageSize) || 20, 1), 50)
+    const params = { keyword: String(keyword || ''), page: Number(page) || 1, pageSize: size }
+    return toText(await window.electronAPI.browserLocal.getBrowsers(params))
+  },
   createBrowser: async (args) => {
     const { name, description = '', categoryId = '', proxyUrl = '' } = args || {}
     assertArgs(args, ['name'])

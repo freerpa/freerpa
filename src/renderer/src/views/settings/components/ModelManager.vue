@@ -37,7 +37,7 @@
                 <div class="provider-card__models">
                   <template v-if="provider.models.length">
                     <a-tag v-for="m in visibleModels(provider)" :key="m.id" class="model-chip" :title="m.id">
-                      {{ m.name || m.id }}
+                      {{ m.id }}
                     </a-tag>
                     <a-tag v-if="provider.models.length > VISIBLE_MODELS" color="gray">
                       +{{ provider.models.length - VISIBLE_MODELS }}
@@ -157,6 +157,9 @@
     }
   };
 
+  /** 通知同窗口内的 AI 面板刷新模型下拉（主进程广播之外的双保险，避免设置弹窗内保存后不刷新） */
+  const notifyModelsChanged = () => window.dispatchEvent(new Event('ai:models-changed'));
+
   onMounted(async () => {
     try {
       presetProviders.value = (await getPresetProviders()) || [];
@@ -194,7 +197,8 @@
       protocol: provider.protocol,
       baseURL: provider.baseURL,
       apiKey: '',
-      models: (provider.models || []).map((m) => ({ ...m })),
+      // 历史数据的 name 可能与 ID 不一致，编辑时统一以 ID 为准（显示名输入已隐藏）
+      models: (provider.models || []).map((m) => ({ id: m.id, name: m.id })),
     });
     modalVisible.value = true;
   };
@@ -224,9 +228,10 @@
       apiKey: form.apiKey,
       // map 重造纯对象：form.models 元素是 Vue reactive Proxy，Electron IPC 的
       // structuredClone 无法克隆 Proxy，直接传会报 "An object could not be cloned"
+      // 显示名输入已隐藏：name 一律与模型ID 同步，避免编辑 ID 后列表/下拉仍显示旧名称
       models: form.models
         .filter((m) => m.id && m.id.trim())
-        .map((m) => ({ id: m.id.trim(), name: (m.name || '').trim() })),
+        .map((m) => ({ id: m.id.trim(), name: m.id.trim() })),
     };
     saving.value = true;
     try {
@@ -238,6 +243,7 @@
       Message.success('保存成功');
       modalVisible.value = false;
       load();
+      notifyModelsChanged();
     } catch (error) {
       Message.error(error.message || '保存失败');
     } finally {
@@ -250,6 +256,7 @@
       await deleteProvider(provider.id);
       Message.success('已删除');
       load();
+      notifyModelsChanged();
     } catch (error) {
       Message.error(error.message || '删除失败');
     }

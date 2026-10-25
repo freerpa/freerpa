@@ -31,15 +31,15 @@ export class WorkflowEngine {
   }
 
   // 设置工作流状态（状态源：engine.status；store 经 statusChange 事件同步 workflowStatus/isExecuting）
-  setStatus(status) {
+  // error 携带引擎上报的真实失败原因，供界面展示（此前只传状态，界面只能提示笼统的“工作流执行失败”）
+  setStatus(status, error = null) {
+    // 同一终态可能被重复上报（节点异常 + worker 兜底），去重避免重复弹错和重复清理
+    if (this.status === status && ['error', 'stopped', 'completed'].includes(status)) return
     this.status = status
-    this.emit('statusChange', status)
+    this.emit('statusChange', status, error)
     if (status === 'stopped' || status === 'error' || status === 'completed') {
       this.emit('beforeStop')
       this.cleanup()
-      if (status === 'error') {
-        throw new Error('工作流执行失败')
-      }
     }
   }
 
@@ -48,7 +48,7 @@ export class WorkflowEngine {
     // 监听工作流状态
     this.unsubscribers.push(
       window.electronAPI.onFlowEvent('stateChange', this.flowId, null, (event, state) => {
-        this.setStatus(state.state)
+        this.setStatus(state.state, state.error || null)
       })
     )
     this.unsubscribers.push(
@@ -123,10 +123,21 @@ export class WorkflowEngine {
     this.emit('beforeStart')
     // 注册工作流状态事件
     this.registerStatusEvent()
-    // 开始工作流
-    await window.electronAPI.emitFlowEvent('startFlow', null, null, this.flowId)
-    // 设置工作流状态为运行中
-    this.setStatus('running')
+    try {
+      // 开始工作流（同步异常会在这里抛出，如宿主启动失败/起始节点异常）
+      await window.electronAPI.emitFlowEvent('startFlow', null, null, this.flowId)
+    } catch (error) {
+      // 若引擎已通过 stateChange 上报 error，这里不再重复；否则补一次带真实原因的失败状态，
+      // 避免界面停在“执行中”或只提示笼统的“工作流执行失败”
+      if (!['error', 'stopped', 'completed'].includes(this.status)) {
+        this.setStatus('error', error?.message || String(error))
+      }
+      return this.flowId
+    }
+    // 设置工作流状态为运行中（若执行很快已结束/报错，不要覆盖终态）
+    if (!['running', 'error', 'stopped', 'completed'].includes(this.status)) {
+      this.setStatus('running')
+    }
     // 返回工作流id
     return this.flowId
   }

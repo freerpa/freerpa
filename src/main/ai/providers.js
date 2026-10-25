@@ -63,10 +63,12 @@ const readAll = () => get(STORE_KEY) || []
 
 const writeAll = (providers) => set(STORE_KEY, providers)
 
+// 模型列表只以「模型ID」为唯一标识，显示名始终与 ID 同步：
+// 设置页已隐藏显示名输入，若保留历史 name 值会导致改了 ID 后列表仍显示旧名称
 const normalizeModels = (models) =>
   Array.isArray(models)
     ? models
-        .map((m) => ({ id: (m.id || '').trim(), name: (m.name || m.id || '').trim() }))
+        .map((m) => ({ id: (m.id || '').trim(), name: (m.id || '').trim() }))
         .filter((m) => m.id)
     : []
 
@@ -75,7 +77,8 @@ const toPublic = (provider) => ({
   name: provider.name,
   protocol: provider.protocol,
   baseURL: provider.baseURL,
-  models: provider.models || [],
+  // 历史数据里可能残留与 ID 不一致的 name，读取时统一按 ID 输出，保证设置列表/模型下拉立即正确
+  models: (provider.models || []).map((m) => ({ id: m.id, name: m.id })).filter((m) => m.id),
   createdAt: provider.createdAt,
   apiKey: maskApiKey(provider.apiKey),
   hasKey: !!provider.apiKey
@@ -84,8 +87,18 @@ const toPublic = (provider) => ({
 /** 供主进程内部使用（含明文 apiKey，不经过 IPC） */
 export const getProviderById = (id) => readAll().find((p) => p.id === id)
 
-/** 对外列表：apiKey 一律脱敏 */
-export const listProviders = () => readAll().map(toPublic)
+/** 对外列表：apiKey 一律脱敏。同时把历史脏数据（name 与 id 不一致）就地纠正，避免再次误用 */
+export const listProviders = () => {
+  const providers = readAll()
+  let dirty = false
+  const normalized = providers.map((p) => {
+    const models = normalizeModels(p.models)
+    if (JSON.stringify(models) !== JSON.stringify(p.models)) dirty = true
+    return { ...p, models }
+  })
+  if (dirty) writeAll(normalized)
+  return normalized.map(toPublic)
+}
 
 export const createProvider = (data = {}) => {
   const name = (data.name || '').trim()

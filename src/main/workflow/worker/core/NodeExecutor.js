@@ -105,6 +105,9 @@ class NodeExecutor extends EventEmitter {
     // 节点已被清理（cleanup 置空 queue/node）后，忽略仍在运行的异步回调（complete/setState）发来的状态变更，
     // 避免读空指针（queue.length）报错：此时终态与关闭浏览器已由 cleanup 负责
     if (this.queue === null || this.node === null) return
+    // 流程正在销毁（停止/结束/重启）：资源释放导致的执行中断不是节点错误，
+    // 直接忽略 error 状态，避免绕过引擎守卫把画布节点标红
+    if (state === 'error' && this.context?.engine?.finalizing) return
     this.state = state
     this.sendDebugInfo(state, error)
     // 状态非 running 且队列非空 → 继续执行队列
@@ -125,6 +128,8 @@ class NodeExecutor extends EventEmitter {
     // 记录错误信息（供 execute() 短路抛出；error 状态不再在此 throw，避免同一错误触发两次 error 事件）
     if (this.state === 'error') {
       this.errorMessage = error
+      // 错误序号：引擎据此判断同一次错误是否已由状态事件统一处理，避免 catch 与事件重复处理
+      this.errorSeq = (this.errorSeq || 0) + 1
     }
   }
 

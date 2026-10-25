@@ -28,6 +28,16 @@ export const deleteChatMessages = ({ workflowId, conversationId, messageId }) =>
     : window.electronAPI.ai.clearMessages(workflowId, conversationId)
 }
 
+// ---- 会话事件日志（append-only） ----
+export const loadEvents = (workflowId, conversationId) =>
+  window.electronAPI.ai.loadEvents(workflowId, conversationId)
+export const appendEvents = (workflowId, conversationId, events) =>
+  window.electronAPI.ai.appendEvents(workflowId, conversationId, events)
+export const deleteEvents = (workflowId, conversationId) =>
+  window.electronAPI.ai.deleteEvents(workflowId, conversationId)
+export const migrateEvents = (workflowId, conversationId) =>
+  window.electronAPI.ai.migrateEvents(workflowId, conversationId)
+
 /**
  * 创建流式对话（单步补全）：主进程 streamText，增量经 ai:chatChunk/ai:chatDone/ai:chatError 事件推送
  * @param {Object} payload

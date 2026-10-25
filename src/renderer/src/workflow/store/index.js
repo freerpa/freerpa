@@ -39,14 +39,16 @@ export const useFlowStore = (id) =>
     // 当前激活的节点tab
     const activeNodeTab = ref('流程控制')
     // 监听状态变化（唯一状态同步点：engine.status → store.workflowStatus / isExecuting）
-    engine.value.on('statusChange', (status) => {
+    engine.value.on('statusChange', (status, error) => {
       workflowStatus.value = status
       isExecuting.value = status === 'running'
       if (status === 'completed') {
         Message.success('工作流执行完成')
       }
       if (status === 'error') {
-        Message.error(`工作流执行失败`)
+        // 展示引擎上报的真实原因（含失败节点名），不再只提示笼统的“工作流执行失败”
+        const detail = typeof error === 'string' ? error : error?.message
+        Message.error(detail ? `工作流执行失败：${detail}` : '工作流执行失败')
       }
     })
 

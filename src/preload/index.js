@@ -206,6 +206,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     clearMessages: (workflowId, conversationId) =>
       ipcRenderer.invoke('ai:clearMessages', { workflowId, conversationId }),
     getMemories: (workflowId) => ipcRenderer.invoke('ai:getMemories', { workflowId }),
+    // 会话事件日志（append-only）
+    loadEvents: (workflowId, conversationId) =>
+      ipcRenderer.invoke('ai:eventsLoad', { workflowId, conversationId }),
+    appendEvents: (workflowId, conversationId, events) =>
+      ipcRenderer.invoke('ai:eventsAppend', { workflowId, conversationId, events }),
+    deleteEvents: (workflowId, conversationId) =>
+      ipcRenderer.invoke('ai:eventsDelete', { workflowId, conversationId }),
+    migrateEvents: (workflowId, conversationId) =>
+      ipcRenderer.invoke('ai:eventsMigrate', { workflowId, conversationId }),
     chatStart: (payload) => ipcRenderer.invoke('ai:chatStart', payload),
     chatAbort: (requestId) => ipcRenderer.invoke('ai:chatAbort', requestId),
     onProvidersChanged: (callback) => {
