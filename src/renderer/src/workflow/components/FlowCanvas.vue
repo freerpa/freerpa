@@ -34,6 +34,8 @@
         @connect="onConnect"
         @nodesChange="handleNodesChange"
         @edgesChange="handleNodesChange"
+        @nodeClick="handleNodeClick"
+        @paneClick="clearClickedNode"
         @nodeDragStart="((isDragging = true), dispatchMouseDown())"
         @nodeDrag="onNodeDrag"
         @nodeDragStop="onNodeDragStop"
@@ -85,7 +87,7 @@
         <template #node-comment="nodeProps">
           <CommentNode :id="nodeProps.id" :data="nodeProps.data" :selected="nodeProps.selected" />
         </template>
-        <Background pattern-color="#aaa" gap="20" />
+        <Background pattern-color="rgba(60, 60, 67, 0.18)" gap="22" />
         <MiniMap />
       </VueFlow>
 
@@ -167,6 +169,8 @@ const onCanvasWheel = (e) => handleWheel(e, vueFlowRef)
 // ── 选中节点追踪与配置字段（提取至 useNodeSelection） ───────
 const {
   handleNodesChange,
+  handleNodeClick,
+  clearClickedNode,
   configDrawerVisible,
   selectedNodeId,
   selectedNodeData,
@@ -358,7 +362,9 @@ provide('engine', engine)
   right: 0;
   bottom: 0;
   outline: none; // 移除焦点轮廓
-  background-color: #f2f3f5;
+  background:
+    radial-gradient(1100px 640px at 50% -10%, rgba(255, 255, 255, 0.5), transparent 60%),
+    linear-gradient(180deg, #f1f1f4 0%, #e8e8ec 100%);
   .drag-prompt {
     position: absolute;
     top: 20px;

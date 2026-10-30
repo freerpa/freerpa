@@ -105,9 +105,9 @@
     min-width: 0;
     margin: 2px 0 4px;
     padding: 3px 10px 3px 6px;
-    border: 1px solid #ebedf0;
-    border-radius: 10px;
-    background: #fafbfc;
+    border: 0.5px solid var(--mac-separator);
+    border-radius: var(--mac-radius-md);
+    background: rgba(255, 255, 255, 0.5);
   }
 
   .reasoning__head {
@@ -119,8 +119,8 @@
     padding: 2px 7px;
     border: none;
     background: none;
-    border-radius: 6px;
-    color: #9aa1ab;
+    border-radius: var(--mac-radius-xs);
+    color: var(--mac-text-3);
     font: inherit;
     font-size: 12px;
     font-weight: 560;
@@ -128,13 +128,13 @@
     cursor: pointer;
 
     &:hover {
-      color: #111114;
-      background: rgba(17, 17, 20, 0.05);
+      color: var(--mac-text);
+      background: var(--mac-fill);
     }
 
     /* 思考中：文字做 shimmer 扫光（对齐 dsh data-running） */
     &[data-running] > span:first-of-type {
-      background: linear-gradient(105deg, #9aa1ab 0%, #9aa1ab 38%, #111114 46%, #111114 54%, #9aa1ab 62%, #9aa1ab 100%);
+      background: linear-gradient(105deg, #9aa1ab 0%, #9aa1ab 38%, #1d1d1f 46%, #1d1d1f 54%, #9aa1ab 62%, #9aa1ab 100%);
       background-size: 220% 100%;
       background-position: 100% 0;
       background-clip: text;
@@ -145,28 +145,28 @@
     &[data-running]:hover > span:first-of-type {
       animation-play-state: paused;
       background: none;
-      color: #111114;
+      color: var(--mac-text);
     }
     &[data-running] .reasoning__icon,
     &[data-running] .reasoning__meta {
-      color: #9aa1ab;
+      color: var(--mac-text-3);
     }
   }
 
   .reasoning__icon {
     flex-shrink: 0;
-    color: #9aa1ab;
+    color: var(--mac-text-3);
   }
 
   .reasoning__meta {
-    color: #b3b9c2;
+    color: var(--mac-text-4);
     font-weight: 500;
     white-space: nowrap;
   }
 
   .reasoning__chevron {
     flex-shrink: 0;
-    color: #b3b9c2;
+    color: var(--mac-text-4);
     transition: transform 0.2s;
 
     &--open {
@@ -178,8 +178,8 @@
     max-width: 100%;
     margin: 2px 0 6px 8px;
     padding-left: 12px;
-    border-left: 2px solid #ececf1;
-    color: #7b8290;
+    border-left: 2px solid var(--mac-separator);
+    color: var(--mac-text-2);
     font-size: 12.5px;
     line-height: 1.72;
     white-space: pre-wrap;
@@ -193,10 +193,10 @@
     margin: 2px 0 6px 8px;
     padding: 0 0 0 12px;
     border: none;
-    border-left: 2px solid #ececf1;
+    border-left: 2px solid var(--mac-separator);
     border-radius: 0;
     background: none;
-    color: #8c93a1;
+    color: var(--mac-text-3);
     font: inherit;
     font-size: 12.5px;
     line-height: 1.72;
@@ -207,7 +207,7 @@
     cursor: pointer;
 
     &:hover {
-      color: #111114;
+      color: var(--mac-text);
     }
   }
 

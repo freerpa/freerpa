@@ -284,18 +284,19 @@
     width: 100%;
     height: 100%;
     min-height: fit-content;
-    background: var(--color-bg-2);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-small);
+    background: rgba(255, 255, 255, 0.88);
+    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--mac-radius-md);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
     cursor: pointer;
     overflow: auto;
     overflow-x: hidden;
 
     &:hover {
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      box-shadow: var(--mac-shadow-2);
 
       .toggleSubFlow {
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        box-shadow: var(--mac-shadow-2);
       }
 
       .quick-config {
@@ -308,19 +309,19 @@
     }
 
     &.selected {
-      border-color: rgb(var(--primary-6)) !important;
-      box-shadow: 0 4px 8px rgba(var(--primary-6), 0.2) !important;
+      border-color: var(--mac-accent) !important;
+      box-shadow: 0 0 0 3px var(--mac-accent-soft), var(--mac-shadow-2) !important;
 
       .quick-config {
         display: block !important;
       }
 
       :deep(.toggleSubFlow) {
-        border-color: rgb(var(--primary-6)) !important;
-        box-shadow: 0 4px 8px rgba(var(--primary-6), 0.2) !important;
+        border-color: var(--mac-accent) !important;
+        box-shadow: 0 0 0 3px var(--mac-accent-soft), var(--mac-shadow-2) !important;
 
         &::before {
-          background: rgb(var(--primary-6)) !important;
+          background: var(--mac-accent) !important;
         }
       }
     }
@@ -331,7 +332,7 @@
       height: calc(100% - 2px);
       background: rgba(255, 255, 255, 0.8);
       z-index: 99;
-      border-radius: var(--border-radius-small);
+      border-radius: var(--mac-radius-md);
       display: flex;
       gap: 16px;
       flex-direction: column;
@@ -453,7 +454,7 @@
         right: 0;
         bottom: 0;
         border: 2px solid rgb(var(--warning-6));
-        border-radius: 4px;
+        border-radius: var(--mac-radius-md);
         animation: border-flow 1s linear infinite;
       }
     }
@@ -498,11 +499,11 @@
     position: absolute;
     width: 8px;
     height: 8px;
-    border-bottom: 1px solid #000;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.4);
     bottom: 0px;
     right: 0px;
-    border-right: 1px solid #000;
-    border-bottom-right-radius: var(--border-radius-small);
+    border-right: 1px solid rgba(0, 0, 0, 0.4);
+    border-bottom-right-radius: var(--mac-radius-md);
     pointer-events: none;
 
     &:before {
@@ -510,7 +511,7 @@
       position: absolute;
       width: 8px;
       height: 8px;
-      border-top: 1px solid #000;
+      border-top: 1px solid rgba(0, 0, 0, 0.4);
       pointer-events: none;
       transform: translate(-50%, -50%) rotate(135deg);
     }
@@ -520,7 +521,7 @@
       position: absolute;
       width: 3px;
       height: 12px;
-      border-top: 1px solid #000;
+      border-top: 1px solid rgba(0, 0, 0, 0.4);
       pointer-events: none;
       transform: translate(-50%, -50%) rotate(135deg);
     }

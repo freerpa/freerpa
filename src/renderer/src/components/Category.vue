@@ -28,7 +28,7 @@
         </template>
       </a-popover>
     </div>
-    <a-scrollbar style="height: calc(100vh - 116px); overflow: auto">
+    <a-scrollbar class="category-scroll">
       <a-menu v-model:selectedKeys="selectedKeys" class="workflow-cate-menu">
         <a-menu-item key="all">全部</a-menu-item>
         <a-menu-item v-for="item in categoryList" :key="item.id" :title="item.name">
@@ -182,17 +182,27 @@ const handleActionSelect = (item) => {
 <style lang="less" scoped>
 .category {
   flex-shrink: 0;
-  width: 200px;
+  width: 212px;
   height: 100%;
-  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  background: rgba(246, 246, 248, 0.55);
+  border-right: 0.5px solid var(--mac-separator);
+  .category-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
   &-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 11px 12px 10px;
+    padding: 15px 10px 8px 14px;
     .title {
-      font-size: 18px;
-      font-weight: bold;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--mac-text-2);
+      letter-spacing: -0.01em;
     }
   }
   .category-item {
@@ -202,9 +212,9 @@ const handleActionSelect = (item) => {
 
     .action {
       margin: 0px;
-      color: var(--color-primary) !important;
+      color: var(--mac-text-3) !important;
       &:hover {
-        color: var(--color-primary);
+        color: var(--mac-accent);
       }
     }
   }

@@ -40,13 +40,20 @@
           </a-tree>
         </div>
         <div class="edit-panel">
-          <div class="panel-header">目标元素</div>
+          <div class="panel-header">
+            <span>目标元素</span>
+            <span v-if="hasSelected" class="panel-subtitle">{{ editingElement.name || '未命名元素' }}</span>
+          </div>
           <div class="edit-body">
-            <ElementItem v-model="editingElement" :show-remove="false" param-ref />
+            <ElementItem v-if="hasSelected" v-model="editingElement" :show-remove="false" param-ref />
+            <div v-else class="edit-empty">
+              <RiStackLine size="28px" />
+              <p>请从左侧选择一个元素</p>
+            </div>
           </div>
           <div class="edit-footer">
-            <a-button @click="onModalCancel">取消</a-button>
-            <a-button type="primary" @click="onConfirm">确定</a-button>
+            <a-button size="medium" @click="onModalCancel">取消</a-button>
+            <a-button size="medium" type="primary" :disabled="!hasSelected" @click="onConfirm">确定</a-button>
           </div>
         </div>
       </div>
@@ -69,6 +76,7 @@ const value = defineModel({ default: null })
 const displayName = computed(() => value.value?.name || '')
 
 const showModal = ref(false)
+const hasSelected = ref(false)
 const editingElement = ref(emptyElement())
 const treeData = ref([])
 const selectedKeys = ref([])
@@ -87,8 +95,10 @@ const openModal = () => {
       match_condition: d.match_condition || 'any',
       selectors: d.selectors.map((s, i) => ({ ...s, _key: i + 2, _sizeError: false }))
     }
+    hasSelected.value = true
   } else {
     editingElement.value = emptyElement()
+    hasSelected.value = false
   }
   showModal.value = true
 }
@@ -153,6 +163,7 @@ const onTreeSelect = (keys, { node }) => {
     return
   } 
   selectedKeys.value = keys
+  hasSelected.value = true
   const el = node._elementData
   editingElement.value = {
     _key: 1,
@@ -184,21 +195,96 @@ const onConfirm = () => {
 .element-selector {
   width: 100%;
   :deep(.arco-input-group) {
-    .arco-btn { border-radius: 0; height: 100%; padding: 0 8px; }
+    .arco-btn { height: 100%; padding: 0 8px; }
   }
 }
-.icon { width: 1em; height: 1em; }
-.selector-layout { display: flex; height: 55vh; min-height: 400px; gap: 0; }
-.tree-panel {
-  width: 260px; flex-shrink: 0; border-right: 1px solid var(--color-border-2); padding-right: 12px;
-  display: flex; flex-direction: column;
-  .panel-header { font-weight: 600; font-size: 14px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--color-border-2); }
+
+.selector-layout {
+  display: flex;
+  height: 62vh;
+  min-height: 440px;
+  gap: 10px;
 }
+
+.tree-panel,
 .edit-panel {
-  flex: 1; padding-left: 16px; display: flex; flex-direction: column;
-  .panel-header { font-weight: 600; font-size: 14px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--color-border-2); }
-  .edit-body { flex: 1; overflow-y: auto; padding: 4px 0; }
-  .edit-footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; border-top: 1px solid var(--color-border-2); margin-top: 8px; }
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 10px;
+  background: rgba(120, 120, 128, 0.06);
+  border: 0.5px solid var(--mac-separator);
+  border-radius: var(--mac-radius-md);
 }
-.tree-node-title { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.tree-panel {
+  width: 264px;
+  flex-shrink: 0;
+  :deep(.arco-tree) {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    background: transparent;
+    padding: 2px 0;
+  }
+}
+
+.edit-panel {
+  flex: 1;
+  min-width: 0;
+  .edit-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 2px;
+  }
+  .edit-empty {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--mac-text-3);
+    font-size: 13px;
+    svg { color: var(--mac-text-4); }
+    p { margin: 0; }
+  }
+  .edit-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 12px;
+    margin-top: 10px;
+    border-top: 0.5px solid var(--mac-separator);
+  }
+}
+
+.panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mac-text);
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 0.5px solid var(--mac-separator);
+  .panel-subtitle {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--mac-text-3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.tree-node-title {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 </style>

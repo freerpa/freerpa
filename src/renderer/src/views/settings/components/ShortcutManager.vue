@@ -16,14 +16,14 @@
               </div>
               <div class="shortcut-keys">
                 <a-tag
-                  :color="recording === item.id ? 'red' : 'arcoblue'"
+                  :color="recording === item.id ? 'red' : undefined"
                   size="large" class="keys-tag"
                   @click="startRecord(item)"
                 >
                   {{ recording === item.id ? (currentKeys || '按下按键...') : formatKeys(item.keys) }}
                 </a-tag>
               </div>
-              <a-button type="text" size="mini" status="warning" @click="handleResetOne(item.id)">
+              <a-button type="text" @click="handleResetOne(item.id)">
                 恢复默认
               </a-button>
             </div>
@@ -140,10 +140,10 @@ onUnmounted(() => removeListener?.())
       display: flex;
       align-items: center;
       padding: 8px 0;
-      border-bottom: 1px solid var(--color-border-2);
+      border-bottom: 0.5px solid var(--mac-separator);
       &:last-child { border-bottom: none; }
       .shortcut-info { flex: 1; display: flex; align-items: center; gap: 8px; .shortcut-name { font-weight: 500; font-size: 13px; } }
-      .shortcut-keys { margin-right: 12px; .keys-tag { cursor: pointer; min-width: 100px; text-align: center; user-select: none; } }
+      .shortcut-keys { margin-right: 12px; .keys-tag { cursor: pointer; min-width: 100px; text-align: center; user-select: none; font-family: var(--mac-font-mono); font-size: 12px; letter-spacing: 0; } }
     }
   }
 }

@@ -152,10 +152,12 @@
   .ref-menu {
     display: flex;
     flex-direction: column;
-    background: #fff;
-    border: 1px solid #e5e5e8;
-    border-radius: var(--border-radius-small);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    background: rgba(250, 250, 252, 0.94);
+    -webkit-backdrop-filter: saturate(180%) blur(28px);
+    backdrop-filter: saturate(180%) blur(28px);
+    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--mac-radius-sm);
+    box-shadow: var(--mac-shadow-3);
     overflow: hidden;
 
     &__tabs {
@@ -163,8 +165,8 @@
       align-items: center;
       gap: 2px;
       padding: 4px;
-      border-bottom: 1px solid #e5e5e8;
-      background: #fafafa;
+      border-bottom: 0.5px solid var(--mac-separator);
+      background: rgba(255, 255, 255, 0.35);
     }
 
     &__tab {
@@ -175,10 +177,10 @@
       justify-content: center;
       padding: 5px 4px;
       border: none;
-      border-radius: var(--border-radius-small);
+      border-radius: var(--mac-radius-control-sm);
       background: transparent;
       font-size: 12px;
-      color: #6b7280;
+      color: var(--mac-text-2);
       cursor: pointer;
       white-space: nowrap;
       transition:
@@ -186,13 +188,13 @@
         color 0.15s ease;
 
       &:hover {
-        color: #111114;
-        background: #f0f0f2;
+        color: var(--mac-text);
+        background: var(--mac-fill);
       }
 
       &.is-active {
-        color: #111114;
-        background: #fff;
+        color: var(--mac-text);
+        background: rgba(255, 255, 255, 0.95);
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
       }
     }
@@ -208,18 +210,19 @@
       align-items: center;
       gap: 8px;
       padding: 7px 8px;
-      border-radius: var(--border-radius-small);
+      border-radius: var(--mac-radius-control-sm);
       font-size: 13px;
-      color: #111114;
+      color: var(--mac-text);
       cursor: pointer;
 
       &.is-active {
-        background: #f2f3f5;
+        background: var(--mac-accent-soft);
+        color: var(--mac-accent);
       }
 
       :deep(svg) {
         flex-shrink: 0;
-        color: #6b7280;
+        color: var(--mac-text-2);
       }
     }
 
@@ -235,8 +238,8 @@
       flex-shrink: 0;
       max-width: 40%;
       font-size: 11px;
-      color: #9ca3af;
-      font-family: monospace;
+      color: var(--mac-text-3);
+      font-family: var(--mac-font-mono);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -246,15 +249,15 @@
       padding: 16px 8px;
       text-align: center;
       font-size: 12px;
-      color: #9ca3af;
+      color: var(--mac-text-3);
     }
 
     &__hint {
       padding: 5px 8px;
-      border-top: 1px solid #f0f0f2;
+      border-top: 0.5px solid var(--mac-separator);
       font-size: 11px;
-      color: #9ca3af;
-      background: #fafafa;
+      color: var(--mac-text-3);
+      background: rgba(255, 255, 255, 0.35);
     }
   }
 </style>

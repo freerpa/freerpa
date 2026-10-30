@@ -22,7 +22,7 @@
             :model-value="searchKeyword"
             @update:model-value="emit('update:searchKeyword', $event)"
             :placeholder="searchPlaceholder"
-            style="width: 300px"
+            style="width: 260px"
             allow-clear
           >
             <template #prefix><icon-search /></template>
@@ -71,7 +71,7 @@
           </a-empty>
         </div>
 
-        <a-row :gutter="8">
+        <a-row :gutter="14">
           <a-col
             :xs="{ span: 24 }"
             :sm="{ span: 12 }"
@@ -203,18 +203,18 @@
     }
 
     .operation-bar {
-      padding: 16px 16px 12px 16px;
+      padding: 14px 20px 10px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
     .selection-bar {
-      padding: 0 16px 8px 16px;
+      padding: 0 20px 10px 20px;
 
       .selection-count {
-        color: var(--color-text-2);
-        font-size: 13px;
+        color: var(--mac-text-2);
+        font-size: 12px;
       }
     }
 
@@ -222,7 +222,7 @@
       flex: 1;
       min-height: 200px;
       overflow-y: auto;
-      padding: 4px 16px 16px 16px;
+      padding: 4px 20px 20px 20px;
 
       .empty-wrapper {
         display: flex;
@@ -230,26 +230,30 @@
         justify-content: center;
         width: 100%;
         min-height: 400px;
-        background-color: var(--color-bg-2);
-        border-radius: var(--border-radius-small);
-        border: 1px dashed var(--color-border-2);
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: var(--mac-radius-lg);
+        border: 0.5px solid rgba(255, 255, 255, 0.7);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
       }
     }
 
     .card-wrapper {
       position: relative;
+      padding-bottom: 14px;
 
       .card-checkbox {
         position: absolute;
-        top: 10px;
-        left: 10px;
+        top: 12px;
+        left: 12px;
         z-index: 10;
       }
 
       &.is-selected {
         :deep(.arco-card) {
-          border-color: #000;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+          border-color: rgba(0, 0, 0, 0.55);
+          box-shadow:
+            0 0 0 3px rgba(0, 0, 0, 0.08),
+            var(--mac-shadow-2);
         }
       }
     }

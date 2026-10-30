@@ -371,9 +371,9 @@
       }
 
       .group-title {
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--color-text-1);
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--mac-text-2);
         margin-bottom: 8px;
       }
 
@@ -388,9 +388,11 @@
       display: flex;
       align-items: center;
       padding: 8px;
-      border: 1px solid var(--color-border);
-      border-radius: var(--border-radius-small);
-      transition: all 0.2s;
+      border: 0.5px solid rgba(0, 0, 0, 0.06);
+      /* 浅灰填充卡片：与接近白色的弹出面板拉开层次，保证节点名可读 */
+      background: rgba(120, 120, 128, 0.07);
+      border-radius: var(--mac-radius-sm);
+      transition: all 0.18s;
       &.click {
         cursor: pointer;
       }
@@ -402,7 +404,8 @@
         cursor: no-drop;
       }
       &:hover {
-        background: var(--color-fill-2);
+        background: rgba(120, 120, 128, 0.12);
+        border-color: rgba(0, 0, 0, 0.12);
       }
       &.workflow-item {
         padding: 0px;
@@ -412,27 +415,29 @@
         flex-direction: column;
         justify-content: flex-start;
         align-items: flex-start;
-        background: white;
+        background: rgba(120, 120, 128, 0.07);
         :deep(.arco-list-item-meta) {
           padding: 0px;
         }
         &:hover {
-          border-color: rgb(var(--primary-6));
+          background: rgba(120, 120, 128, 0.12);
+          border-color: rgba(0, 0, 0, 0.14);
         }
         .workflow-item-header {
           display: flex;
           align-items: center;
           padding: 8px 12px;
           width: 360px;
-          // border-bottom: 1px solid var(--color-border);
-          background: linear-gradient(to bottom, rgb(var(--primary-1)), #fff);
+          border-bottom: 0.5px solid var(--mac-separator);
+          background: transparent;
 
           &-icon {
             width: 24px;
             height: 24px;
             margin-right: 8px;
-            background: var(--color-fill-2);
-            border-radius: var(--border-radius-small);
+            background: rgba(60, 60, 67, 0.08);
+            color: var(--mac-accent);
+            border-radius: var(--mac-radius-xs);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -440,9 +445,9 @@
 
           &-title {
             flex: 1;
-            font-size: 14px;
-            font-weight: bold;
-            color: var(--color-text-1);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--mac-text);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -452,24 +457,26 @@
           }
         }
         .workflow-item-description {
-          padding: 0px 12px;
+          padding: 12px;
           font-size: 12px;
-          color: var(--color-text-2);
+          color: var(--mac-text-3);
         }
       }
 
       .node-icon {
         font-size: 16px;
         margin-right: 8px;
-        color: rgb(var(--primary-6));
+        color: var(--mac-accent);
       }
 
       .node-name {
         font-size: 12px;
-        color: var(--color-text-2);
+        font-weight: 500;
+        color: var(--mac-text);
         .node-ver {
-          color: var(--color-text-3);
+          color: var(--mac-text-3);
           font-size: 11px;
+          font-weight: 400;
         }
       }
     }

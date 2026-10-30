@@ -1,22 +1,33 @@
 <template>
   <div class="version-manager">
-    <a-card title="版本更新" :bordered="false">
-      <!-- 当前版本 -->
-      <div class="update-section">
-        <h3 class="update-title">当前版本 <b>V{{ version }}</b></h3>
+    <a-card :bordered="false" class="version-card">
+      <div class="app-row">
+        <img class="app-icon" :src="appIcon" alt="FreeRPA" />
+        <div class="app-meta">
+          <span class="app-name">FreeRPA</span>
+          <span class="app-sub">自动化流程客户端</span>
+        </div>
+        <span class="app-version">V{{ version }}</span>
+      </div>
 
+      <div class="update-panel">
+        <div class="update-copy">
+          <div class="update-heading">版本更新</div>
+          <div class="update-desc">检查是否有可用更新，新版本将跳转官网下载。</div>
+        </div>
         <div class="update-actions">
           <a-button type="primary" :loading="checking" @click="checkUpdate">检查更新</a-button>
-          <a-button type="primary" status="danger" v-if="canUpdate" @click="goDownload">立即更新</a-button>
+          <a-button v-if="canUpdate" status="danger" @click="goDownload">立即更新</a-button>
         </div>
-        <!-- 检查结果 -->
-        <div v-if="checkResult && !updateError" class="check-result">
-          <a-alert v-if="checkResult.hasUpdate" type="success">发现新版本 V{{ checkResult.version }}</a-alert>
-          <a-alert v-else type="normal">当前已是最新版本</a-alert>
-        </div>
-        <div v-if="updateError" class="check-result">
-          <a-alert type="error">{{ updateError }}</a-alert>
-        </div>
+      </div>
+
+      <div v-if="checkResult" class="check-status" :class="{ 'is-new': checkResult.hasUpdate }">
+        <span class="status-dot"></span>
+        <span>{{ checkResult.hasUpdate ? `发现新版本 V${checkResult.version}` : '当前已是最新版本' }}</span>
+      </div>
+      <div v-if="updateError" class="check-status is-error">
+        <span class="status-dot"></span>
+        <span>{{ updateError }}</span>
       </div>
     </a-card>
   </div>
@@ -25,6 +36,7 @@
 <script setup>
   import { ref, onMounted } from 'vue';
   import { Message } from '@arco-design/web-vue';
+  import appIcon from '@/assets/app-icon.png';
 
   // 下载区地址：「立即更新」跳转的官网下载页（VITE_DOWNLOAD_URL）
   const latestVersionUrl = import.meta.env.VITE_DOWNLOAD_URL || '';
@@ -82,19 +94,113 @@
 
 <style lang="less" scoped>
   .version-manager {
-    .update-section {
-      .update-title {
-        font-weight: 400;
-        font-size: 16px;
-        margin-bottom: 16px;
+    .version-card {
+      :deep(.arco-card-body) {
+        padding: 0;
       }
-      .update-actions {
-        display: flex;
-        gap: 12px;
-        margin-bottom: 12px;
+    }
+
+    .app-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 20px;
+    }
+    .app-icon {
+      width: 52px;
+      height: 52px;
+      flex-shrink: 0;
+      display: block;
+      object-fit: contain;
+      border-radius: var(--mac-radius-lg);
+    }
+    .app-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+    .app-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--mac-text);
+      letter-spacing: -0.01em;
+    }
+    .app-sub {
+      font-size: 12px;
+      color: var(--mac-text-3);
+    }
+    .app-version {
+      margin-left: auto;
+      flex-shrink: 0;
+      height: var(--mac-control-h-mini);
+      line-height: calc(var(--mac-control-h-mini) - 2px);
+      padding: 0 8px;
+      border-radius: var(--mac-radius-control-xs);
+      background: var(--mac-fill);
+      color: var(--mac-text-2);
+      font-family: var(--mac-font-mono);
+      font-size: 12px;
+    }
+
+    .update-panel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 20px 18px;
+      border-top: 0.5px solid var(--mac-separator);
+    }
+    .update-copy {
+      min-width: 0;
+    }
+    .update-heading {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--mac-text);
+      margin-bottom: 4px;
+    }
+    .update-desc {
+      font-size: 12px;
+      color: var(--mac-text-3);
+      line-height: 1.5;
+    }
+    .update-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .check-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 20px 18px;
+      padding: 8px 12px;
+      border-radius: var(--mac-radius-sm);
+      background: var(--mac-hover-fill);
+      font-size: 12px;
+      color: var(--mac-text-2);
+      .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--mac-gray);
+        flex-shrink: 0;
       }
-      .check-result {
-        margin-top: 4px;
+      &.is-new {
+        background: rgba(52, 199, 89, 0.08);
+        color: #248a3d;
+        .status-dot {
+          background: var(--mac-green);
+        }
+      }
+      &.is-error {
+        background: rgba(255, 59, 48, 0.08);
+        color: var(--mac-red);
+        .status-dot {
+          background: var(--mac-red);
+        }
       }
     }
   }

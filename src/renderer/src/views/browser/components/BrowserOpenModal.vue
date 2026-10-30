@@ -237,8 +237,8 @@ onBeforeUnmount(() => {
   .step {
     margin-bottom: 16px;
     padding: 12px;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
+    border: 0.5px solid var(--mac-separator);
+    border-radius: var(--mac-radius-sm);
     transition: all 0.3s;
     &.active {
       border-color: rgb(var(--primary-6));

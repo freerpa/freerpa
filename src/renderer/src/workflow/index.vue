@@ -255,8 +255,8 @@ const toggleBatch = () => {
   z-index: 1000;
   overflow: hidden;
   transition: right 0.3s ease-in-out;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
-  border-radius: var(--border-radius-small);
+  box-shadow: var(--mac-shadow-3);
+  border-radius: var(--mac-radius-lg);
 }
 
 .batch-container {
@@ -266,8 +266,12 @@ const toggleBatch = () => {
   z-index: 1000;
   overflow: hidden;
   transition: right 0.3s ease-in-out;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
-  border-radius: var(--border-radius-small);
+  background: rgba(250, 250, 252, 0.6);
+  -webkit-backdrop-filter: saturate(180%) blur(30px);
+  backdrop-filter: saturate(180%) blur(30px);
+  border: 0.5px solid rgba(255, 255, 255, 0.7);
+  box-shadow: var(--mac-shadow-3);
+  border-radius: var(--mac-radius-lg);
 }
 
 .ai-assistant-btn {

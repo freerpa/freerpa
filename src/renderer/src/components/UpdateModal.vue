@@ -79,8 +79,8 @@ const goDownload = async () => {
   }
 
   .log-box {
-    background: var(--color-fill-2);
-    border-radius: 4px;
+    background: var(--mac-fill);
+    border-radius: var(--mac-radius-sm);
     padding: 12px;
     max-height: 240px;
     overflow: auto;

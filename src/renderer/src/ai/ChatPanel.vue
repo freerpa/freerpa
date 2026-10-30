@@ -262,7 +262,10 @@
     flex-direction: column;
     width: 520px;
     height: 100%;
-    background: #fff;
+    /* 工作台底色略压深，让白色气泡与卡片形成层次，避免与背景混在一起 */
+    background: rgba(242, 242, 245, 0.6);
+    -webkit-backdrop-filter: saturate(180%) blur(30px);
+    backdrop-filter: saturate(180%) blur(30px);
 
     .chat__messages {
       flex: 1;
@@ -276,18 +279,16 @@
       display: flex;
       align-items: center;
       gap: 16px;
-      padding: 6px 12px;
+      padding: 6px 14px;
       font-size: 12px;
-      color: #9ca3af;
-      border-top: 1px solid #e5e5e8;
-      background: #fafafa;
+      color: var(--mac-text-3);
+      border-top: 0.5px solid var(--mac-separator);
     }
 
     .chat__sender {
       flex-shrink: 0;
       padding: 12px;
-      border-top: 1px solid #e5e5e8;
-      background: #f7f7f8;
+      border-top: 0.5px solid var(--mac-separator);
     }
   }
 
@@ -299,9 +300,9 @@
       max-width: 100%;
     }
     .welcome-text {
-      font-size: 14px;
-      line-height: 1.72;
-      color: #111114;
+      font-size: 13.5px;
+      line-height: 1.7;
+      color: var(--mac-text);
       p {
         margin: 0;
       }

@@ -11,13 +11,13 @@
     <div class="selector-header">
       <div class="match-condition">
         <span class="match-condition-label" style="width: 60px">匹配模式</span>
-        <a-radio-group v-model="model.match_condition" type="button" size="mini">
+        <a-radio-group v-model="model.match_condition" type="button" size="medium">
           <a-radio value="any">任一匹配</a-radio>
           <a-radio value="all">全部匹配</a-radio>
         </a-radio-group>
       </div>
 
-      <a-button type="secondary" @click="addSelector" size="mini">
+      <a-button type="secondary" @click="addSelector" size="medium">
         <template #icon><RiCrosshair2Line /></template>
         添加选择器
       </a-button>
@@ -29,7 +29,7 @@
       :pagination="false"
       :hoverable="false"
       :show-header="false"
-      size="mini"
+      size="medium"
       @change="onTableChange"
       :draggable="{ type: 'handle', width: 24 }"
       class="selector-table"
@@ -40,7 +40,7 @@
       <template #columns>
         <a-table-column :width="90">
           <template #cell="{ record }">
-            <a-select v-model="record.type" size="mini" style="width: 100%" @change="onSelectorTypeChange(record)">
+            <a-select v-model="record.type" size="medium" style="width: 100%" @change="onSelectorTypeChange(record)">
               <a-option value="css">CSS</a-option>
               <a-option value="xpath">XPath</a-option>
               <a-option value="image">截图</a-option>
@@ -54,7 +54,7 @@
             <div class="expr-cell">
               <!-- 文本类型：子类型 + 表达式 -->
               <template v-if="record.type === 'text'">
-                <a-select v-model="record.text_subtype" size="mini" style="width: 80px" class="text-sub-select">
+                <a-select v-model="record.text_subtype" size="medium" style="width: 80px" class="text-sub-select">
                   <a-option value="start">开头</a-option>
                   <a-option value="end">结束</a-option>
                   <a-option value="equals">等于</a-option>
@@ -68,20 +68,13 @@
                   :auto-size="{ minRows: 1, maxRows: 3 }"
                   class="expr-input"
                 />
-                <a-input
-                  v-else
-                  v-model="record.expression"
-                  size="mini"
-                  placeholder="匹配文本"
-                  allow-clear
-                  class="expr-input"
-                />
+                <a-input v-else v-model="record.expression" size="medium" placeholder="匹配文本" allow-clear class="expr-input" />
               </template>
               <!-- 图片类型 -->
               <template v-else-if="record.type === 'image'">
-                <a-space size="mini">
-                  <a-button size="mini" @click="handleUpload(record)">上传</a-button>
-                  <a-button size="mini" @click="handlePaste(record)">粘贴</a-button>
+                <a-space>
+                  <a-button size="medium" @click="handleUpload(record)">上传</a-button>
+                  <a-button size="medium" @click="handlePaste(record)">粘贴</a-button>
                 </a-space>
                 <a-image v-if="record.expression" height="24" :src="record.expression" />
                 <span v-if="record._sizeError" class="size-error">超过500KB</span>
@@ -93,29 +86,31 @@
                   @change="(e) => onFileChange(e, record)"
                 />
               </template>
-              <!-- 其他类型 -->
-              <Text
-                v-if="props.paramRef && record.type !== 'image'"
-                v-model="record.expression"
-                :field="{ paramRef: true, placeholder: getPlaceholder(record.type) }"
-                :intercept="false"
-                :auto-size="{ minRows: 1, maxRows: 3 }"
-                class="expr-input"
-              />
-              <a-input
-                v-else
-                v-model="record.expression"
-                size="mini"
-                :placeholder="getPlaceholder(record.type)"
-                allow-clear
-                class="expr-input"
-              />
+              <!-- 其他类型（CSS / XPath / 坐标） -->
+              <template v-else>
+                <Text
+                  v-if="props.paramRef"
+                  v-model="record.expression"
+                  :field="{ paramRef: true, placeholder: getPlaceholder(record.type) }"
+                  :intercept="false"
+                  :auto-size="{ minRows: 1, maxRows: 3 }"
+                  class="expr-input"
+                />
+                <a-input
+                  v-else
+                  v-model="record.expression"
+                  size="medium"
+                  :placeholder="getPlaceholder(record.type)"
+                  allow-clear
+                  class="expr-input"
+                />
+              </template>
             </div>
           </template>
         </a-table-column>
         <a-table-column :width="36" align="center">
           <template #cell="{ rowIndex }">
-            <a-button type="text" size="mini" status="danger" @click="removeSelector(rowIndex)">
+            <a-button type="text" size="medium" status="danger" @click="removeSelector(rowIndex)">
               <template #icon><icon-minus-circle-fill /></template>
             </a-button>
           </template>
@@ -240,8 +235,8 @@
   }
   .element-item {
     margin-bottom: 8px;
-    border: 1px solid var(--color-border-2);
-    border-radius: var(--border-radius-small);
+    border: 0.5px solid var(--mac-separator);
+    border-radius: var(--mac-radius-sm);
     padding: 8px;
     box-sizing: border-box;
   }
@@ -305,6 +300,32 @@
     .expr-input {
       flex: 1;
       min-width: 60px;
+    }
+    // 参数引用输入（Text 组件）统一成与 a-input medium 一致的高度与外观
+    .expr-input.text-field-container {
+      background: rgba(255, 255, 255, 0.78);
+      border: 0.5px solid rgba(0, 0, 0, 0.1);
+      border-radius: var(--mac-radius-sm);
+      box-shadow: inset 0 1px 1.5px rgba(0, 0, 0, 0.04);
+      transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        background-color 0.15s ease;
+      &:hover {
+        background: rgba(255, 255, 255, 0.92);
+        border-color: rgba(0, 0, 0, 0.16);
+      }
+      &:focus-within {
+        background: #fff;
+        border-color: var(--mac-accent);
+        box-shadow: none;
+      }
+      :deep(.arco-textarea) {
+        font-size: 13px;
+        padding: 5px 10px;
+        min-height: 21px;
+        background: transparent;
+      }
     }
   }
 

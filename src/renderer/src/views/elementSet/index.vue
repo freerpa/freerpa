@@ -46,9 +46,11 @@
           <p class="description">{{ es.description || '暂无描述' }}</p>
         </div>
         <div class="element-set-info">
-          <a-space>
-            <a-tag size="large">{{ es.elementCount ?? 0 }}个元素</a-tag>
-          </a-space>
+          <a-tag size="large">{{ es.elementCount ?? 0 }}个元素</a-tag>
+          <a-button type="primary" @click="openElements(es)">
+            <template #icon><ri-stack-line /></template>
+            打开元素集
+          </a-button>
         </div>
       </a-card>
     </template>
@@ -60,6 +62,12 @@
     @success="handleEditorSuccess"
   />
 
+  <ElementManager
+    v-model:visible="showElements"
+    :model-id="elementsSetId"
+    @success="refetch"
+  />
+
   <RecycleBin v-model:visible="showTrash" :api="elementSetAPI" :on-restored="refetch" />
 
   <CopyCountModal v-model:visible="showCopyModal" name="元素集" @confirm="(count) => handleCopyConfirm(count, copyElementSet)" />
@@ -67,11 +75,12 @@
 
 <script setup>
 import { ref, provide } from 'vue'
-import { IconEdit, IconDelete, IconMoreVertical, IconExport, IconCopy } from '@arco-design/web-vue/es/icon'
+import { IconEdit, IconDelete, IconMoreVertical, IconExport, IconCopy, IconSettings } from '@arco-design/web-vue/es/icon'
 import { RiStackLine } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
 import RecycleBin from '@/components/RecycleBin.vue'
 import ElementSetEditor from './components/ElementSetEditor.vue'
+import ElementManager from './components/ElementManager.vue'
 import CopyCountModal from '@/components/CopyCountModal.vue'
 import { MODULE_CONFIG } from '@/utils/importer'
 import { useResourceList } from '@/composables/useResourceList'
@@ -79,7 +88,9 @@ import { useResourceList } from '@/composables/useResourceList'
 const { elementSet: elementSetAPI } = window.electronAPI
 const showTrash = ref(false)
 const showEditor = ref(false)
+const showElements = ref(false)
 const selectedId = ref(null)
+const elementsSetId = ref(null)
 
 const {
   items: elementSets,
@@ -103,6 +114,7 @@ provide('category', categoryId)
 
 const handleCreate = () => { selectedId.value = null; showEditor.value = true }
 const handleEdit = (es) => { selectedId.value = es.id; showEditor.value = true }
+const openElements = (es) => { elementsSetId.value = es.id; showElements.value = true }
 
 const handleEditorSuccess = () => {
   showEditor.value = false
@@ -149,11 +161,23 @@ const batchExport = (ids) => handleBatchExport(ids, buildElementSetPayload)
 
 <style lang="less" scoped>
 .element-set-card {
-  margin-bottom: 16px; transition: all 0.3s;
-  &:hover { transform: translateY(-2px); box-shadow: 0 2px 8px rgba(0,0,0,.09); }
+  margin-bottom: 0;
+  &:hover { transform: translateY(-1px); }
   :deep(.arco-card-header) { border: none !important; }
 }
-.element-set-header { display: flex; align-items: center; font-size: 18px; font-weight: bold; .element-set-icon { margin-right: 12px; } }
-.element-set-content .description { color: var(--color-text-3); height: 60px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; font-size: 13px; }
-.element-set-info { display: flex; justify-content: flex-end; margin-top: 12px; align-items: center; }
+.element-set-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  .element-set-icon {
+    width: 28px; height: 28px; border-radius: var(--mac-radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 15px;
+    background: rgba(60, 60, 67, 0.08); color: var(--mac-text-2);
+  }
+}
+.element-set-content .description { color: var(--mac-text-3); height: 48px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; font-size: 12.5px; line-height: 1.55; }
+.element-set-info { display: flex; justify-content: flex-end;gap: 10px; align-items: center; margin-top: 12px; }
 </style>

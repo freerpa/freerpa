@@ -26,7 +26,7 @@
       </a-button-group>
       <a-tooltip content="自动布局(K)">
         <a-button type="text" size="small" @click="autoLayout(flowStore.vueFlowRef)" :disabled="isExecuting">
-          <template #icon><RiDashboardLine size="20" /></template>
+          <template #icon><RiDashboardLine size="24" /></template>
         </a-button>
       </a-tooltip>
     </a-space>
@@ -324,14 +324,18 @@
     display: flex;
     align-items: center;
     position: absolute;
-    bottom: 20px;
+    bottom: 22px;
     left: 50%;
     transform: translateX(-50%);
-    padding: 4px 4px;
-    background: var(--color-bg-2);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-small);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    padding: 5px 6px;
+    background: rgba(255, 255, 255, 0.62);
+    -webkit-backdrop-filter: saturate(180%) blur(28px);
+    backdrop-filter: saturate(180%) blur(28px);
+    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--mac-radius-lg);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.75),
+      0 8px 24px rgba(0, 0, 0, 0.12);
   }
   .noticeTitle {
     width: 100%;

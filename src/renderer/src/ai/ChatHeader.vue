@@ -86,18 +86,18 @@ onUnmounted(() => {
 
 <style scoped lang="less">
 .chat__title {
-  height: 44px;
+  height: 46px;
   flex-shrink: 0;
-  border-bottom: 1px solid #e5e5e8;
+  border-bottom: 0.5px solid var(--mac-separator);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
+  padding: 0 14px;
 
   &-left {
-    font-size: 14px;
-    font-weight: 500;
-    color: #111114;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--mac-text);
   }
   &-right {
     display: flex;
@@ -118,7 +118,7 @@ onUnmounted(() => {
 
     .menu-item-icon {
       flex-shrink: 0;
-      color: #6b7280;
+      color: var(--mac-text-2);
     }
     .menu-item-text {
       flex: 1;
@@ -129,21 +129,21 @@ onUnmounted(() => {
     .menu-item-count {
       flex-shrink: 0;
       font-size: 11px;
-      color: #9ca3af;
+      color: var(--mac-text-3);
     }
     .menu-item--active {
-      background: #f0f0f2;
+      background: var(--mac-accent-soft);
     }
     .menu-item-del {
       flex-shrink: 0;
       display: flex;
       align-items: center;
       padding: 0 4px;
-      color: #9ca3af;
+      color: var(--mac-text-3);
       opacity: 0;
       transition: opacity 0.15s ease;
       &:hover {
-        color: #ef4444;
+        color: var(--mac-red);
       }
     }
     .ai-menu-item:hover .menu-item-del {

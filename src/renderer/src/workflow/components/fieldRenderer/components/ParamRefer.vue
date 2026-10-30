@@ -327,7 +327,7 @@ defineExpose({
   .target {
     display: flex;
     padding: 2px 0px;
-    border-radius: 4px;
+    border-radius: var(--mac-radius-xs);
     gap: 8px;
     font-size: 12px;
     color: var(--color-text-2);

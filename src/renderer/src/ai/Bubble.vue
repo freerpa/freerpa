@@ -230,11 +230,14 @@
   .user-bubble {
     max-width: 100%;
     padding: 9px 15px;
-    border-radius: 14px;
-    background: #f2f5fa;
-    border: 1px solid #e4e9f2;
-    color: #111114;
-    font-size: 14px;
+    border-radius: var(--mac-radius-lg);
+    background: linear-gradient(180deg, var(--mac-accent-hover), var(--mac-accent));
+    border: 0.5px solid rgba(0, 0, 0, 0.16);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 1px 2px rgba(0, 0, 0, 0.16);
+    color: #fff;
+    font-size: 13.5px;
     line-height: 1.65;
     user-select: text;
     word-break: break-word;
@@ -263,7 +266,7 @@
     margin: 1px 2px;
     padding: 0 6px;
     border: 1px solid transparent;
-    border-radius: 4px;
+    border-radius: var(--mac-radius-xs);
     font-size: 12px;
     line-height: 1;
     vertical-align: middle;
@@ -301,9 +304,9 @@
       border-color: #ffedd5;
     }
     &--file {
-      color: #374151;
-      background: #f7f7f8;
-      border-color: #e5e5e8;
+      color: var(--mac-text-2);
+      background: var(--mac-fill);
+      border-color: var(--mac-separator);
     }
   }
 
@@ -316,15 +319,16 @@
     gap: 8px;
   }
 
-  /* 最终回复气泡：浅色卡片承载正文，避免与过程行混为一片纯文本 */
+  /* 最终回复气泡：实心白色卡片承载正文，与工作台浅灰底色拉开层次 */
   .answer {
     min-width: 0;
     padding: 10px 14px;
-    border: 1px solid #eceef2;
-    border-radius: 12px;
-    background: #f7f8fa;
-    color: #111114;
-    font-size: 14px;
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
+    border-radius: var(--mac-radius-md);
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    color: var(--mac-text);
+    font-size: 13.5px;
     line-height: 1.72;
     user-select: text;
     word-break: break-word;
@@ -336,7 +340,7 @@
     gap: 4px;
     margin-top: 4px;
     font-size: 11px;
-    color: #9ca3af;
+    color: var(--mac-text-3);
   }
 
   /* Markdown 预览：去掉编辑器默认底色/内边距，跟随消息排版 */
@@ -363,13 +367,13 @@
     min-height: 22px;
     margin-top: 2px;
     margin-right: 4px;
-    color: #a1a1aa;
+    color: var(--mac-text-3);
     font-size: 11px;
     line-height: 1;
     user-select: none;
 
     &__time {
-      color: #a1a1aa;
+      color: var(--mac-text-4);
       font-variant-numeric: tabular-nums;
     }
   }
@@ -383,7 +387,7 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #9ca3af;
+      background: var(--mac-text-3);
       animation: typing-bounce 1.4s infinite ease-in-out both;
       &:nth-child(1) {
         animation-delay: -0.32s;

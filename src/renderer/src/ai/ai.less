@@ -1,6 +1,6 @@
 /**
  * AI 公共样式（chat.vue 全局引入，供 Bubble / Sender / ReferenceMenu / chat 复用）
- * 圆角统一 var(--border-radius-small)
+ * 圆角统一 var(--mac-radius-sm)
  */
 
 /* 图标按钮（工具栏 / 标题栏通用） */
@@ -8,15 +8,15 @@
   width: 28px;
   height: 28px;
   padding: 0;
-  border-radius: var(--border-radius-small);
+  border-radius: var(--mac-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: var(--mac-text-2);
   transition: background 0.15s ease, color 0.15s ease;
   &:hover {
-    background: #f7f7f8;
-    color: #111114;
+    background: var(--mac-fill);
+    color: var(--mac-text);
   }
   :deep(svg) {
     flex-shrink: 0;
@@ -28,12 +28,12 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #f7f7f8;
-  border: 1px solid #e5e5e8;
-  border-radius: var(--border-radius-small);
+  background: var(--mac-fill);
+  border: 0.5px solid var(--mac-separator);
+  border-radius: var(--mac-radius-xs);
   padding: 4px 8px;
   font-size: 12px;
-  color: #111114;
+  color: var(--mac-text);
   max-width: 200px;
   white-space: nowrap;
   overflow: hidden;
@@ -42,33 +42,39 @@
 
 /* 上拉/下拉菜单面板（对话列表 / 资源选择器） */
 .ai-menu {
-  background: #fff;
-  border: 1px solid #e5e5e8;
-  border-radius: var(--border-radius-small);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  background: rgba(250, 250, 252, 0.92);
+  -webkit-backdrop-filter: saturate(180%) blur(28px);
+  backdrop-filter: saturate(180%) blur(28px);
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--mac-radius-md);
+  box-shadow: var(--mac-shadow-3);
   z-index: 100;
   overflow: hidden;
 
   .ai-menu-search {
     position: relative;
     padding: 8px;
-    border-bottom: 1px solid #e5e5e8;
+    border-bottom: 0.5px solid var(--mac-separator);
     .ai-menu-search__icon {
       position: absolute;
       left: 17px;
       top: 50%;
       transform: translateY(-50%);
-      color: #6b7280;
+      color: var(--mac-text-3);
     }
     input {
       width: 100%;
-      background: #f7f7f8;
-      border: 1px solid #e5e5e8;
-      border-radius: var(--border-radius-small);
+      background: rgba(255, 255, 255, 0.72);
+      border: 0.5px solid rgba(0, 0, 0, 0.1);
+      border-radius: var(--mac-radius-control-sm);
       padding: 5px 8px 5px 26px;
       font-size: 12px;
       outline: none;
-      &:focus { border-color: #d1d5db; }
+      color: var(--mac-text);
+      &:focus {
+        border-color: var(--mac-accent);
+        box-shadow: none;
+      }
     }
   }
 
@@ -82,19 +88,21 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px;
-    border-radius: var(--border-radius-small);
+    padding: 7px 8px;
+    border-radius: var(--mac-radius-xs);
     font-size: 12px;
-    color: #111114;
+    color: var(--mac-text);
     cursor: pointer;
-    &:hover { background: #f7f7f8; }
+    &:hover {
+      background: var(--mac-fill);
+    }
   }
 
   .ai-menu-empty {
     padding: 16px 8px;
     text-align: center;
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--mac-text-3);
   }
 }
 
@@ -112,17 +120,17 @@
     min-width: 22px;
     padding: 0;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--mac-radius-xs);
     background: transparent;
     box-shadow: none;
-    color: #a1a1aa;
+    color: var(--mac-text-4);
     transition: color 0.12s ease, background 0.12s ease;
     &:hover {
-      color: #111114;
-      background: rgba(17, 17, 20, 0.06);
+      color: var(--mac-text);
+      background: var(--mac-fill);
     }
     &.ai-bubble-action--danger:hover {
-      color: #ef4444;
+      color: var(--mac-red);
     }
   }
 }
@@ -130,14 +138,14 @@
 /* Arco secondary 按钮默认底色/边框需要显式覆盖 */
 .message-item .ai-bubble-actions .ai-bubble-action {
   background: transparent;
-  color: #a1a1aa;
+  color: var(--mac-text-4);
 
   &:hover {
-    color: #111114;
-    background: rgba(17, 17, 20, 0.06);
+    color: var(--mac-text);
+    background: var(--mac-fill);
   }
   &.ai-bubble-action--danger:hover {
-    color: #ef4444;
+    color: var(--mac-red);
   }
 }
 

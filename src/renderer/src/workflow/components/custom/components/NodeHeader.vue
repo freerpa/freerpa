@@ -130,7 +130,7 @@
     align-items: center;
     padding: 8px 12px;
     background: linear-gradient(to bottom, rgb(var(--primary-1)), #fff);
-    border-radius: 2px 2px 0 0;
+    border-radius: var(--mac-radius-md) var(--mac-radius-md) 0 0;
 
     .node-icon {
       width: 18px;

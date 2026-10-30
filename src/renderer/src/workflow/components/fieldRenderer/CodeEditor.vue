@@ -414,7 +414,7 @@ function handleSelect(paramText) {
   }
 
   // border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border-radius: var(--mac-radius-sm);
   overflow: auto;
   width: 100% - 0px;
   :deep(.cm-editor) {

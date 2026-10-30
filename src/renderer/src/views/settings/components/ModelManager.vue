@@ -36,10 +36,16 @@
                 <span class="provider-card__label">模型</span>
                 <div class="provider-card__models">
                   <template v-if="provider.models.length">
-                    <a-tag v-for="m in visibleModels(provider)" :key="m.id" class="model-chip" :title="m.id">
+                    <a-tag
+                      v-for="m in visibleModels(provider)"
+                      :key="m.id"
+                      class="model-chip"
+                      size="small"
+                      :title="m.id"
+                    >
                       {{ m.id }}
                     </a-tag>
-                    <a-tag v-if="provider.models.length > VISIBLE_MODELS" color="gray">
+                    <a-tag v-if="provider.models.length > VISIBLE_MODELS" color="gray" size="small">
                       +{{ provider.models.length - VISIBLE_MODELS }}
                     </a-tag>
                   </template>
@@ -122,7 +128,7 @@
 <script setup>
   import { ref, reactive, computed, onMounted } from 'vue';
   import { Message } from '@arco-design/web-vue';
-  import { IconPlus} from '@arco-design/web-vue/es/icon';
+  import { IconPlus, IconRobot } from '@arco-design/web-vue/es/icon';
   import { getProviders, getPresetProviders, createProvider, updateProvider, deleteProvider } from '@/api/aiModels';
 
   const protocolOptions = [

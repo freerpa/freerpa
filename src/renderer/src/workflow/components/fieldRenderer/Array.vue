@@ -22,8 +22,8 @@
                 {
                   id: 'value',
                   name: '值',
-                  type: field.itemType || 'text'
-                }
+                  type: field.itemType || 'text',
+                },
               ]
             "
           />
@@ -33,7 +33,7 @@
 
     <!-- 添加按钮 -->
     <div class="array-actions">
-      <a-button-group>
+      <a-button-group style="padding-left: 1px">
         <a-button
           type="secondary"
           size="mini"
@@ -61,13 +61,7 @@
       </a-button-group>
     </div>
 
-    <a-modal
-      v-model:visible="visible"
-      title="代码视图"
-      :width="800"
-      unmount-on-close
-      @before-ok="handleCodeEditorOk"
-    >
+    <a-modal v-model:visible="visible" title="代码视图" :width="800" unmount-on-close @before-ok="handleCodeEditorOk">
       <codemirror
         v-model="code"
         :style="{ height: '400px' }"
@@ -83,183 +77,183 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue'
-import { IconList, IconClose, IconPlus, IconCode, IconDelete } from '@arco-design/web-vue/es/icon'
-import { Message } from '@arco-design/web-vue'
-import FieldRenderer from './FieldRenderer.vue'
-import { Codemirror } from 'vue-codemirror'
-import { json } from '@codemirror/lang-json'
-import { EditorView } from '@codemirror/view'
-import { getDefaultFieldValue, unDoReDoInterceptor } from '@/workflow/utils'
-import { VueDraggable } from 'vue-draggable-plus'
-import { useFieldWatch } from './composables/useFieldValue'
+  import { ref, computed, watch, inject } from 'vue';
+  import { IconList, IconClose, IconPlus, IconCode, IconDelete } from '@arco-design/web-vue/es/icon';
+  import { Message } from '@arco-design/web-vue';
+  import FieldRenderer from './FieldRenderer.vue';
+  import { Codemirror } from 'vue-codemirror';
+  import { json } from '@codemirror/lang-json';
+  import { EditorView } from '@codemirror/view';
+  import { getDefaultFieldValue, unDoReDoInterceptor } from '@/workflow/utils';
+  import { VueDraggable } from 'vue-draggable-plus';
+  import { useFieldWatch } from './composables/useFieldValue';
 
-const props = defineProps({
-  field: {
-    type: Object,
-    required: true
+  const props = defineProps({
+    field: {
+      type: Object,
+      required: true,
+    },
+  });
+
+  const visible = ref(false);
+  const popupVisible = ref(false);
+  const code = ref('');
+
+  const getCode = () => {
+    if (props.field?.codeView?.type == 'object') {
+      const kvcode = {};
+      arrayData.value.forEach((item) => {
+        kvcode[item[props.field.codeView.key]] = item[props.field.codeView.value];
+      });
+      return JSON.stringify(kvcode, null, 2);
+    } else {
+      return JSON.stringify(arrayData.value, null, 2);
+    }
+  };
+
+  const getArrayData = () => {
+    const data = JSON.parse(code.value);
+    if (props.field?.codeView?.type == 'object') {
+      return Object.keys(data).map((key) => ({
+        [props.field.codeView.key]: key,
+        [props.field.codeView.value]: data[key],
+      }));
+    } else {
+      return data;
+    }
+  };
+
+  const showCodeEditor = () => {
+    visible.value = true;
+    code.value = getCode();
+  };
+  const handleCodeEditorOk = (done) => {
+    try {
+      arrayData.value = getArrayData();
+    } catch (error) {
+      Message.error('代码格式错误');
+      done(false);
+      return;
+    }
+    done(true);
+  };
+
+  // 编辑器扩展配置
+  const extensions = computed(() => {
+    const exts = [EditorView.lineWrapping, json()];
+    return exts;
+  });
+
+  const arrayData = defineModel({ type: Array });
+  if (!arrayData.value) {
+    arrayData.value = [];
   }
-})
 
-const visible = ref(false)
-const popupVisible = ref(false)
-const code = ref('')
+  const itemFields = computed(() => props.field.fields || []);
+  const isQuickConfig = inject('isQuickConfig');
+  useFieldWatch(props, arrayData);
 
-const getCode = () => {
-  if (props.field?.codeView?.type == 'object') {
-    const kvcode = {}
-    arrayData.value.forEach((item) => {
-      kvcode[item[props.field.codeView.key]] = item[props.field.codeView.value]
-    })
-    return JSON.stringify(kvcode, null, 2)
-  } else {
-    return JSON.stringify(arrayData.value, null, 2)
-  }
-}
+  // 清空
+  const clear = () => {
+    arrayData.value = [];
+  };
 
-const getArrayData = () => {
-  const data = JSON.parse(code.value)
-  if (props.field?.codeView?.type == 'object') {
-    return Object.keys(data).map((key) => ({
-      [props.field.codeView.key]: key,
-      [props.field.codeView.value]: data[key]
-    }))
-  } else {
-    return data
-  }
-}
+  // 添加项
+  const addItem = () => {
+    const defaultValue = { _key: Date.now() + '_' + Math.random().toString(36).slice(2, 8) };
+    itemFields.value.forEach((field) => {
+      defaultValue[field.id] = getDefaultFieldValue(field);
+    });
+    arrayData.value.push(defaultValue);
+  };
 
-const showCodeEditor = () => {
-  visible.value = true
-  code.value = getCode()
-}
-const handleCodeEditorOk = (done) => {
-  try {
-    arrayData.value = getArrayData()
-  } catch (error) {
-    Message.error('代码格式错误')
-    done(false)
-    return
-  }
-  done(true)
-}
-
-// 编辑器扩展配置
-const extensions = computed(() => {
-  const exts = [EditorView.lineWrapping, json()]
-  return exts
-})
-
-const arrayData = defineModel({ type: Array })
-if (!arrayData.value) {
-  arrayData.value = []
-}
-
-const itemFields = computed(() => props.field.fields || [])
-const isQuickConfig = inject('isQuickConfig')
-useFieldWatch(props, arrayData)
-
-// 清空
-const clear = () => {
-  arrayData.value = []
-}
-
-// 添加项
-const addItem = () => {
-  const defaultValue = { _key: Date.now() + '_' + Math.random().toString(36).slice(2, 8) }
-  itemFields.value.forEach((field) => {
-    defaultValue[field.id] = getDefaultFieldValue(field)
-  })
-  arrayData.value.push(defaultValue)
-}
-
-// 移除项
-const removeItem = (index) => {
-  arrayData.value.splice(index, 1)
-}
+  // 移除项
+  const removeItem = (index) => {
+    arrayData.value.splice(index, 1);
+  };
 </script>
 
 <style lang="less" scoped>
-.array-field {
-  width: 100%;
+  .array-field {
+    width: 100%;
 
-  .array-items {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .array-item {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-    padding: 4px;
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
-
-    .array-item-content {
-      flex: 1;
-      width: 100%;
-    }
-
-    .array-item-actions {
-      width: 100%;
-      height: 12px;
+    .array-items {
       display: flex;
-      justify-content: space-between;
-      padding-top: 2px;
-      margin-top: -4px;
-      .sort-handle {
-        cursor: move;
-        width: 12px;
-        height: 12px;
-        line-height: 12px;
-        text-align: center;
-        border-radius: 4px;
-      }
-      .delete-handle {
-        cursor: pointer;
-        width: 12px;
-        height: 12px;
-        line-height: 12px;
-        text-align: center;
-        border-radius: 4px;
-      }
-      button {
-        padding: 0px;
-        height: 12px;
-        line-height: 12px;
-      }
+      flex-direction: column;
+      gap: 4px;
     }
-  }
 
-  .array-actions {
-    margin-top: 2px;
-    .arco-btn-group {
-      border-radius: var(--border-radius-small);
-      overflow: hidden;
+    .array-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      padding: 6px;
+      border: 0.5px solid var(--mac-separator);
+      border-radius: var(--mac-radius-sm);
+
+      .array-item-content {
+        flex: 1;
+        width: 100%;
+      }
+
+      .array-item-actions {
+        width: 100%;
+        height: 12px;
+        display: flex;
+        justify-content: space-between;
+        padding-top: 2px;
+        margin-top: -4px;
+        .sort-handle {
+          cursor: move;
+          width: 12px;
+          height: 12px;
+          line-height: 12px;
+          text-align: center;
+          border-radius: var(--mac-radius-xs);
+        }
+        .delete-handle {
+          cursor: pointer;
+          width: 12px;
+          height: 12px;
+          line-height: 12px;
+          text-align: center;
+          border-radius: var(--mac-radius-xs);
+        }
+        button {
+          padding: 0px;
+          height: 12px;
+          line-height: 12px;
+        }
+      }
+    }
+
+    .array-actions {
+      margin-top: 2px;
+      .arco-btn-group {
+        border-radius: var(--mac-radius-control-xs);
+        overflow: hidden;
+      }
     }
   }
-}
-:deep(.cm-editor) {
-  width: 100%;
-  height: 400px;
-  cursor: text;
-  border-radius: var(--border-radius-small);
-  background-color: var(--color-fill-2);
-  &.cm-focused {
-    outline: none;
+  :deep(.cm-editor) {
+    width: 100%;
+    height: 400px;
+    cursor: text;
+    border-radius: var(--border-radius-small);
+    background-color: var(--color-fill-2);
+    &.cm-focused {
+      outline: none;
+    }
+    .cm-gutters.cm-gutters-before {
+      display: none;
+    }
+    .cm-activeLine {
+      background-color: transparent;
+    }
+    .cm-content {
+      padding: 4px 0;
+      // background-color: var(--color-fill-1);
+    }
   }
-  .cm-gutters.cm-gutters-before {
-    display: none;
-  }
-  .cm-activeLine {
-    background-color: transparent;
-  }
-  .cm-content {
-    padding: 4px 0;
-    // background-color: var(--color-fill-1);
-  }
-}
 </style>

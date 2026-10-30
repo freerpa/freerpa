@@ -371,13 +371,13 @@
       display: flex;
       flex: 1;
       min-height: 0;
-      border: 1px solid var(--color-border-2);
-      border-radius: 4px;
+      border: 0.5px solid var(--mac-separator);
+      border-radius: var(--mac-radius-sm);
       overflow: hidden;
 
       .dp-side {
         width: 220px;
-        border-right: 1px solid var(--color-border-2);
+        border-right: 0.5px solid var(--mac-separator);
         padding: 8px 4px;
         overflow: auto;
         flex-shrink: 0;
@@ -404,7 +404,7 @@
           gap: 6px;
           padding: 6px 8px;
           margin: 1px 0;
-          border-radius: 4px;
+          border-radius: var(--mac-radius-xs);
           cursor: pointer;
           transition: background-color 0.15s;
           &:hover,
@@ -491,7 +491,7 @@
               width: 28px;
               height: 28px;
               object-fit: cover;
-              border-radius: 4px;
+              border-radius: var(--mac-radius-xs);
               flex-shrink: 0;
             }
             .dp-row-name {
@@ -517,8 +517,8 @@
               flex-direction: column;
               align-items: center;
               padding: 10px 6px 8px;
-              border: 1px solid var(--color-border-2);
-              border-radius: 6px;
+              border: 0.5px solid var(--mac-separator);
+              border-radius: var(--mac-radius-sm);
               cursor: pointer;
               transition:
                 background-color 0.15s,

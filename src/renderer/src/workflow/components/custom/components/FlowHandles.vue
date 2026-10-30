@@ -168,7 +168,7 @@ const handleDrop = (e, handleId) => {
     height: 24px;
     background: #b1b1b7;
     border: 2px solid var(--color-fill-2);
-    border-radius: 12px;
+    border-radius: 999px;
     pointer-events: all;
     transition: all 0.2s;
     z-index: 99;

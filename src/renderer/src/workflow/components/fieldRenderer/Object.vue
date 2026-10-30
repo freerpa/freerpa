@@ -115,9 +115,9 @@ useFieldWatch(props, objectData)
 
   .object-fields {
     width: 100%;
-    padding: 4px;
-    border-radius: 4px;
-    border: 1px solid var(--color-border);
+    padding: 6px;
+    border-radius: var(--mac-radius-sm);
+    border: 0.5px solid var(--mac-separator);
   }
 
   .object-actions {

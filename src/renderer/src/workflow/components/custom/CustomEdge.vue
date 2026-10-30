@@ -164,16 +164,12 @@ const path = computed(() => {
 })
 // 获取线条样式
 const strokeStyle = computed(() => {
-  const style = { stroke: '#b1b1b7', strokeWidth: 4 }
-  if (props.sourceHandleId !== 'next' && props.sourceHandleId !== 'next-false') {
-    style.strokeWidth = 1.5
-    style.stroke = '#b1b1b7'
+  // 主流程连线（next / next-false）更粗；参数连线更细，便于一眼区分
+  const isMainFlow = props.sourceHandleId === 'next' || props.sourceHandleId === 'next-false'
+  return {
+    stroke: props.selected ? '#1d1d1f' : '#c3c3ca',
+    strokeWidth: isMainFlow ? 3 : 1.5
   }
-  // 选中时，线条颜色加深
-  if (props.selected) {
-    style.stroke = '#000'
-  }
-  return style
 })
 </script>
 
@@ -185,31 +181,26 @@ export default {
 
 <style lang="less" scoped>
 :deep(.vue-flow__edge-path) {
-  stroke: #b1b1b7 !important;
-  stroke-width: 3px;
-}
-.vue-flow__edge--selected .vue-flow__edge-path {
-  stroke: #000;
-  stroke-width: 3px;
+  stroke: #c3c3ca;
 }
 .selected {
   z-index: 101;
   button {
-    border-color: #000;
+    border-color: #1d1d1f;
   }
 }
 .add-btn {
   width: 24px;
   height: 24px;
-  border: 2px solid var(--color-border);
-  border-radius: 15px;
+  border: 2px solid var(--mac-separator);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  background: var(--color-bg-1);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--mac-shadow-2);
   &:hover {
     background: var(--color-fill-2);
     transform: scale(1.2);

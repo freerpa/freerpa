@@ -19,7 +19,7 @@
       <span class="sub-flow-node-header-title">子流程画布</span>
     </div>
     <div class="sub-flow-node-content no-drag" @pointerdown="handlePointerDown">
-      <Background pattern-color="#aaa" gap="20" />
+      <Background pattern-color="rgba(60, 60, 67, 0.18)" gap="20" />
     </div>
   </div>
 </template>
@@ -104,17 +104,18 @@ const handlePointerMove = (e) => {
   min-height: 170px;
   height: 100%;
   width: 100%;
-  background: #fff;
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-small);
+  background: rgba(255, 255, 255, 0.88);
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--mac-radius-md);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
 
   &.selected {
-    border-color: rgb(var(--primary-6)) !important;
-    box-shadow: 0 4px 8px rgba(var(--primary-6), 0.2) !important;
+    border-color: var(--mac-accent) !important;
+    box-shadow: 0 0 0 3px var(--mac-accent-soft), var(--mac-shadow-2) !important;
     .quick-config {
       display: block !important;
     }
@@ -123,29 +124,29 @@ const handlePointerMove = (e) => {
     display: flex;
     align-items: center;
     padding: 8px 12px;
-    background: linear-gradient(to bottom, rgb(var(--primary-1)), #fff);
-    border-radius: var(--border-radius-small) var(--border-radius-small) 0 0;
+    background: linear-gradient(to bottom, rgba(60, 60, 67, 0.06), rgba(255, 255, 255, 0));
+    border-radius: var(--mac-radius-md) var(--mac-radius-md) 0 0;
     height: 40px;
     width: 100%;
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--color-text-1);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--mac-text);
 
     &-icon {
       width: 18px;
       height: 18px;
       margin-right: 8px;
       padding: 2px;
-      border-radius: var(--border-radius-small);
-      border: 1px solid var(--color-text-1);
+      border-radius: var(--mac-radius-xs);
+      border: 1px solid var(--mac-text-2);
       transform: rotate(90deg);
     }
 
     &-title {
       flex: 1;
-      font-size: 16px;
-      font-weight: bold;
-      color: var(--color-text-1);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--mac-text);
     }
   }
 
@@ -153,10 +154,10 @@ const handlePointerMove = (e) => {
     top: 30px;
     width: calc(100% - 20px);
     height: calc(100% - 50px);
-    background: #f2f3f5;
+    background: rgba(244, 244, 247, 0.9);
     margin: 10px;
     position: absolute;
-    border-radius: var(--border-radius-small);
+    border-radius: var(--mac-radius-sm);
   }
 }
 </style>

@@ -145,7 +145,7 @@ defineExpose({
       height: 30px;
       transform: translate(-50%, -50%);
       border: 1px solid #fff;
-      border-radius: 20px;
+      border-radius: 50%;
       z-index: 1001;
       cursor: col-resize;
     }

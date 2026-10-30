@@ -99,7 +99,7 @@
 </template>
 
 <script setup>
-  import { computed, ref, watch } from 'vue';
+  import { computed, ref, watch, nextTick } from 'vue';
 
   import {
     IconMinus,
@@ -163,26 +163,33 @@
       });
     }
   };
+  const measureTabs = () => {
+    const el = tabsContainer.value;
+    if (!el) return;
+    scrollWidth.value = el.scrollWidth;
+    clientWidth.value = el.clientWidth;
+    // 横向滚动条判断：内容总宽 > 可视宽（考虑 1px 误差）
+    hasScrollbar.value = scrollWidth.value > clientWidth.value + 1;
+  };
   watch(tabsContainer, (newVal) => {
     if (newVal) {
-      new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          scrollWidth.value = entry.target.scrollWidth;
-          clientWidth.value = entry.target.clientWidth;
-          // 横向滚动条判断：内容总宽 > 可视宽（考虑1px误差）
-          hasScrollbar.value = scrollWidth.value > clientWidth.value + 1;
-        }
-      }).observe(tabsContainer.value);
+      new ResizeObserver(() => measureTabs()).observe(tabsContainer.value);
       // 监听滚动事件
       tabsContainer.value.addEventListener('scroll', () => {
         scrollLeft.value = tabsContainer.value.scrollLeft;
       });
+      measureTabs();
     }
   });
+  // 标签增删/重命名后内容宽度变化，需重新计算是否溢出
 
   const store = useStore();
 
   const { platform, openedTabs, activeTab } = storeToRefs(store);
+  watch(
+    () => Object.values(openedTabs.value).map((tab) => `${tab.name}-${tab.type}`).join('|'),
+    () => nextTick(measureTabs)
+  );
   const { switchTab } = store;
 
   // 该工作流是否存在未结束的多线程（状态为模块级单例，读 rows 保持响应式）
@@ -266,107 +273,137 @@
 
 <style lang="less" scoped>
   .title-bar {
-    height: 40px;
-    background: var(--color-bg-2);
+    height: var(--mac-titlebar-height);
+    background: linear-gradient(180deg, rgba(248, 248, 250, 0.74) 0%, rgba(241, 241, 245, 0.6) 100%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    backdrop-filter: blur(30px) saturate(180%);
     display: flex;
     justify-content: space-between;
     align-items: center;
     -webkit-app-region: drag;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 0.5px solid var(--mac-separator);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
     width: 100%;
     .left {
       display: flex;
       align-items: center;
-      gap: 12px;
-      -webkit-app-region: no-drag;
+      gap: 10px;
+      /* 整条左侧栏可拖拽（含双击放大）；仅交互元素单独 no-drag */
+      -webkit-app-region: drag;
       overflow: hidden;
+      height: 100%;
+      flex: 1 1 auto;
+      min-width: 0;
       .logo {
-        width: 68px;
+        width: 72px;
         height: 24px;
         margin-left: 12px;
         display: flex;
         align-items: center;
-        font-weight: bold;
+        font-weight: 600;
+        font-size: 12px;
+        letter-spacing: 0.02em;
         flex: 0 0 auto;
-        color: var(--color-text-3);
+        color: var(--mac-text-3);
         line-height: 24px;
       }
       .tabs {
         display: flex;
         align-items: center;
-        gap: 4px;
-        width: calc(100% - 92px);
+        gap: 6px;
+        flex: 1 1 auto;
+        min-width: 0;
+        height: 100%;
       }
 
-      /* 滚动按钮样式 */
+      /* 滚动按钮 */
       .scroll-btn {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--color-text-2);
-        background-color: var(--color-secondary);
-        border-radius: var(--border-radius-small);
+        flex: 0 0 auto;
+        color: var(--mac-text-2);
+        background: transparent;
+        border-radius: var(--mac-radius-sm);
         cursor: pointer;
+        -webkit-app-region: no-drag;
         height: 24px;
+        width: 24px;
         padding: 2px;
         font-size: 12px;
         &:not(.disabled):hover {
-          background-color: var(--color-secondary-hover);
+          background: var(--mac-fill);
+          color: var(--mac-text);
         }
         &:not(.disabled):active {
-          background-color: var(--color-secondary-active);
+          background: var(--mac-fill-strong);
         }
         &.disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
+          opacity: 0.35;
+          cursor: default;
         }
       }
       .editor-tabs {
         display: flex;
         align-items: center;
-        gap: 4px;
-        max-width: 100%;
-        border-radius: var(--border-radius-small);
+        flex: 1 1 0;
+        min-width: 0;
+        gap: 3px;
+        padding: 2px;
+        border-radius: var(--mac-radius-sm);
         overflow-x: auto;
+        /* 标签条本身可拖拽：打开标签后空白区域仍能拖动窗口；标签单独 no-drag */
+        -webkit-app-region: drag;
         &::-webkit-scrollbar {
           display: none;
         }
       }
 
+      /* 标签页：Safari 风格分段标签 */
       .tab-item {
         display: flex;
         flex: 0 0 auto;
         align-items: center;
-        height: 24px;
+        height: 30px;
         padding: 0 24px;
         font-size: 12px;
-        border-radius: var(--border-radius-small);
+        font-weight: 500;
+        border-radius: var(--mac-radius-sm);
+        border: 0.5px solid transparent;
         cursor: pointer;
         position: relative;
-        color: var(--color-text-2);
-        background-color: var(--color-secondary);
+        color: var(--mac-text-2);
+        background: transparent;
+        -webkit-app-region: no-drag;
+        transition:
+          background-color 0.15s ease,
+          color 0.15s ease,
+          box-shadow 0.15s ease;
         .tab-name {
           max-width: 120px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          // pointer-events: none;
         }
         &.home {
-          padding: 0 8px 0 24px;
+          padding: 0 12px 0 28px;
         }
         &.active {
-          background-color: rgb(var(--primary-6));
-          color: #fff;
+          background: rgba(255, 255, 255, 0.92);
+          border-color: rgba(0, 0, 0, 0.09);
+          color: var(--mac-text);
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.9),
+            0 1px 2px rgba(0, 0, 0, 0.06);
           &:hover {
-            background-color: rgb(var(--primary-6));
+            background: rgba(255, 255, 255, 0.98);
           }
           & .nosave {
-            background-color: #fff;
+            background-color: var(--mac-orange);
           }
         }
         &:hover {
-          background-color: var(--color-secondary-hover);
+          background: var(--mac-fill);
           .close-btn {
             display: flex;
           }
@@ -375,16 +412,16 @@
           }
         }
         .badge {
-          background-color: rgb(var(--danger-6));
+          background-color: var(--mac-red);
           color: #fff;
-          padding: 0px 2px;
-          height: 11px;
-          font-size: 8px;
-          border-radius: 5px;
-          border: 1px solid #fff;
+          padding: 0px 3px;
+          height: 12px;
+          font-size: 9px;
+          font-weight: 600;
+          border-radius: 999px;
           margin-left: 6px;
-          line-height: 9px;
-          min-width: 11px;
+          line-height: 11px;
+          min-width: 12px;
           text-align: center;
         }
         .tab-icon {
@@ -395,9 +432,10 @@
           height: 16px;
           position: absolute;
           font-size: 12px;
-          top: 4px;
-          left: 6px;
+          top: 7px;
+          left: 9px;
           pointer-events: none;
+          color: inherit;
         }
         .close-btn {
           display: none;
@@ -405,25 +443,27 @@
           justify-content: center;
           width: 16px;
           height: 16px;
-          border-radius: var(--border-radius-small);
+          border-radius: 50%;
           cursor: pointer;
           position: absolute;
-          top: 4px;
-          right: 4px;
+          top: 7px;
+          right: 5px;
           z-index: 1;
+          color: var(--mac-text-3);
           &:hover {
-            // background-color: var(--color-fill-3);
+            background-color: rgba(0, 0, 0, 0.08);
+            color: var(--mac-text);
           }
         }
         .nosave {
-          background-color: var(--color-text-2);
-          width: 8px;
-          height: 8px;
-          border-radius: 8px;
+          background-color: var(--mac-orange);
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
           cursor: pointer;
           position: absolute;
-          top: 8px;
-          right: 8px;
+          top: 11px;
+          right: 10px;
         }
       }
     }
@@ -432,32 +472,44 @@
       -webkit-app-region: no-drag;
       display: flex;
       align-items: center;
-      padding: 0 12px;
-      gap: 12px;
+      padding: 0 10px;
+      gap: 8px;
       flex: 0 0 auto;
     }
 
     .update-btn {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
+      height: 24px;
+      padding: 0 10px;
+      border-radius: var(--mac-radius-sm);
       -webkit-app-region: no-drag;
       font-weight: 500;
+      font-size: 12px;
+      color: #d63a2f !important;
+      background: rgba(255, 59, 48, 0.1) !important;
+      border: 0.5px solid rgba(255, 59, 48, 0.28) !important;
+      box-shadow: none !important;
+      &:hover {
+        background: rgba(255, 59, 48, 0.16) !important;
+      }
     }
 
     .window-controls {
-      margin-right: -12px;
+      margin-right: -10px;
       .arco-btn {
         padding-left: 12px;
         padding-right: 12px;
         border-radius: 0;
-        height: 40px;
+        height: var(--mac-titlebar-height);
+        color: var(--mac-text-2);
         &:hover {
-          background-color: var(--color-fill-2);
+          background-color: var(--mac-fill);
         }
 
         &:last-child:hover {
-          background-color: rgb(255, 77, 79);
+          background-color: var(--mac-red);
           color: white;
         }
       }
@@ -467,7 +519,7 @@
   .confirm-modal-btn {
     display: flex;
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
     margin-top: 24px;
     .arco-btn {
       width: 120px;

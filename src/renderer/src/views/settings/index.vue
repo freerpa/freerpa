@@ -96,17 +96,25 @@
   .settings-center {
     display: flex;
     height: 100%;
+    background: rgba(246, 246, 248, 0.5);
     .nav-menu {
-      width: 200px;
-      background-color: var(--color-bg-2);
-      padding: 8px;
-      border-right: solid 1px var(--color-border);
+      width: 168px;
+      flex-shrink: 0;
+      background: transparent;
+      padding: 8px 0 8px 8px;
+      :deep(.arco-menu-inner) {
+        padding: 0;
+      }
+      :deep(.arco-menu-item:first-child) {
+        margin-top: 0;
+      }
     }
     .content {
       flex: 1;
-      background-color: var(--color-bg-2);
-      border-radius: 4px;
+      background: transparent;
+      border-radius: 0;
       overflow: auto;
+      padding: 8px;
     }
   }
 </style>

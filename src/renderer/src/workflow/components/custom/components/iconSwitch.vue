@@ -44,7 +44,7 @@ const value = defineModel({
     height: 7px;
     position: absolute;
     background: #fff;
-    border-radius: 7px;
+    border-radius: 999px;
     bottom: 3px;
     right: 0;
     display: flex;

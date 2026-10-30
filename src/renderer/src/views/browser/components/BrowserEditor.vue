@@ -364,16 +364,16 @@ onMounted(async () => {
   font-size: 12px;
   margin-top: 4px;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--mac-radius-xs);
 
   &.success {
-    color: #00b42a;
-    background: #e8ffea;
+    color: #248a3d;
+    background: rgba(52, 199, 89, 0.1);
   }
 
   &.fail {
-    color: #f53f3f;
-    background: #ffece8;
+    color: var(--mac-red);
+    background: rgba(255, 59, 48, 0.08);
   }
 }
 

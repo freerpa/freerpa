@@ -47,27 +47,21 @@
     }
 
     .arco-form-layout-vertical .arco-textarea {
-      font-size: 14px !important;
-      padding: 3px 12px !important;
+      font-size: 13px !important;
+      padding: 6px 10px !important;
     }
 
     .arco-modal-container {
       -webkit-app-region: no-drag;
     }
     .arco-modal-header {
-      height: 40px !important;
+      height: auto !important;
     }
     .arco-modal-fullscreen {
       border-radius: 0 !important;
     }
     .arco-modal-close-btn {
-      margin-right: -8px !important;
-      margin-top: 4px !important;
-    }
-    .arco-modal-header .arco-icon-hover::before {
-      height: 32px !important;
-      width: 32px !important;
-      border-radius: var(--border-radius-small) !important;
+      margin: 0 !important;
     }
     .arco-icon-hover .arco-icon {
       height: 16px !important;
@@ -94,7 +88,10 @@
       user-select: text !important;
     }
     body {
-      --border-radius-small: 4px !important;
+      --border-radius-small: 8px !important;
+    }
+    .arco-radio-button{
+      border-radius: 5px !important;
     }
     /* .arco-menu-selected,
       .arco-menu-item:hover {
@@ -121,21 +118,22 @@
     }
 
     .editor-content-view blockquote {
-      border-left: 8px solid #d0e5f2;
-      padding: 10px 10px;
+      border-left: 3px solid rgba(60, 60, 67, 0.16);
+      padding: 8px 12px;
       margin: 10px 0;
-      background-color: #f1f1f1;
+      background-color: rgba(60, 60, 67, 0.05);
+      border-radius: 8px;
     }
 
     .editor-content-view code {
-      font-family: monospace;
-      background-color: #eee;
-      padding: 3px;
-      border-radius: 3px;
+      font-family: 'SF Mono', SFMono-Regular, Menlo, monospace;
+      background-color: rgba(120, 120, 128, 0.12);
+      padding: 2px 5px;
+      border-radius: 5px;
     }
     .editor-content-view pre > code {
       display: block;
-      padding: 10px;
+      padding: 10px 12px;
     }
 
     .editor-content-view table {
@@ -143,12 +141,12 @@
     }
     .editor-content-view td,
     .editor-content-view th {
-      border: 1px solid #ccc;
+      border: 1px solid rgba(60, 60, 67, 0.14);
       min-width: 50px;
       padding: 6px 12px;
     }
     .editor-content-view th {
-      background-color: #f1f1f1;
+      background-color: rgba(120, 120, 128, 0.08);
     }
 
     .editor-content-view ul,

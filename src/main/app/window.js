@@ -13,9 +13,9 @@ export const createWindow = () => {
     minHeight: 600,
     frame: false,
     titleBarStyle: 'hiddenInset',
-    backgroundColor: '#fff',
+    backgroundColor: '#ECECF0',
     show: false,
-    trafficLightPosition: { x: 16, y: 12 }
+    trafficLightPosition: { x: 18, y: 19 }
   })
 
   if (process.platform === 'darwin') {

@@ -138,9 +138,9 @@
   .tool-card {
     min-width: 0;
     margin: 2px 0;
-    border: 1px solid #ebedf0;
-    border-radius: 10px;
-    background: #fafbfc;
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
+    border-radius: var(--mac-radius-md);
+    background: rgba(255, 255, 255, 0.6);
     overflow: hidden;
   }
 
@@ -155,7 +155,7 @@
     border: none;
     border-radius: 0;
     background: none;
-    color: #9aa1ab;
+    color: var(--mac-text-3);
     font: inherit;
     font-size: 12px;
     text-align: left;
@@ -163,11 +163,11 @@
     overflow: hidden;
 
     &:hover {
-      background: rgba(17, 17, 20, 0.04);
+      background: var(--mac-fill);
     }
 
     &--error {
-      color: #ef4444;
+      color: var(--mac-red);
     }
   }
 
@@ -179,33 +179,33 @@
     flex-shrink: 0;
 
     .is-ok {
-      color: #10b981;
+      color: var(--mac-green);
     }
     .is-err {
-      color: #ef4444;
+      color: var(--mac-red);
     }
   }
 
   .tool-spin {
     width: 10px;
     height: 10px;
-    border: 2px solid #e5e7eb;
-    border-top-color: #6b7280;
+    border: 2px solid var(--mac-fill-strong);
+    border-top-color: var(--mac-text-2);
     border-radius: 50%;
     animation: tool-spin 0.9s linear infinite;
   }
 
   .tool-name {
     flex-shrink: 0;
-    font-family: var(--font-code-family, ui-monospace, SFMono-Regular, Menlo, monospace);
+    font-family: var(--font-code-family, var(--mac-font-mono));
     font-size: 12px;
     font-weight: 600;
-    color: #111114;
+    color: var(--mac-text);
   }
 
   /* 执行中：工具名 shimmer 扫光（对齐 dsh tool__head[data-running]） */
   .tool-head[data-running] .tool-name {
-    background: linear-gradient(105deg, #9aa1ab 0%, #9aa1ab 38%, #111114 46%, #111114 54%, #9aa1ab 62%, #9aa1ab 100%);
+    background: linear-gradient(105deg, #9aa1ab 0%, #9aa1ab 38%, #1d1d1f 46%, #1d1d1f 54%, #9aa1ab 62%, #9aa1ab 100%);
     background-size: 220% 100%;
     background-position: 100% 0;
     background-clip: text;
@@ -216,14 +216,14 @@
   .tool-head[data-running]:hover .tool-name {
     animation-play-state: paused;
     background: none;
-    color: #111114;
+    color: var(--mac-text);
   }
 
   .tool-summary {
     flex: 1 1 auto;
     min-width: 0;
-    color: #9ca3af;
-    font-family: var(--font-code-family, ui-monospace, SFMono-Regular, Menlo, monospace);
+    color: var(--mac-text-3);
+    font-family: var(--font-code-family, var(--mac-font-mono));
     font-size: 11px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -236,14 +236,14 @@
     gap: 6px;
     margin-left: auto;
     flex-shrink: 0;
-    color: #9ca3af;
+    color: var(--mac-text-3);
     font-size: 11px;
     font-variant-numeric: tabular-nums;
   }
 
   .tool-chevron {
     flex-shrink: 0;
-    color: #b3b9c2;
+    color: var(--mac-text-4);
     transition: transform 0.2s;
 
     &--open {
@@ -258,7 +258,7 @@
     gap: 8px;
     margin: 0;
     padding: 8px 10px 10px;
-    border-top: 1px dashed #e6e8ee;
+    border-top: 0.5px solid var(--mac-separator);
     min-width: 0;
   }
 
@@ -268,7 +268,7 @@
     &__label {
       margin-bottom: 3px;
       font-size: 11px;
-      color: #a1a1aa;
+      color: var(--mac-text-4);
     }
   }
 
@@ -276,11 +276,11 @@
     max-height: 180px;
     margin: 0;
     padding: 6px 8px;
-    background: #fafafa;
-    border: 1px solid #f0f0f2;
-    border-radius: 6px;
-    color: #6b7280;
-    font-family: var(--font-code-family, ui-monospace, SFMono-Regular, Menlo, monospace);
+    background: var(--mac-fill);
+    border: 0.5px solid var(--mac-separator);
+    border-radius: var(--mac-radius-control-sm);
+    color: var(--mac-text-2);
+    font-family: var(--font-code-family, var(--mac-font-mono));
     font-size: 11.5px;
     line-height: 1.6;
     white-space: pre-wrap;
@@ -289,9 +289,9 @@
     user-select: text;
 
     &.is-error {
-      color: #ef4444;
-      background: #fef2f2;
-      border-color: #fee2e2;
+      color: var(--mac-red);
+      background: rgba(255, 59, 48, 0.08);
+      border-color: rgba(255, 59, 48, 0.2);
     }
   }
 
@@ -300,15 +300,16 @@
     margin-top: 4px;
     padding: 2px 8px;
     border: none;
-    border-radius: 4px;
-    background: #eef2ff;
-    color: #4f46e5;
+    border-radius: var(--mac-radius-xs);
+    background: rgba(120, 120, 128, 0.08);
+    color: var(--mac-text-2);
     font-size: 11px;
     line-height: 1.6;
     cursor: pointer;
 
     &:hover {
-      background: #e0e7ff;
+      background: rgba(120, 120, 128, 0.14);
+      color: var(--mac-text);
     }
   }
 

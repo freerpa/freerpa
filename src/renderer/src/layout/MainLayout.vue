@@ -89,18 +89,29 @@ onUnmounted(() => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-bg-1);
+  background: var(--mac-window-bg);
+  background-attachment: fixed;
 
   &-content {
     flex: 1;
     display: flex;
     min-height: 0;
+    padding: 8px 0;
   }
 
   &-page {
     flex: 1;
     height: 100%;
     overflow: hidden;
+    margin: 0 8px 0 0;
+    border-radius: var(--mac-radius-lg);
+    background: rgba(255, 255, 255, 0.76);
+    border: 0.5px solid rgba(255, 255, 255, 0.7);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      0 1px 3px rgba(0, 0, 0, 0.05);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
 
     :deep(> *) {
       height: 100%;
@@ -108,10 +119,10 @@ onUnmounted(() => {
   }
 
   .tab-content {
-    height: calc(100vh - 40px);
-    background-color: var(--color-bg-2);
+    height: calc(100vh - var(--mac-titlebar-height));
+    background: var(--mac-window-bg);
     position: fixed;
-    top: 40px;
+    top: var(--mac-titlebar-height);
     left: 0;
     width: 100vw;
     z-index: 1000;

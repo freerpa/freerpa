@@ -57,7 +57,7 @@
 
           <!-- 添加文件 -->
           <div class="dropup">
-            <a-button class="ai-icon-btn" type="secondary" title="添加文件" @click="fileInput?.click()">
+            <a-button class="ai-icon-btn" type="text" title="添加文件" @click="fileInput?.click()">
               <RiAttachmentLine :size="15" />
             </a-button>
             <input ref="fileInput" type="file" multiple class="hidden-input" @change="handleFiles" />
@@ -532,15 +532,18 @@
   }
 
   .input-card {
-    background: #fff;
-    border: 1px solid #e5e5e8;
-    border-radius: var(--border-radius-small);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    background: rgba(255, 255, 255, 0.82);
+    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--mac-radius-md);
+    box-shadow:
+      inset 0 1px 1.5px rgba(0, 0, 0, 0.04),
+      0 1px 2px rgba(0, 0, 0, 0.03);
     transition:
       border-color 0.15s ease,
       box-shadow 0.15s ease;
     &:focus-within {
-      border-color: #d1d5db;
+      border-color: var(--mac-accent);
+      box-shadow: none;
     }
   }
 
@@ -563,13 +566,13 @@
     .attachment-item__del {
       display: flex;
       align-items: center;
-      color: #6b7280;
+      color: var(--mac-text-3);
       padding: 0 4px;
       opacity: 0.6;
       transition: opacity 0.15s ease;
       &:hover {
         opacity: 1;
-        color: #ef4444;
+        color: var(--mac-red);
       }
     }
   }
@@ -583,8 +586,8 @@
     min-height: 60px;
     max-height: 160px;
     padding: 12px 16px 6px;
-    font-size: 14px;
-    color: #111114;
+    font-size: 13px;
+    color: var(--mac-text);
     line-height: 1.6;
     outline: none;
     overflow-y: auto;
@@ -597,9 +600,9 @@
     top: 12px;
     left: 16px;
     right: 16px;
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.6;
-    color: #9ca3af;
+    color: var(--mac-text-4);
     pointer-events: none;
     white-space: pre-wrap;
   }
@@ -614,7 +617,7 @@
     margin: 1px 2px;
     padding: 0 6px;
     border: 1px solid transparent;
-    border-radius: 4px;
+    border-radius: var(--mac-radius-xs);
     font-size: 12px;
     line-height: 1;
     vertical-align: middle;
@@ -687,15 +690,16 @@
   .send-btn {
     width: 28px;
     height: 28px;
+    border-radius: var(--mac-radius-sm);
     transition: background 0.15s ease;
     flex-shrink: 0;
     &:hover {
-      background: #333333;
+      background: var(--mac-accent-hover);
       color: #fff;
     }
     &:disabled {
-      background: #e5e5e8;
-      color: #9ca3af;
+      background: var(--mac-fill);
+      color: var(--mac-text-4);
     }
   }
 </style>

@@ -72,9 +72,12 @@
     left: 20px;
     bottom: 80px;
     width: 400px;
-    background: var(--color-bg-2);
-    border-radius: var(--border-radius-small);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+    background: rgb(242 242 245 / 60%);
+    -webkit-backdrop-filter: saturate(180%) blur(28px);
+    backdrop-filter: saturate(180%) blur(28px);
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
+    border-radius: var(--mac-radius-lg);
+    box-shadow: var(--mac-shadow-2);
     z-index: 50;
     display: flex;
     flex-direction: column;
@@ -103,10 +106,36 @@
 
     .drawer-content {
       flex: 1;
-      padding: 10px;
+      padding: 12px;
       overflow-y: auto;
       overflow-x: hidden;
       max-height: 100%;
+
+      /* 输入控件使用纯白底 + 更清晰的描边，与压深的面板底色形成层次 */
+      :deep(.arco-input-wrapper),
+      :deep(.arco-textarea-wrapper),
+      :deep(.arco-select-view),
+      :deep(.arco-input-group-wrapper) {
+        background: #fff;
+        border-color: rgba(0, 0, 0, 0.14);
+      }
+      /* 聚焦只保留黑色边框（覆盖上面的描边色） */
+      :deep(.arco-input-wrapper.arco-input-focus),
+      :deep(.arco-textarea-wrapper:focus-within),
+      :deep(.arco-select-view-focus),
+      :deep(.arco-input-group-wrapper.arco-input-focus) {
+        border-color: var(--mac-accent);
+        box-shadow: none;
+      }
+
+      :deep(.arco-form-item-label-col) {
+        color: var(--mac-text);
+        font-size: 12px;
+        font-weight: 500;
+      }
+      :deep(.arco-form-item) {
+        margin-bottom: 10px;
+      }
     }
   }
 

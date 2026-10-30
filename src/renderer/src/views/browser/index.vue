@@ -195,11 +195,23 @@ onActivated(() => { fetchBrowserStatus() })
 
 <style lang="less" scoped>
 .env-card {
-  margin-bottom: 16px; transition: all 0.3s;
-  &:hover { transform: translateY(-2px); box-shadow: 0 2px 8px rgba(0,0,0,.09); }
+  margin-bottom: 0;
+  &:hover { transform: translateY(-1px); }
   :deep(.arco-card-header) { border: none !important; }
 }
-.env-header { display: flex; align-items: center; font-size: 18px; font-weight: bold; .env-icon { margin-right: 12px; } }
-.env-content .description { color: var(--color-text-3); height: 60px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; font-size: 13px; }
+.env-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  .env-icon {
+    width: 28px; height: 28px; border-radius: var(--mac-radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 15px;
+    background: rgba(60, 60, 67, 0.08); color: var(--mac-text-2);
+  }
+}
+.env-content .description { color: var(--mac-text-3); height: 48px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; font-size: 12.5px; line-height: 1.55; }
 .env-actions { display: flex; justify-content: flex-end; margin-top: 12px; .status-tag { cursor: pointer; user-select: none; } }
 </style>

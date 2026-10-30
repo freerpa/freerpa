@@ -43,14 +43,15 @@
         <a-config-provider size="mini">
           <div class="filter-group">
             <div v-for="(item, index) in group.conditions" :key="index" class="filter-item">
-              <a-link
-                :disabled="index === 0"
-                type="secondary"
+              <a-button
+                class="cond-remove"
+                type="text"
+                size="mini"
                 status="danger"
-                @click="group.conditions.splice(index, 1)"
+                @click="removeCondition(group, index)"
               >
-                <icon-minus-circle-fill />
-              </a-link>
+                <template #icon><IconMinusCircleFill /></template>
+              </a-button>
               <a-select
                 :options="fields.map((f) => ({ label: f.description, value: f.name }))"
                 :style="{ width: '160px' }"
@@ -184,7 +185,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { IconDelete } from '@arco-design/web-vue/es/icon'
+import { IconDelete, IconMinusCircleFill } from '@arco-design/web-vue/es/icon'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -232,6 +233,16 @@ const getFiledType = (field) => {
 const addConditionGroup = () => {
   conditions.value.push({ conditions: [{ field: '', operator: '', value: '' }], logic: 'and' })
 }
+
+// 删除单条条件：仅剩一条时连同整个条件组一起移除，避免出现空组
+const removeCondition = (group, index) => {
+  if (group.conditions.length <= 1) {
+    const groupIndex = conditions.value.indexOf(group)
+    if (groupIndex > -1) conditions.value.splice(groupIndex, 1)
+    return
+  }
+  group.conditions.splice(index, 1)
+}
 </script>
 
 <style lang="less" scoped>
@@ -267,6 +278,13 @@ const addConditionGroup = () => {
   align-items: center;
   gap: 8px;
   width: 600px;
+  .cond-remove {
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    color: var(--mac-red);
+  }
   .filter-input {
     display: flex;
     gap: 8px;
@@ -277,7 +295,7 @@ const addConditionGroup = () => {
 .color-marker {
   width: 24px;
   height: 24px;
-  border-radius: 4px;
+  border-radius: var(--mac-radius-xs);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;

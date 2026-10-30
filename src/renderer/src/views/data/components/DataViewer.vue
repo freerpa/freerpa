@@ -83,7 +83,7 @@
       "
       column-resizable
       :scroll="{
-        y: 'calc(90vh - 20px)',
+        y: 'calc(100vh - 160px)',
         x: 'calc(95vw - 330px)'
       }"
       @sorter-change="handleSortChange"
@@ -624,7 +624,7 @@ const handleImport = async () => {
 .json-viewer {
   padding: 16px;
   background-color: var(--color-fill-2);
-  border-radius: 4px;
+  border-radius: var(--mac-radius-xs);
   overflow: auto;
   max-height: 400px;
   white-space: pre-wrap;
@@ -634,7 +634,7 @@ const handleImport = async () => {
 .color-marker {
   width: 24px;
   height: 24px;
-  border-radius: 4px;
+  border-radius: var(--mac-radius-xs);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -690,8 +690,7 @@ const handleImport = async () => {
 .dataViewer {
   width: 100%;
   :deep(.arco-table-header th) {
-    padding: 5px 0px;
-    font-size: 14px !important;
+    padding: 6px 0px;
   }
   :deep(.arco-table-sorter) {
     margin-left: 4px !important;

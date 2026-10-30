@@ -50,12 +50,14 @@
     z-index: 20;
     display: flex;
     max-height: 70%;
-    background: #fff;
-    border: 1px solid #e5e5e8;
-    border-radius: 8px;
+    background: rgba(250, 250, 252, 0.92);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    backdrop-filter: saturate(180%) blur(24px);
+    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--mac-radius-md);
     overflow: hidden;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--mac-shadow-2);
     transition: all 0.2s ease;
 
     &:hover {

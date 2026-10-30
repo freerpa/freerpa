@@ -82,23 +82,56 @@
   .side-menu-container {
     position: relative;
     height: 100%;
+    flex: 0 0 auto;
 
     .side-menu {
       height: 100%;
-      border-right: solid 1px var(--color-border);
+      background: transparent;
+      border: none;
+      padding: 0 4px;
+      :deep(.arco-menu-inner) {
+        padding: 0;
+      }
 
       &:not(.arco-menu-collapsed) {
-        width: 200px;
+        width: 212px;
+      }
+      &.arco-menu-collapsed {
+        width: 60px;
       }
     }
     .arco-menu-item {
-      padding: 0 16px;
+      padding: 0 10px;
+      margin: 2px 6px;
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+    :deep(.arco-menu-collapsed .arco-menu-item:first-child) {
+      margin-top: 0;
     }
     .collapse-btn {
       position: absolute;
-      bottom: 20px;
-      left: 20px;
+      bottom: 14px;
+      left: 16px;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--mac-text-2);
+      background: rgba(255, 255, 255, 0.55);
+      border: 0.5px solid rgba(0, 0, 0, 0.08);
+      border-radius: var(--mac-radius-sm);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
       cursor: pointer;
+      transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+      &:hover {
+        background: rgba(255, 255, 255, 0.85);
+        color: var(--mac-text);
+      }
     }
   }
 </style>
