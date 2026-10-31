@@ -16,7 +16,7 @@
   >
     <template #header v-if="field.multiple">
       <div style="padding: 6px 12px">
-        <a-checkbox value="1" @change="handleCheckAll">全选 ({{ value.length }}/{{ options.length }})</a-checkbox>
+        <a-checkbox value="1" @change="handleCheckAll">全选 ({{ value?.length || 0 }}/{{ options.length }})</a-checkbox>
       </div>
     </template>
   </a-select>
@@ -38,6 +38,11 @@
 
   const formData = inject('formData');
   const value = defineModel();
+  // 多选值统一为数组：未声明 default 时是 ''，历史单值配置保留为一项
+  if (props.field.multiple && !Array.isArray(value.value)) {
+    value.value =
+      value.value === undefined || value.value === null || value.value === '' ? [] : [value.value];
+  }
   useFieldWatch(props, value);
   // 远程加载统一（useRemoteOptions）；Select 的静态 options 支持 async 函数，由 resolveOptions 处理
   const { loading, options, loadOptions: loadRemote } = useRemoteOptions(props.field, (kw) => kw, formData.value);
@@ -89,7 +94,8 @@
 
   const valueValid = debounce(() => {
     if (props.field.multiple) {
-      value.value = value.value.filter((item) => options.value.some((opt) => opt.value === item));
+      const list = Array.isArray(value.value) ? value.value : [];
+      value.value = list.filter((item) => options.value.some((opt) => opt.value === item));
     } else {
       value.value = options.value.find((opt) => opt.value === value.value) ? value.value : '';
     }

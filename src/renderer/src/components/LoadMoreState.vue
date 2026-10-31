@@ -3,7 +3,7 @@
 </template>
 
 <script setup>
-const props = defineProps({
+defineProps({
   hasMore: {
     type: Boolean,
     default: true

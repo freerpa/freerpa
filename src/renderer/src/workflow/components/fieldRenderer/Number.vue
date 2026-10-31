@@ -14,7 +14,6 @@
 </template>
 
 <script setup>
-import { inject } from 'vue'
 import { unDoReDoInterceptor } from '@/workflow/utils'
 import { useFieldWatch } from './composables/useFieldValue'
 

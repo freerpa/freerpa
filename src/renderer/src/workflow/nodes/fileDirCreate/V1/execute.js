@@ -13,7 +13,7 @@ const execute = async (node, context) => {
   try {
     fs.mkdirSync(dirPath, { recursive: true })
     // 使用 complete 方法返回结果并继续执行
-  } catch (error) {
+  } catch {
     resultPath = ''
   }
 

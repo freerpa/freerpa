@@ -149,7 +149,7 @@
     try {
       const data = await elementSetAPI.getElementSet(props.modelId);
       elements.value = (data.elements || []).map(cloneElement);
-    } catch (e) {
+    } catch {
       elements.value = [];
       Message.error('获取元素列表失败');
     } finally {
@@ -206,10 +206,19 @@
     }
     saving.value = true;
     try {
-      const payload = elements.value.map(({ _key, ...rest }) => ({
-        ...rest,
-        selectors: (rest.selectors || []).map(({ _key: sk, _sizeError, ...s }) => s),
-      }));
+      const payload = elements.value.map((el) => {
+        const rest = { ...el };
+        delete rest._key;
+        return {
+          ...rest,
+          selectors: (rest.selectors || []).map((sel) => {
+            const clean = { ...sel };
+            delete clean._key;
+            delete clean._sizeError;
+            return clean;
+          }),
+        };
+      });
       await elementSetAPI.updateElementSet({ id: props.modelId, elements: payload });
       Message.success('元素已保存');
       emit('success');

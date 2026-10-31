@@ -22,7 +22,7 @@ export const migrateLegacyPreferences = async () => {
     legacy = JSON.parse(fs.readFileSync(file, 'utf8'))
   } catch {
     // 旧文件损坏：改名留档，不阻断启动
-    try { fs.renameSync(file, file + '.migrated') } catch (_) {}
+    try { fs.renameSync(file, file + '.migrated') } catch { /* 忽略：留档重命名失败不阻断启动 */ }
     return false
   }
 

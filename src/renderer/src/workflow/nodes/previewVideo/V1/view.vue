@@ -12,7 +12,7 @@
 import { ref } from 'vue'
 import { IconPlayCircle } from '@arco-design/web-vue/es/icon'
 
-const props = defineProps({
+defineProps({
   node: {
     type: Object,
     required: true

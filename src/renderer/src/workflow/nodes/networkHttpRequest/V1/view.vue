@@ -83,18 +83,11 @@ const handleCodeEditorOk = (done) => {
       }
     }
     done()
-  } catch (error) {
+  } catch {
     showErr.value = true
   }
 }
 
-// 处理节点事件
-const onNodeEvent = async (url) => {
-  serverUrl.value = url
-}
-defineExpose({
-  onNodeEvent
-})
 </script>
 
 <style lang="less" scoped>

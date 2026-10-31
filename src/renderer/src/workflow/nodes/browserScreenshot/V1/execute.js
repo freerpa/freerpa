@@ -54,7 +54,7 @@ const execute = async (node, context) => {
     case 'fullscreen':
       screenshotOptions.fullPage = true
       break
-    case 'element':
+    case 'element': {
       if (!selector) {
         throw new Error('元素选择器不能为空')
       }
@@ -64,6 +64,7 @@ const execute = async (node, context) => {
       }
       screenshotOptions.clip = await element.boundingBox()
       break
+    }
     case 'area':
       if (!area || !area.width || !area.height) {
         throw new Error('截图区域配置不正确')

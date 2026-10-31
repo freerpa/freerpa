@@ -291,7 +291,7 @@ const fetchBrowserDetail = async (id) => {
     const result = await browserAPI.getBrowser(id)
     if (result) {
       let config = {}
-      try { config = typeof result.config === 'string' ? JSON.parse(result.config) : (result.config || {}) } catch (e) {}
+      try { config = typeof result.config === 'string' ? JSON.parse(result.config) : (result.config || {}) } catch { /* 忽略：配置解析失败时使用空配置 */ }
       rawConfig.value = config
       const proxyDirect = config.proxy_direct || false
       const isDirectMode = proxyDirect === true || proxyDirect === 1 || proxyDirect === 'true'
@@ -335,7 +335,7 @@ const fetchBrowserDetail = async (id) => {
         }
       }
     }
-  } catch (error) {
+  } catch {
     Message.error('获取环境详情失败')
   }
 }

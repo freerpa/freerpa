@@ -2,7 +2,6 @@
  * @file: 文件删除节点执行器
  */
 
-import path from 'node:path'
 import fs from 'node:fs'
 
 const execute = async (node, context) => {

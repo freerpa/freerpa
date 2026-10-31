@@ -74,7 +74,7 @@
 <script setup>
   import { ref, onMounted, onUnmounted } from 'vue';
   import { Message, Modal } from '@arco-design/web-vue';
-  import { IconPlus, IconRefresh, IconInfoCircle, IconFolderAdd } from '@arco-design/web-vue/es/icon';
+  import { IconPlus, IconRefresh, IconFolderAdd } from '@arco-design/web-vue/es/icon';
   import nodes, { loadPluginNodes, PLUGIN_NODE_PREFIX } from '@/workflow/nodes';
 
   const plugins = ref([]);

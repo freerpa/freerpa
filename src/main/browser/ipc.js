@@ -46,7 +46,7 @@ export const register = () => {
       incrementRef(envId)
 
       if (fingerprint?.seed && !existingFingerprint?.seed) {
-        try { if (event.sender && !event.sender.isDestroyed()) event.sender.send('env:saveSession', { envId: String(envId), fingerprint }) } catch (_) { }
+        try { if (event.sender && !event.sender.isDestroyed()) event.sender.send('env:saveSession', { envId: String(envId), fingerprint }) } catch { /* 忽略：会话保存失败不影响浏览器使用 */ }
       }
 
       return { code: 200, message: '浏览器已打开', data: { instanceId: String(instance.id), port: Number(instance.port), wsEndpoint: String(instance.wsEndpoint) } }

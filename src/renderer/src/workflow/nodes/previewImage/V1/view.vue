@@ -51,7 +51,7 @@ const workflowId = inject('workflowId')
 // 工作流store
 const flowStore = useFlowStore(workflowId)
 
-const props = defineProps({
+defineProps({
   node: {
     type: Object,
     required: true
@@ -62,13 +62,13 @@ const image = ref('')
 const compareImage = ref('')
 
 const imageRef = ref(null)
-const { width: imageWidth, height: imageHeight } = useElementBounding(imageRef)
+const { width: imageWidth } = useElementBounding(imageRef)
 
 const width = ref(50)
 
 let startX = 0
 let isDragging = false
-const handlePionterUp = (e) => {
+const handlePionterUp = () => {
   isDragging = false
   window.removeEventListener('pointermove', handlePointerMove)
   window.removeEventListener('pointerup', handlePionterUp)

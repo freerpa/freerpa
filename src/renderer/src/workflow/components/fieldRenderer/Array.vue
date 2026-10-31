@@ -34,16 +34,11 @@
     <!-- 添加按钮 -->
     <div class="array-actions">
       <a-button-group style="padding-left: 1px">
-        <a-button
-          type="secondary"
-          size="mini"
-          @click="addItem"
-          :disabled="field.maxItems && value.length >= field.maxItems"
-        >
+        <a-button type="secondary" @click="addItem" :disabled="field.maxItems && arrayData?.length >= field.maxItems">
           <icon-plus />
           添加{{ field.name || '项' }}
         </a-button>
-        <a-button v-if="field.codeView" type="secondary" size="mini" @click="showCodeEditor">
+        <a-button v-if="field.codeView" type="secondary" @click="showCodeEditor">
           <icon-code />
           代码视图
         </a-button>
@@ -53,7 +48,7 @@
           :content="`确定清空所有${field.name || '项'}？`"
           @ok="clear"
         >
-          <a-button type="secondary" size="mini" @click.stop="popupVisible = true">
+          <a-button type="secondary" @click.stop="popupVisible = true">
             <icon-delete />
             清空
           </a-button>
@@ -77,7 +72,7 @@
 </template>
 
 <script setup>
-  import { ref, computed, watch, inject } from 'vue';
+  import { ref, computed, inject } from 'vue';
   import { IconList, IconClose, IconPlus, IconCode, IconDelete } from '@arco-design/web-vue/es/icon';
   import { Message } from '@arco-design/web-vue';
   import FieldRenderer from './FieldRenderer.vue';
@@ -130,7 +125,7 @@
   const handleCodeEditorOk = (done) => {
     try {
       arrayData.value = getArrayData();
-    } catch (error) {
+    } catch {
       Message.error('代码格式错误');
       done(false);
       return;
@@ -151,6 +146,8 @@
 
   const itemFields = computed(() => props.field.fields || []);
   const isQuickConfig = inject('isQuickConfig');
+  // 数组项固定使用横排（label 与控件同排）；外层抽屉/节点的布局不影响数组项内部
+
   useFieldWatch(props, arrayData);
 
   // 清空

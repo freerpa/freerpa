@@ -39,22 +39,30 @@ export const migrateEvents = (workflowId, conversationId) =>
   window.electronAPI.ai.migrateEvents(workflowId, conversationId)
 
 /**
- * 创建流式对话（单步补全）：主进程 streamText，增量经 ai:chatChunk/ai:chatDone/ai:chatError 事件推送
+ * 创建一次 Agent turn（主进程 LangGraph 多步循环）
+ * - 流式增量：ai:chatChunk
+ * - 事件事实：ai:agentEvent
+ * - 渲染层 host 调用：ai:agentHostCall → 执行后 ai:agentHostReply
  * @param {Object} payload
- * @param {string} payload.providerId 供应商 ID
- * @param {string} payload.modelId 模型 ID
+ * @param {string} payload.providerId
+ * @param {string} payload.modelId
+ * @param {number} payload.turn
+ * @param {string} payload.turnId
  * @param {Array} payload.messages renderer 内部格式消息（user/assistant/tool）
  * @param {Array} payload.tools OpenAI 风格工具定义
  * @param {Object} handlers
- * @param {(part: {type:'text'|'reasoning'|'tool-call', ...}) => void} handlers.onChunk 流式增量
- * @param {(result: {text, reasoning, toolCalls, finishReason, aborted?}) => void} handlers.onDone 结束
- * @param {(error: Error) => void} handlers.onError 出错
+ * @param {(part:Object)=>void} handlers.onPart 流式增量
+ * @param {(event:Object)=>void} handlers.onEvent 事件
+ * @param {(method:string, payload:Object)=>Promise<any>} handlers.onHostCall host 调用
+ * @param {(result:Object)=>void} handlers.onDone 结束
+ * @param {(error:Error)=>void} handlers.onError 出错
  * @returns {{ start: () => Promise<void>, abort: () => void }}
  */
-export const createChatStream = (payload, handlers) => {
+export const createAgentRun = (payload, handlers) => {
   const requestId = uuidv4()
-  const { onChunk, onDone, onError } = handlers || {}
+  const { onPart, onEvent, onHostCall, onDone, onError } = handlers || {}
   let unsubscribe = []
+  let finished = false
   const cleanup = () => {
     unsubscribe.forEach((off) => off())
     unsubscribe = []
@@ -65,30 +73,43 @@ export const createChatStream = (payload, handlers) => {
     })
     unsubscribe.push(off)
   }
+  const finish = (fn, value) => {
+    if (finished) return
+    finished = true
+    cleanup()
+    fn?.(value)
+  }
 
   const start = async () => {
-    subscribe(window.electronAPI.ai.onChatChunk, ({ part }) => onChunk?.(part))
-    subscribe(window.electronAPI.ai.onChatDone, ({ result }) => {
-      cleanup()
-      onDone?.(result)
+    subscribe(window.electronAPI.ai.onChatChunk, ({ part }) => onPart?.(part))
+    subscribe(window.electronAPI.ai.onAgentEvent, ({ event }) => onEvent?.(event))
+    subscribe(window.electronAPI.ai.onAgentHostCall, async ({ callId, method, payload: hostPayload }) => {
+      try {
+        const result = await onHostCall?.(method, hostPayload)
+        await window.electronAPI.ai.agentHostReply({ requestId, callId, ok: true, result })
+      } catch (error) {
+        await window.electronAPI.ai.agentHostReply({
+          requestId,
+          callId,
+          ok: false,
+          error: error?.message || String(error)
+        })
+      }
     })
-    subscribe(window.electronAPI.ai.onChatError, ({ error }) => {
-      cleanup()
-      onError?.(new Error(error))
-    })
+    subscribe(window.electronAPI.ai.onChatDone, ({ result }) => finish(onDone, result))
+    subscribe(window.electronAPI.ai.onChatError, ({ error }) =>
+      finish(onError, new Error(error))
+    )
     try {
       await window.electronAPI.ai.chatStart({ requestId, ...payload })
     } catch (error) {
-      cleanup()
-      onError?.(error)
+      finish(onError, error)
     }
   }
 
   const abort = () => {
+    // 主进程收到 abort 后会补发中断 attempt 事件并回 chatDone，这里保持订阅等待收尾
     window.electronAPI.ai.chatAbort(requestId)
-    cleanup()
-    // 主进程 abort 后的 chatDone 事件已被退订，本地同步完成以解除 runCompletion 悬挂
-    onDone?.({ aborted: true })
   }
 
   return { start, abort }

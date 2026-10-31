@@ -27,7 +27,7 @@
 <script setup>
   import { ref, watch, computed } from 'vue';
   import { RiBrainLine, RiArrowRightSLine } from '@remixicon/vue';
-  import { fmtDuration } from './turnModel';
+  import { fmtDuration } from '../turnModel';
 
   const props = defineProps({
     /** 思考内容（纯文本） */

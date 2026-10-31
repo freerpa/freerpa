@@ -15,7 +15,7 @@
 </template>
 
 <script setup>
-import { ref, inject } from 'vue'
+import { ref } from 'vue'
 import { useFieldWatch } from './composables/useFieldValue'
 
 const props = defineProps({

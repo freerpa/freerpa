@@ -34,7 +34,7 @@
     try {
       const result = await window.electronAPI.dbInfo.getInfo();
       Object.assign(dbInfo, result);
-    } catch (e) {
+    } catch {
       Message.error('获取数据库信息失败');
     }
   };

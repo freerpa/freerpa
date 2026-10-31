@@ -85,7 +85,7 @@ const execute = async (node, context) => {
       const buffer = fs.readFileSync(filePath)
       // 转换为 ArrayBuffer
       return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
-    } catch (error) {
+    } catch {
       return new ArrayBuffer(0)
     }
   }
@@ -102,7 +102,7 @@ const execute = async (node, context) => {
         } else if (stat.isDirectory()) {
           filePaths.push(...getAllFiles(filePath))
         }
-      } catch (error) {
+      } catch {
         console.error('无效的文件路径:', filePath)
       }
     }

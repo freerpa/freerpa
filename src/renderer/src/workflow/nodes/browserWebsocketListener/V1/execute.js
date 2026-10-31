@@ -19,7 +19,7 @@ const execute = async (node, context) => {
     activeWebsockets: new Map() // 存储 url -> ws 的映射
   }
   // 处理WebSocket消息
-  const handleMessage = async (message, requestId, isReceive) => {
+  const handleMessage = async (message, requestId) => {
     const connection = state.connections.get(requestId)
     if (!connection) return
     next({
@@ -43,14 +43,14 @@ const execute = async (node, context) => {
     if (!state.connections.has(requestId)) return
 
     try {
-      await handleMessage(response.payloadData, requestId, 'receive')
+      await handleMessage(response.payloadData, requestId)
     } catch (error) {
       console.error('处理WebSocket接收消息失败:', error)
     }
   })
 
   // 添加WebSocket发送消息监听
-  page._client().on('Network.webSocketFrameSent', async ({ requestId, response }) => {
+  page._client().on('Network.webSocketFrameSent', async ({ requestId }) => {
     if (!state.connections.has(requestId)) return
 
     try {
@@ -66,7 +66,7 @@ const execute = async (node, context) => {
     }
   })
 
-  page._client().on('Network.webSocketClosed', ({ requestId, timestamp }) => {
+  page._client().on('Network.webSocketClosed', ({ requestId }) => {
     const connection = state.connections.get(requestId)
     if (!connection) return
 
@@ -75,7 +75,7 @@ const execute = async (node, context) => {
     state.activeWebsockets.delete(wsUrl)
   })
 
-  page._client().on('Network.webSocketFrameError', ({ requestId, timestamp, errorMessage }) => {
+  page._client().on('Network.webSocketFrameError', ({ requestId }) => {
     const connection = state.connections.get(requestId)
     if (!connection) return
   })

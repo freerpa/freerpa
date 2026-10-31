@@ -171,6 +171,7 @@ export const deriveModelMessages = (events = []) => {
         role: 'user',
         content: message.content || '',
         attachments: asArray(message.attachments),
+        source: event.data?.source || message.source || '',
         round_id: message.round_id || ''
       })
       continue

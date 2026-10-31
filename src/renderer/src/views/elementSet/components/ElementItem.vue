@@ -123,7 +123,7 @@
 <script setup>
   import { ref } from 'vue';
   import { Message } from '@arco-design/web-vue';
-  import { IconDelete, IconPlus, IconMinusCircleFill } from '@arco-design/web-vue/es/icon';
+  import { IconDelete, IconMinusCircleFill } from '@arco-design/web-vue/es/icon';
   import { RiCrosshair2Line } from '@remixicon/vue';
   import Text from '@/workflow/components/fieldRenderer/Text.vue';
 

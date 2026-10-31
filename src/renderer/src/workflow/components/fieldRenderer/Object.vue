@@ -4,6 +4,7 @@
     <div class="object-fields">
       <field-renderer
         v-model="objectData"
+        :layout="parentLayout"
         :fields="fields || []"
         :is-quick-config="isQuickConfig"
       />
@@ -11,7 +12,7 @@
 
     <!-- 添加字段按钮(如果允许动态添加字段) -->
     <div v-if="field.allowCustomFields" class="object-actions">
-      <a-button type="outline" size="mini" @click="showAddField = true">
+      <a-button type="outline" @click="showAddField = true">
         <template #icon>
           <icon-plus />
         </template>
@@ -43,7 +44,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue'
+import { ref, computed, inject } from 'vue'
 import { IconPlus } from '@arco-design/web-vue/es/icon'
 import FieldRenderer from './FieldRenderer.vue'
 import { getDefaultFieldValue } from '../../utils'
@@ -71,7 +72,7 @@ const objectData = defineModel({
 if (JSON.stringify(objectData.value) === '{}') {
   const defaultValue = {}
   fields.value.forEach((field) => {
-    defaultValue[field.id] = field.hasOwnProperty('default')
+    defaultValue[field.id] = Object.hasOwn(field, 'default')
       ? field.default
       : getDefaultFieldValue(field)
   })
@@ -106,6 +107,8 @@ const handleAddField = () => {
 }
 
 const isQuickConfig = inject('isQuickConfig')
+// 跟随父级表单布局（抽屉竖排 / 节点横排）
+const parentLayout = inject('fieldLayout', 'horizontal')
 useFieldWatch(props, objectData)
 </script>
 

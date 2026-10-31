@@ -17,7 +17,7 @@ const execute = async (node, context) => {
   try {
     socket.send(message)
     complete()
-  } catch (error) {
+  } catch {
     throw new Error('WebSocket连接已关闭')
   }
 

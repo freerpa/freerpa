@@ -8,7 +8,7 @@ const execute = async (node, context) => {
   const { complete } = context
   const { time } = inputs
 
-  const { handleType = 'toTimestamp', format = 'YYYY-MM-DD HH:mm:ss', timeZone = 'Asia/Shanghai', amount = 1, unit = 'hour' } = config
+  const { handleType = 'toTimestamp', format = 'YYYY-MM-DD HH:mm:ss', amount = 1, unit = 'hour' } = config
 
   try {
     let result = time

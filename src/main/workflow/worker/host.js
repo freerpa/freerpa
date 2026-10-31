@@ -2,6 +2,7 @@
  * @file: deno 宿主进程 — 主进程（stdin/stdout JSON 行）与工作流 Worker（postMessage）之间的路由器
  * 权限：Worker 的 deno.permissions 描述符由主进程按权限规则生成（最小权限原则）
  */
+/* global Deno */
 import { MSG, encodeLine, LineDecoder } from './protocol.js'
 
 // worker 内部异常/未处理 rejection 不拖垮宿主（仅影响对应工作流）

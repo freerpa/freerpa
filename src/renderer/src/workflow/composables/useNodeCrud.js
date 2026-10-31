@@ -82,7 +82,6 @@ export function useNodeCrud({ vueFlowRef, isExecuting, clipboard, createConnecti
       parentNode: nodeData.parentNode,
       selectable: nodeData.selectable,
       deletable: nodeData.deletable,
-      focusable: nodeData.focusable,
       extent: nodeData.extent,
       // expandParent: !!nodeData.parentNode,
       // extent: { range: 'parent', padding: [20, 20, 20, 20] },

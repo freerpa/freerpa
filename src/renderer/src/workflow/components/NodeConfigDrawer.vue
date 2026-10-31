@@ -12,7 +12,7 @@
       >
         <a-tab-pane v-for="group in tabGroups" :key="group.name" :title="group.name">
           <div class="drawer-content scrollbar">
-            <a-config-provider size="small">
+            <a-config-provider size="medium">
               <FieldRenderer
                 layout="vertical"
                 :model-value="nodeConfig"
@@ -115,9 +115,15 @@
       :deep(.arco-input-wrapper),
       :deep(.arco-textarea-wrapper),
       :deep(.arco-select-view),
-      :deep(.arco-input-group-wrapper) {
+      :deep(.arco-input-group-wrapper),
+      :deep(.arco-input-tag) {
         background: #fff;
         border-color: rgba(0, 0, 0, 0.14);
+      }
+      /* 自定义字段容器（Text 的 prefix/suffix 区、色板）同样统一为白底 */
+      :deep(.text-field-container),
+      :deep(.color-picker) {
+        background: #fff;
       }
       /* 聚焦只保留黑色边框（覆盖上面的描边色） */
       :deep(.arco-input-wrapper.arco-input-focus),

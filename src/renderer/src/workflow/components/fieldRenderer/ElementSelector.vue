@@ -185,7 +185,12 @@ const onConfirm = () => {
   value.value = {
     name: el.name.trim() || '',
     match_condition: el.match_condition || 'any',
-    selectors: (el.selectors || []).map(({ _key, _sizeError, ...rest }) => rest)
+    selectors: (el.selectors || []).map((sel) => {
+      const clean = { ...sel }
+      delete clean._key
+      delete clean._sizeError
+      return clean
+    })
   }
   showModal.value = false
 }

@@ -42,7 +42,7 @@
 <script setup>
   import { ref, reactive, computed, watch, nextTick, onMounted } from 'vue';
   import { RiFlowChart, RiDatabase2Line, RiGlobalLine, RiStackLine } from '@remixicon/vue';
-  import { RESOURCE_TABS, loadResourceType } from './resourceIndex';
+  import { RESOURCE_TABS, loadResourceType } from '../resourceIndex';
 
   /**
    * @file: @ 资源引用菜单（输入 @ 时唤起）

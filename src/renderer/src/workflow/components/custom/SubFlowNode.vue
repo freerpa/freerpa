@@ -75,7 +75,7 @@ const handleSubFlowDrop = (e) => {
 let startX = 0
 let startY = 0
 let isDragging = false
-const handlePionterUp = (e) => {
+const handlePionterUp = () => {
   isDragging = false
   window.removeEventListener('pointermove', handlePointerMove)
   window.removeEventListener('pointerup', handlePionterUp)

@@ -1,9 +1,6 @@
 <template>
-  <a-switch
-    v-model="value"
-    :disabled="field.disabled"
-    size="small"
-  />
+  <!-- size 继承 ConfigProvider：mini/small 为 16px，medium/large 为默认 24px -->
+  <a-switch v-model="value" :disabled="field.disabled" />
 </template>
 
 <script setup>
@@ -18,5 +15,4 @@ const props = defineProps({
 
 const value = defineModel()
 useFieldWatch(props, value)
-
-</script> 
+</script>

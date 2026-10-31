@@ -129,12 +129,11 @@
 
 <script setup>
   import { computed, defineAsyncComponent, ref, inject, provide, onUnmounted } from 'vue';
-  import { IconCheckCircle, IconExclamationCircle } from '@arco-design/web-vue/es/icon';
+  import { IconCheckCircle } from '@arco-design/web-vue/es/icon';
   import { NodeResizer } from '@vue-flow/node-resizer';
   import { useFlowStore } from '../../store';
   import { storeToRefs } from 'pinia';
   import { ConnectionRules } from '../../utils';
-  import { useStore } from '@/store';
   import { loadPluginNodes } from '@nodes-path';
 
   // Sub-components

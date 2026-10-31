@@ -27,19 +27,19 @@ const TEMP_SESSION_PATH = () => path.join(app.getPath('userData'), TEMP_SESSION_
 /** 若 userDataDir 属于 tempSession（随机指纹临时目录）则删除之；常规 sessions 目录绝不动 */
 const maybeRemoveTempSessionDir = (userDataDir) => {
   if (!userDataDir || !userDataDir.includes(`${path.sep}${TEMP_SESSION_ROOT}${path.sep}`)) return
-  try { fs.rmSync(userDataDir, { recursive: true, force: true }) } catch (_) { /* 目录被占用/不存在时忽略 */ }
+  try { fs.rmSync(userDataDir, { recursive: true, force: true }) } catch { /* 目录被占用/不存在时忽略 */ }
 }
 
 /** 清空整个 tempSession 随机指纹临时目录（应用退出前调用） */
 export const cleanupTempSessionDir = () => {
-  try { fs.rmSync(TEMP_SESSION_PATH(), { recursive: true, force: true }) } catch (_) { /* 忽略 */ }
+  try { fs.rmSync(TEMP_SESSION_PATH(), { recursive: true, force: true }) } catch { /* 忽略 */ }
 }
 
 /**
  * 安全发送 IPC 消息到渲染进程
  */
 const safeSend = (sender, channel, data) => {
-  try { if (sender && !sender.isDestroyed()) sender.send(channel, data) } catch (_) {}
+  try { if (sender && !sender.isDestroyed()) sender.send(channel, data) } catch { /* 忽略：窗口已销毁时发送失败无影响 */ }
 }
 
 /**
@@ -61,11 +61,11 @@ export const killBrowserProcess = async (envId) => {
     } else {
       proc.kill('SIGTERM')
       await new Promise(resolve => {
-        const t = setTimeout(() => { try { proc.kill('SIGKILL') } catch (_) {}; resolve() }, 3000)
+        const t = setTimeout(() => { try { proc.kill('SIGKILL') } catch { /* 忽略：进程已退出时 kill 失败无影响 */ }; resolve() }, 3000)
         proc.on('exit', () => { clearTimeout(t); resolve() })
       })
     }
-  } catch (_) {}
+  } catch { /* 忽略：进程关闭失败时不影响后续流程 */ }
 }
 
 /**
@@ -121,13 +121,13 @@ const startPageMonitor = async (envId, entry) => {
           return
         }
         setTimeout(check, 2000)
-      } catch (_) {
+      } catch {
         // CDP 已断开，进程应该已退出
         killBrowserProcess(envId).catch(() => {})
       }
     }
     setTimeout(check, 3000)
-  } catch (_) {}
+  } catch { /* 忽略：连接 CDP 失败时无需监控页面 */ }
 }
 
 /**

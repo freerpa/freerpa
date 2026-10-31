@@ -21,7 +21,7 @@
 import { ref, watch } from 'vue'
 
 const visible = defineModel('visible')
-const props = defineProps({
+defineProps({
   name: { type: String, default: '' }
 })
 const emit = defineEmits(['confirm'])

@@ -38,7 +38,7 @@ const sendNodeEvent = inject('sendNodeEvent')
 const isExecuting = inject('isExecuting')
 
 // 处理节点事件
-const onNodeEvent = async (params, callback) => {
+const onNodeEvent = async () => {
 }
 
 const handleTrigger = async () => {

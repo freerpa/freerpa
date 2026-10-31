@@ -17,7 +17,7 @@ const ensureTable = async (db) => {
       updated_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
     )
   `)
-  try { await db.exec(`ALTER TABLE workflows ADD COLUMN deleted_at TIMESTAMP DEFAULT NULL`) } catch (e) {}
+  try { await db.exec(`ALTER TABLE workflows ADD COLUMN deleted_at TIMESTAMP DEFAULT NULL`) } catch { /* 忽略：列已存在（重复迁移） */ }
 }
 
 const crud = createEntityCrud({

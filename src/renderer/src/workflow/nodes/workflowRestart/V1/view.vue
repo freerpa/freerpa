@@ -2,7 +2,7 @@
   <div class="end-workflow-view">重启当前流程</div>
 </template>
 <script setup>
-const props = defineProps({
+defineProps({
   node: {
     type: Object,
     required: true

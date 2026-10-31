@@ -5,13 +5,13 @@
 import { createSession } from './session.js'
 import { createInbox } from './inbox.js'
 import { createAgent } from './agent.js'
-import { createLlmAdapter } from './llm.js'
+import { createAgentAdapter } from './llm.js'
 import { createPromptAssembler } from './prompt.js'
 import { createToolRegistry } from './tools/registry.js'
 import { createToolPipeline } from './tools/pipeline.js'
 import { createWorkflowGuard } from './policies/workflowGuard.js'
 import { createEventPersistence } from './persistence.js'
-import { createChatStream } from '@/api/aiModels'
+import { createAgentRun } from '@/api/aiModels'
 
 /**
  * @param {Object} options
@@ -46,7 +46,7 @@ export const createChatKernel = ({
   const registry = createToolRegistry({ definitions: tools, executors })
   const prompt = createPromptAssembler({ buildSystem, buildTurn, loadMemories })
   const workflowGuard = createWorkflowGuard({ flowStore })
-  const llm = createLlmAdapter({ createChatStream })
+  const llm = createAgentAdapter({ createAgentRun })
   const toolsPipeline = createToolPipeline({ registry, session })
 
   let currentModel = null

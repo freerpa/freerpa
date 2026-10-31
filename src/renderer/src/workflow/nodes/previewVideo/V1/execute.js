@@ -1,7 +1,6 @@
 /**
  * @file: 视频预览节点执行器
  */
-import path from 'node:path'
 import { URL } from 'node:url'
 import fs from 'node:fs'
 

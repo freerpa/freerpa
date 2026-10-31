@@ -105,10 +105,10 @@ const execute = async ({ config }, context) => {
       }
     }
   }
-  if (!finalHeaders.hasOwnProperty('Host')) {
+  if (!Object.hasOwn(finalHeaders, 'Host')) {
     finalHeaders['Host'] = new URL(finalUrl).host
   }
-  if (!finalHeaders.hasOwnProperty('Connection')) {
+  if (!Object.hasOwn(finalHeaders, 'Connection')) {
     finalHeaders['Connection'] = 'keep-alive'
   }
   // 发送请求

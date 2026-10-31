@@ -72,11 +72,11 @@
   import Sender from './Sender.vue';
   import ChatHeader from './ChatHeader.vue';
   import RoundNav from './RoundNav.vue';
-  import { buildRoundGroups } from './turnModel';
+  import { buildRoundGroups } from '../turnModel';
   import { useFlowStore } from '@/workflow/store';
-  import { useAiChat } from './composables/useAiChat';
-  import { buildTools, buildExecutors } from './tools';
-  import { createPromptContext } from './prompt';
+  import { useAiChat } from '../composables/useAiChat';
+  import { buildTools, buildExecutors } from '../tools';
+  import { createPromptContext } from '../systemPrompt';
 
   const props = defineProps({
     workflowId: {
@@ -110,10 +110,16 @@
     }
     lastScrollTop = el.scrollTop;
   };
+  // rAF 合并：流式增量高频触发时，一帧最多执行一次滚动，避免逐 token 触发布局抖动
+  let scrollFrame = 0;
   const scrollToBottom = () => {
-    nextTick(() => {
-      if (!messagesContainer.value || userScrolledUp) return;
-      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+    if (scrollFrame) return;
+    scrollFrame = requestAnimationFrame(() => {
+      scrollFrame = 0;
+      nextTick(() => {
+        if (!messagesContainer.value || userScrolledUp) return;
+        messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+      });
     });
   };
 
@@ -252,7 +258,7 @@
 </script>
 
 <style lang="less">
-  @import './ai.less';
+  @import '../ai.less';
 </style>
 
 <style scoped lang="less">

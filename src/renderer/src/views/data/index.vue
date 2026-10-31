@@ -72,7 +72,7 @@
 <script setup>
 import { ref, provide } from 'vue'
 import { Message } from '@arco-design/web-vue'
-import { IconEdit, IconDelete, IconMoreVertical, IconSettings, IconCopy, IconExport } from '@arco-design/web-vue/es/icon'
+import { IconEdit, IconDelete, IconMoreVertical, IconCopy, IconExport } from '@arco-design/web-vue/es/icon'
 import { RiDatabase2Line } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
 import ModelEditor from './components/ModelEditor.vue'

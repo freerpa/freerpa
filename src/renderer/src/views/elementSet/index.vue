@@ -75,7 +75,7 @@
 
 <script setup>
 import { ref, provide } from 'vue'
-import { IconEdit, IconDelete, IconMoreVertical, IconExport, IconCopy, IconSettings } from '@arco-design/web-vue/es/icon'
+import { IconEdit, IconDelete, IconMoreVertical, IconExport, IconCopy } from '@arco-design/web-vue/es/icon'
 import { RiStackLine } from '@remixicon/vue'
 import ResourceList from '@/components/ResourceList.vue'
 import RecycleBin from '@/components/RecycleBin.vue'

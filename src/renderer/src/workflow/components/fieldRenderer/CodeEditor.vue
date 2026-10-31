@@ -248,7 +248,7 @@ const setTextSelection = (from, to) => {
     })
 
     return true
-  } catch (error) {
+  } catch {
     return false
   }
 }
@@ -288,6 +288,8 @@ const handleMouseUp = () => {
   const start = cursorPosition.from
   const text = value.value
   let match
+  // 正则带 g 标记，每次从头匹配，避免上次提前 return 残留 lastIndex
+  paramReferRegex.lastIndex = 0
   while ((match = paramReferRegex.exec(text)) !== null) {
     const paramStart = match.index
     const paramEnd = paramStart + match[0].length
@@ -295,7 +297,7 @@ const handleMouseUp = () => {
     if (start > paramStart && start < paramEnd) {
       setTimeout(() => {
         setTextSelection(paramStart, paramEnd)
-        if (!props.field.hasOwnProperty('paramRef') || props.field.paramRef) {
+        if (!Object.hasOwn(props.field, 'paramRef') || props.field.paramRef) {
           ParamReferRef.value.show(true)
           paramRefRect.value = editorView.coordsAtPos((paramStart + paramEnd) / 2)
           selectionRange.value = {
@@ -312,7 +314,7 @@ const paramRefRect = ref({})
 // 监听键盘输入
 const handleKeydown = async (e) => {
   unDoReDoInterceptor(e)
-  if (e.key === 'Alt' && (!props.field.hasOwnProperty('paramRef') || props.field.paramRef)) {
+  if (e.key === 'Alt' && (!Object.hasOwn(props.field, 'paramRef') || props.field.paramRef)) {
     //获取光标位置
     const cursorPos = getCurrentCursorPosition()
     paramRefRect.value = editorView.coordsAtPos(cursorPos.to)
@@ -335,7 +337,8 @@ const handleKeydown = async (e) => {
     if (start !== end) return
     const text = value.value
     let match
-    // 查找所有参数位置
+    // 查找所有参数位置（正则带 g 标记，每次从头匹配）
+    paramReferRegex.lastIndex = 0
     while ((match = paramReferRegex.exec(text)) !== null) {
       const paramStart = match.index
       const paramEnd = paramStart + match[0].length
@@ -378,6 +381,7 @@ const handleKeydown = async (e) => {
     const text = value.value
     let match
 
+    paramReferRegex.lastIndex = 0
     while ((match = paramReferRegex.exec(text)) !== null) {
       const paramStart = match.index
       const paramEnd = paramStart + match[0].length

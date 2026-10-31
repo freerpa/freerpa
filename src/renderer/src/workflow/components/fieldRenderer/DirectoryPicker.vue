@@ -142,8 +142,6 @@
   });
   const emit = defineEmits(['update:modelValue', 'update:visible', 'select']);
 
-  const multiLabel = computed(() => props.multiple);
-
   /** 判断 path 是否落在某个授权根内（根自身或其后代）；path 非字符串一律视为不命中 */
   const inRootOf = (path, root) => {
     if (typeof path !== 'string' || typeof root !== 'string' || !root) return false;

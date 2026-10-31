@@ -8,8 +8,8 @@
             <template v-for="(seg, i) in userSegments">
               <span v-if="seg.type === 'text'" :key="`t-${i}`">{{ seg.text }}</span>
               <span v-else :key="`r-${i}`" class="user-ref" :class="`user-ref--${seg.ref.type}`">
-                <component :is="attMeta(seg.ref.type).icon" :size="12" />
-                <span class="user-ref__tag">{{ attMeta(seg.ref.type).label }}</span>
+                <component :is="getAttachmentMeta(seg.ref.type).icon" :size="12" />
+                <span class="user-ref__tag">{{ getAttachmentMeta(seg.ref.type).label }}</span>
                 <span class="user-ref__name">{{ seg.ref.name }}</span>
               </span>
             </template>
@@ -22,8 +22,8 @@
             class="user-ref"
             :class="`user-ref--${att.type}`"
           >
-            <component :is="attMeta(att.type).icon" :size="12" />
-            <span class="user-ref__tag">{{ attMeta(att.type).label }}</span>
+            <component :is="getAttachmentMeta(att.type).icon" :size="12" />
+            <span class="user-ref__tag">{{ getAttachmentMeta(att.type).label }}</span>
             <span class="user-ref__name">{{ att.name }}</span>
           </span>
         </div>
@@ -77,7 +77,7 @@
   import BubbleActions from './BubbleActions.vue';
   import ReasoningPanel from './ReasoningPanel.vue';
   import ToolCard from './ToolCard.vue';
-  import { attMeta } from './attachMeta';
+  import { getAttachmentMeta } from '../attachmentMeta';
 
   const props = defineProps({
     reasoning_content: {
@@ -316,7 +316,6 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
   }
 
   /* 最终回复气泡：实心白色卡片承载正文，与工作台浅灰底色拉开层次 */

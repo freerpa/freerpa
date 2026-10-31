@@ -41,7 +41,7 @@ const selectedKeys = ref([])
 const loadTrash = async () => {
   selectedKeys.value = []
   loading.value = true
-  try { items.value = await props.api.getTrash() || [] } catch (e) { items.value = [] } finally { loading.value = false }
+  try { items.value = await props.api.getTrash() || [] } catch { items.value = [] } finally { loading.value = false }
 }
 
 const handleBatchRestore = async () => {

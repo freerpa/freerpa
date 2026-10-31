@@ -11,4 +11,4 @@ export const ATTACH_META = {
   element: { icon: RiStackLine, label: '元素集' }
 }
 
-export const attMeta = (type) => ATTACH_META[type] || ATTACH_META.file
+export const getAttachmentMeta = (type) => ATTACH_META[type] || ATTACH_META.file

@@ -124,50 +124,46 @@ const execute = async (node, context) => {
       content: String(content)
     }
   }
-  try {
-    // 取消下载
-    onBeforeDestroy(() => {
-      if (source) {
-        source.cancel()
-      }
-    })
-
-    // 处理内容
-    const { content: processedContent } = await processContent(content)
-
-    // 处理文件名
-    if (!finalFileName) {
-      finalFileName = fileName || getFileName(content)
+  // 取消下载
+  onBeforeDestroy(() => {
+    if (source) {
+      source.cancel()
     }
-    const fileDirPath = getCorrectDirectorySync(filePath)
+  })
 
-    // 保存文件
-    let savePath = path.join(fileDirPath, finalFileName)
+  // 处理内容
+  const { content: processedContent } = await processContent(content)
 
-    // 如果文件存在，且不允许覆盖，则编号
-    if (!overwrite) {
-      let index = 1
-      savePath = path.join(fileDirPath, generateNumber(finalFileName, index))
-      while (fs.existsSync(savePath)) {
-        savePath = path.join(fileDirPath, generateNumber(finalFileName, index))
-        index++
-      }
-    }
-
-    // 保存文件
-    try {
-      safeWriteFileSync(savePath, processedContent)
-      // 使用 complete 方法返回结果并继续执行
-    } catch (error) {
-      savePath = ''
-    }
-
-    complete({
-      result: savePath
-    })
-  } catch (error) {
-    throw error
+  // 处理文件名
+  if (!finalFileName) {
+    finalFileName = fileName || getFileName(content)
   }
+  const fileDirPath = getCorrectDirectorySync(filePath)
+
+  // 保存文件
+  let savePath = path.join(fileDirPath, finalFileName)
+
+  // 如果文件存在，且不允许覆盖，则编号
+  if (!overwrite) {
+    let index = 1
+    savePath = path.join(fileDirPath, generateNumber(finalFileName, index))
+    while (fs.existsSync(savePath)) {
+      savePath = path.join(fileDirPath, generateNumber(finalFileName, index))
+      index++
+    }
+  }
+
+  // 保存文件
+  try {
+    safeWriteFileSync(savePath, processedContent)
+    // 使用 complete 方法返回结果并继续执行
+  } catch {
+    savePath = ''
+  }
+
+  complete({
+    result: savePath
+  })
 }
 
 export default execute

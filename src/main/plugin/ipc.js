@@ -8,7 +8,7 @@ import fs from 'fs'
 import path from 'path'
 import { getPluginRoot } from './store.js'
 import { findPluginByIdentifier, findPlugin, listPlugins } from './manifest.js'
-import { installFrp, uninstallPlugin, importDevPlugin, parseIdentifier } from './install.js'
+import { installFrp, uninstallPlugin, importDevPlugin } from './install.js'
 import { packFrp } from './pack.js'
 
 const sendProgress = (event, percent, label) => {

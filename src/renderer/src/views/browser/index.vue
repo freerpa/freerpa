@@ -165,7 +165,7 @@ const fetchBrowserStatus = async () => {
   try {
     const res = await window.electronAPI.env.getAllBrowserStatus()
     if (res.code === 200) Object.assign(envStatusMap, res.data)
-  } catch {}
+  } catch { /* 忽略：查询浏览器状态失败时保持默认状态 */ }
 }
 
 let remove1, remove2, remove3
@@ -180,9 +180,9 @@ onMounted(() => {
         try {
           const existing = await browserAPI.getBrowser(envId)
           let cfg = {}
-          try { cfg = typeof existing?.config === 'string' ? JSON.parse(existing.config) : (existing?.config || {}) } catch {}
+          try { cfg = typeof existing?.config === 'string' ? JSON.parse(existing.config) : (existing?.config || {}) } catch { /* 忽略：配置解析失败时使用空配置 */ }
           await browserAPI.updateBrowser({ id: envId, config: { ...cfg, fingerprint } })
-        } catch {}
+        } catch { /* 忽略：保存会话失败不影响主流程 */ }
       }
     })
   }

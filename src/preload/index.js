@@ -217,6 +217,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('ai:eventsMigrate', { workflowId, conversationId }),
     chatStart: (payload) => ipcRenderer.invoke('ai:chatStart', payload),
     chatAbort: (requestId) => ipcRenderer.invoke('ai:chatAbort', requestId),
+    agentHostReply: (payload) => ipcRenderer.invoke('ai:agentHostReply', payload),
+    onAgentEvent: (callback) => {
+      const listener = (_event, data) => callback(data)
+      ipcRenderer.on('ai:agentEvent', listener)
+      return () => ipcRenderer.removeListener('ai:agentEvent', listener)
+    },
+    onAgentHostCall: (callback) => {
+      const listener = (_event, data) => callback(data)
+      ipcRenderer.on('ai:agentHostCall', listener)
+      return () => ipcRenderer.removeListener('ai:agentHostCall', listener)
+    },
     onProvidersChanged: (callback) => {
       const listener = () => callback()
       ipcRenderer.on('ai:providersChanged', listener)

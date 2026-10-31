@@ -11,7 +11,7 @@
 
 <script setup>
 import { IconQuestionCircle } from '@arco-design/web-vue/es/icon'
-const props = defineProps({
+defineProps({
   node: {
     type: Object,
     required: true

@@ -6,7 +6,7 @@ import { clipboard, shell, app, ipcMain } from 'electron'
 import { getBrowserDetail } from '../../api/browserDetail.js'
 import { launchEnvBrowser } from '../../browser/launch.js'
 import {
-  getBrowserInstance, registerBrowser, incrementRef, decrementRef, killBrowserProcess
+  getBrowserInstance, incrementRef, decrementRef, killBrowserProcess
 } from '../../browser/manager'
 import { matchTemplate } from '../../browser/selector/imageMatcher.js'
 import { sendToRendererAsync } from './rendererUtils.js'
@@ -59,7 +59,6 @@ const isEnvHeldByOthers = (flowId, envId) => {
 // ═══════════ 浏览器：内核启动/复用（页面操作在 worker 内 puppeteer） ═══════════
 async function browserOpen(args, host, flowId) {
   const { env, options } = args[0] || {}
-  const { headless = false, proxy: optionProxy = '', extraArgs = [] } = options || {}
   const envId = env?.id
   const randomFingerprint = !!env?.random_fingerprint
 

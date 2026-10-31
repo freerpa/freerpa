@@ -74,7 +74,7 @@
         await handleSubmit();
         done(true);
       }
-    } catch (error) {
+    } catch {
       done(false);
     }
   };
@@ -124,7 +124,7 @@
           description: result.description,
         };
       }
-    } catch (error) {
+    } catch {
       Message.error('获取工作流详情失败');
     }
   };

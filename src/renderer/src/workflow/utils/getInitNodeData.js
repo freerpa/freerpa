@@ -1,7 +1,7 @@
 import nodes from '@nodes-path'
 import { deepClone } from './index'
 export const getDefaultFieldValue = (field) => {
-  if (field.hasOwnProperty('default')) {
+  if (Object.hasOwn(field, 'default')) {
     return deepClone(field.default)
   }
   if (field.type === 'object') {

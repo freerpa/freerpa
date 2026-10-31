@@ -135,15 +135,15 @@ export const useAiChat = ({ workflowId, tools, executors, buildSystem, buildTurn
         applyLiveFrame(frame)
       },
       onEvent: (event) => {
-        eventsVersion.value += 1
-        if (conversationId !== activeConversationId) return
+        // 会话列表刷新与当前视图无关：后台会话也需要更新标题/时间
         if (event.type === 'user/message' && event.data?.source !== 'runtime-context') {
           scheduleConversationRefresh()
         }
-        if (event.type === 'turn/end') {
-          scheduleConversationRefresh()
-          if (liveMessage.value) liveMessage.value = null
-        }
+        if (event.type === 'turn/end') scheduleConversationRefresh()
+        // 仅活动会话的事件驱动视图重算，避免后台事件触发整表重投影
+        if (conversationId !== activeConversationId) return
+        eventsVersion.value += 1
+        if (event.type === 'turn/end' && liveMessage.value) liveMessage.value = null
         scrollToBottom?.()
       }
     })

@@ -1,6 +1,8 @@
 <template>
   <a-form
     ref="formRef"
+    class="field-form"
+    :class="`field-form--${layout}`"
     :model="formData"
     :rules="formRules"
     @submit="handleSubmit"
@@ -109,6 +111,8 @@
 
   const isExecuting = inject('isExecuting');
   provide('isQuickConfig', props.isQuickConfig);
+  // 对象字段继承父级布局（数组项固定横排，不在此列）
+  provide('fieldLayout', props.layout);
 
   const emit = defineEmits(['validate', 'submit']);
   const formRef = ref(null);
@@ -141,10 +145,10 @@
     if (!formData.value || typeof formData.value !== 'object') {
       return;
     }
-    if (!formData.value.hasOwnProperty(field.id)) {
+    if (!Object.hasOwn(formData.value, field.id)) {
       // console.error(formData.value, field)
 
-      formData.value[field.id] = field.hasOwnProperty('default') ? field.default : getDefaultFieldValue(field);
+      formData.value[field.id] = Object.hasOwn(field, 'default') ? field.default : getDefaultFieldValue(field);
     }
   });
   // 提供表单数据
@@ -176,9 +180,8 @@
     const fields = [];
     const values = { ...nodeData.config, ...formData.value };
     props.fields.forEach((field) => {
-      const fieldCacheKey = field.id + '_show';
       // Only re-evaluate parseConfigExpression if values changed (computed dependency tracks this)
-      const shouldShow = field.hasOwnProperty('show')
+      const shouldShow = Object.hasOwn(field, 'show')
         ? parseConfigExpression(props.fields, 'show', field.show, values)
         : true;
 
@@ -203,7 +206,7 @@
   });
 
   // 表单提交
-  const handleSubmit = async (e) => {
+  const handleSubmit = async () => {
     if (validate()) {
       emit('submit', formData.value);
     }
@@ -227,6 +230,49 @@
 </script>
 
 <style scoped lang="less">
+  /**
+   * 按表单尺寸统一控件高度与字体，供 Text / Alert 等自定义容器读取。
+   * mini 24 / small 28 / medium 32 / large 36（--field-input-height 为去掉 1px 描边后的内部高度）
+   */
+  .field-form {
+    &.arco-form-size-mini {
+      --field-control-height: 24px;
+      --field-input-height: 22px;
+      --field-font-size: 12px;
+      --field-line-height: 20px;
+      --field-textarea-padding: 1px 12px;
+    }
+    &.arco-form-size-small {
+      --field-control-height: 28px;
+      --field-input-height: 26px;
+      --field-font-size: 14px;
+      --field-line-height: 22px;
+      --field-textarea-padding: 2px 12px;
+    }
+    &.arco-form-size-medium {
+      --field-control-height: 32px;
+      --field-input-height: 30px;
+      --field-font-size: 14px;
+      --field-line-height: 22px;
+      --field-textarea-padding: 4px 12px;
+    }
+    &.arco-form-size-large {
+      --field-control-height: 36px;
+      --field-input-height: 34px;
+      --field-font-size: 14px;
+      --field-line-height: 22px;
+      --field-textarea-padding: 6px 12px;
+    }
+  }
+
+  // 横排/竖排都让控件成为 flex 项：既保证 switch 等较矮控件垂直居中，
+  // 也消除 inline-flex 控件（select/input）因基线不同产生的额外行高
+  .field-form :deep(.arco-form-item-content) {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+
   .arco-form-item {
     margin-bottom: 2px;
     &:last-child {
@@ -262,7 +308,8 @@
     }
   }
 
-  :deep(.arco-form-item-code) {
+  // 代码字段仅在横排（画布节点）下需要更宽的行内空间；竖排抽屉里强制 400px 会造成横向溢出
+  .field-form--horizontal :deep(.arco-form-item-code) {
     min-width: 400px;
   }
   :deep(.no-label > .arco-form-item-label-col) {
@@ -279,8 +326,9 @@
   .arco-form-layout-vertical > .arco-form-item {
     margin-bottom: 8px;
   }
-  .arco-form-layout-vertical .arco-tag {
-    height: 28px;
-    font-size: 14px;
+  // 参数引用标签与同尺寸控件等高（横排 mini / 抽屉 small 都适用）
+  .arco-form-item .arco-tag {
+    height: var(--field-control-height, 24px);
+    font-size: var(--field-font-size, 12px);
   }
 </style>

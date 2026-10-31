@@ -33,7 +33,7 @@ const formData = defineModel({
   default: () => ({})
 })
 
-const props = defineProps({
+defineProps({
   fields: {
     type: Array,
     default: () => []

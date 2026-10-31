@@ -35,7 +35,7 @@
 <script setup>
 import { ref, watch, nextTick } from 'vue'
 
-const props = defineProps({
+defineProps({
   title: {
     type: String,
     default: ''

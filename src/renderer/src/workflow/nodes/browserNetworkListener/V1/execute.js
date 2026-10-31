@@ -103,7 +103,7 @@ const execute = async (node, context) => {
     if (contentType.includes('application/json')) {
       try {
         body = JSON.parse(postData)
-      } catch (err) {
+      } catch {
         body = postData
       }
     } else if (contentType.includes('application/x-www-form-urlencoded')) {
@@ -111,14 +111,14 @@ const execute = async (node, context) => {
         // 转换为JSON对象
         body = querystring.parse(postData)
         console.error('表单参数值:', body)
-      } catch (err) {
+      } catch {
         body = postData
       }
     } else if (contentType.includes('application/xml')) {
       try {
         const parser = new xml2js.Parser()
         body = await parser.parseStringPromise(postData)
-      } catch (err) {
+      } catch {
         body = postData
       }
     }

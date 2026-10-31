@@ -32,7 +32,7 @@
 </template>
 
 <script setup>
-import { watch, inject, ref, computed, useSlots } from 'vue'
+import { ref, computed, useSlots } from 'vue'
 import ParamRefer from './components/ParamRefer.vue'
 import { unDoReDoInterceptor, paramReferRegex } from '@/workflow/utils'
 import { useFieldWatch } from './composables/useFieldValue'
@@ -79,7 +79,7 @@ const getTextarea = () => {
 // 监听键盘输入
 const handleKeydown = async (e) => {
   interceptor(e)
-  if (e.key === 'Alt' && (!props.field.hasOwnProperty('paramRef') || props.field.paramRef)) {
+  if (e.key === 'Alt' && (!Object.hasOwn(props.field, 'paramRef') || props.field.paramRef)) {
     if (!ParamReferRef.value.visible) {
       e.preventDefault()
       ParamReferRef.value.show(true)
@@ -103,7 +103,8 @@ const handleKeydown = async (e) => {
     const text = value.value
     let match
 
-    // 查找所有参数位置
+    // 查找所有参数位置（正则带 g 标记，每次从头匹配，避免上次提前 return 残留 lastIndex）
+    paramReferRegex.lastIndex = 0
     while ((match = paramReferRegex.exec(text)) !== null) {
       const paramStart = match.index
       const paramEnd = paramStart + match[0].length
@@ -149,6 +150,7 @@ const handleKeydown = async (e) => {
     const text = value.value
     let match
 
+    paramReferRegex.lastIndex = 0
     while ((match = paramReferRegex.exec(text)) !== null) {
       const paramStart = match.index
       const paramEnd = paramStart + match[0].length
@@ -191,6 +193,7 @@ const handleMouseUp = () => {
   const text = value.value
   let match
 
+  paramReferRegex.lastIndex = 0
   while ((match = paramReferRegex.exec(text)) !== null) {
     const paramStart = match.index
     const paramEnd = paramStart + match[0].length
@@ -199,7 +202,7 @@ const handleMouseUp = () => {
       setTimeout(() => {
         input.focus()
         input.setSelectionRange(paramStart, paramEnd)
-        if (!props.field.hasOwnProperty('paramRef') || props.field.paramRef) {
+        if (!Object.hasOwn(props.field, 'paramRef') || props.field.paramRef) {
           ParamReferRef.value.show(true)
           selectionRange.value = {
             start: paramStart,
@@ -257,9 +260,11 @@ function handleSelect(paramText) {
   
   :deep(.arco-textarea) {
     resize: none;
-    font-size: 12px;
-    padding: 1px 12px;
-    min-height: 20px;
+    // 跟随表单尺寸，与 input / select 保持等高（变量由 FieldRenderer 按 mini/small/medium/large 注入）
+    font-size: var(--field-font-size, 12px);
+    line-height: var(--field-line-height, 20px);
+    padding: var(--field-textarea-padding, 1px 12px);
+    min-height: var(--field-input-height, 22px);
 
     &::-webkit-scrollbar {
       width: 4px;

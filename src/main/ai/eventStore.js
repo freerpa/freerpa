@@ -3,7 +3,7 @@
  * 事件是唯一事实来源：会话恢复靠 loadEvents 重放，旧消息表仅保留只读历史。
  */
 import { initDatabase } from '../data/db.js'
-import { getMessages } from './messages.js'
+import { getMessages } from './messageStore.js'
 import { ensureTables } from './messages-migrate.js'
 import { legacyMessagesToEvents } from '../../shared/ai-events.js'
 import { ensureEventTables, EVENTS_TABLE, EVENTS_META_TABLE } from './events-migrate.js'

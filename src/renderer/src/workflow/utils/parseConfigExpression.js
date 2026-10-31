@@ -41,7 +41,7 @@ export const parseConfigExpression = (
   let replacedExpr = expression.replace(/\${([^}]+?)}/g, (_, fieldId) => {
     const targetField = fieldMap.get(fieldId);
     // 当前解析维度是show，且目标字段存在show表达式
-    if (parseKey === 'show' && targetField?.hasOwnProperty('show')) {
+    if (parseKey === 'show' && targetField && Object.hasOwn(targetField, 'show')) {
       // 循环依赖检测
       const visitKey = `${parseKey}_${fieldId}`;
       if (visited.has(visitKey)) return 'false';
@@ -81,7 +81,7 @@ export const parseConfigExpression = (
     }
     const execFn = new Function('return ' + replacedExpr);
     return execFn();
-  } catch (err) {
+  } catch {
     return false;
   }
 };

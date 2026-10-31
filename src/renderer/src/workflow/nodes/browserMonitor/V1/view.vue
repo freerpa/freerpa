@@ -71,12 +71,10 @@ import {
   RiLink,
   RiKeyboardBoxLine,
   RiResetRightLine,
-  RiArrowGoBackLine,
-  RiArrowGoForwardLine,
   RiArrowLeftSLine,
   RiArrowRightSLine
 } from '@remixicon/vue'
-const props = defineProps({
+defineProps({
   node: {
     type: Object,
     required: true

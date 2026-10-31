@@ -34,7 +34,7 @@ const filterHeaders = (headers = {}) => {
  * 代理场景下对端随时可能断开，错误一律吞掉，绝不让其冒泡成 uncaughtException。
  */
 const relayPair = (a, b) => {
-  const die = (x) => { try { x.destroy() } catch (_) {} }
+  const die = (x) => { try { x.destroy() } catch { /* 忽略：代理对端可能已断开 */ } }
   const onErr = () => { die(a); die(b) }
   a.on('error', onErr)
   b.on('error', onErr)
@@ -231,7 +231,7 @@ export const createProxyRelay = (upstreamProxyUrl) =>
     let up
     try {
       up = parseUpstream(upstreamProxyUrl)
-    } catch (e) {
+    } catch {
       reject(new Error(`无效的代理地址: ${upstreamProxyUrl}`))
       return
     }

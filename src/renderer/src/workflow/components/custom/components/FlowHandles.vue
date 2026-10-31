@@ -95,7 +95,7 @@
 import { Handle } from '@vue-flow/core'
 import { useFlowStore } from '../../../store'
 import { storeToRefs } from 'pinia'
-import { ref, computed, inject } from 'vue'
+import { inject } from 'vue'
 import { getConnectionClass, ConnectionRules } from '../../../utils'
 const workflowId = inject('workflowId')
 const pendingConnection = inject('pendingConnection')

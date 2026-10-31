@@ -38,7 +38,7 @@ class History {
       if (!oldNode) {
         diff.added.push(node)
       } else {
-        if (oldNode?.hasOwnProperty('position') && oldNode?.hasOwnProperty('dimensions')) {
+        if (oldNode && Object.hasOwn(oldNode, 'position') && Object.hasOwn(oldNode, 'dimensions')) {
           const before = {}
           const after = {}
           if (oldNode.position.x !== node.position.x || oldNode.position.y !== node.position.y) {

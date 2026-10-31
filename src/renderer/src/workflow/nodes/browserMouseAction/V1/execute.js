@@ -87,7 +87,7 @@ const execute = async (node, context) => {
           throw error
         }
         break
-      case 'drag':
+      case 'drag': {
         const target = await page.find(dragConfig.target)
         if (!target) throw new Error(`未找到拖拽目标元素`)
 
@@ -132,11 +132,12 @@ const execute = async (node, context) => {
           // 确保鼠标释放
           try {
             await page.mouse.up()
-          } catch (e) {
+          } catch {
             // 忽略鼠标释放错误
           }
         }
         break
+      }
       case 'wheel': {
         const boundingBox = await element.boundingBox();
         if (!boundingBox) throw new Error(`未找到元素: ${name}`)

@@ -17,7 +17,7 @@ export const register = () => {
     let size = 0
     let exists = fs.existsSync(dbPath)
     if (exists) {
-      try { size = fs.statSync(dbPath).size } catch (_) {}
+      try { size = fs.statSync(dbPath).size } catch { /* 忽略：读取数据库大小失败不影响信息展示 */ }
     }
     return {
       path: dbPath,

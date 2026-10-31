@@ -13,7 +13,7 @@
       <!-- 文件附件展示区（资源引用以输入框内联 pill 呈现，不再堆在这里） -->
       <div class="attachments-area" v-if="attachments.length > 0">
         <div v-for="(att, index) in attachments" :key="index" class="ai-attach-chip attachment-item">
-          <component :is="attMeta(att.type).icon" :size="12" />
+          <component :is="getAttachmentMeta(att.type).icon" :size="12" />
           <span class="attachment-item__name">{{ att.name }}</span>
           <a-button class="attachment-item__del" type="secondary" size="mini" @click="attachments.splice(index, 1)">
             <RiCloseLine :size="12" />
@@ -82,8 +82,8 @@
   import { getModels } from '@/api/aiModels';
   import { v4 as uuidv4 } from 'uuid';
   import ReferenceMenu from './ReferenceMenu.vue';
-  import { attMeta } from './attachMeta';
-  import { loadAllResources, getCachedResources } from './resourceIndex';
+  import { getAttachmentMeta } from '../attachmentMeta';
+  import { loadAllResources, getCachedResources } from '../resourceIndex';
 
   const props = defineProps({
     placeholder: {
@@ -289,11 +289,11 @@
     pill.dataset.type = item.type;
     pill.dataset.id = String(item.id ?? '');
     pill.dataset.name = item.name;
-    pill.title = `${attMeta(item.type).label}：${item.name}`;
+    pill.title = `${getAttachmentMeta(item.type).label}：${item.name}`;
 
     const tag = document.createElement('span');
     tag.className = 'ref-pill__tag';
-    tag.textContent = attMeta(item.type).label;
+    tag.textContent = getAttachmentMeta(item.type).label;
 
     const name = document.createElement('span');
     name.className = 'ref-pill__name';

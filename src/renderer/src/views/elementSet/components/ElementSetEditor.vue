@@ -86,7 +86,7 @@
       }
       await handleSubmit();
       done(true);
-    } catch (e) {
+    } catch {
       done(false);
     }
   };
@@ -98,10 +98,19 @@
         title: form.title,
         category_id: form.category,
         description: form.description,
-        elements: form.elements.map(({ _key, ...rest }) => ({
-          ...rest,
-          selectors: (rest.selectors || []).map(({ _key: sk, _sizeError, ...srest }) => srest),
-        })),
+        elements: form.elements.map((el) => {
+          const rest = { ...el };
+          delete rest._key;
+          return {
+            ...rest,
+            selectors: (rest.selectors || []).map((sel) => {
+              const clean = { ...sel };
+              delete clean._key;
+              delete clean._sizeError;
+              return clean;
+            }),
+          };
+        }),
       };
       if (props.modelId) {
         await elementSetAPI.updateElementSet(payload);
@@ -145,7 +154,7 @@
             expression: sel.expression || '',
           })),
         }));
-      } catch (e) {
+      } catch {
         Message.error('获取元素集详情失败');
       }
     } else {

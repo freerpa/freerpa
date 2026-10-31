@@ -48,8 +48,8 @@
 <script setup>
   import { ref, computed } from 'vue';
   import { RiCheckLine, RiCloseLine, RiArrowRightSLine } from '@remixicon/vue';
-  import { fmtDuration } from './turnModel';
-  import { toolDisplayName } from './tools';
+  import { fmtDuration } from '../turnModel';
+  import { toolDisplayName } from '../tools';
 
   const props = defineProps({
     /** 工具调用数据（turnModel 合并后含 ok/error/text/durationMs；或 OpenAI 风格原始 tool_calls 条目） */

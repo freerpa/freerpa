@@ -5,12 +5,11 @@
       :disabled="field.disabled || isExecuting"
       :format="field.format || 'hex'"
       :preset-colors="field.presetColors"
-      size="mini"
       showText
       showPreset
       :trigger-props="{ trigger: 'hover' }"
     />
-    <a-button class="clear-btn" type="secondary" size="mini" shape="circle" @click="clear">
+    <a-button class="clear-btn" type="secondary" size="mini" shape="circle" :disabled="isExecuting" @click="clear">
       <template #icon><icon-close /></template>
     </a-button>
   </div>
@@ -18,6 +17,7 @@
 
 <script setup>
 import { inject } from 'vue'
+import { useSize } from '@arco-design/web-vue/es/_hooks/use-size.js'
 import { useFieldWatch } from './composables/useFieldValue'
 import { IconClose } from '@arco-design/web-vue/es/icon'
 

@@ -1,21 +1,16 @@
 /**
- * @file: AI 内核 - Agent driver（turn / step）
- * 对齐 dsh core/agent-loop：
- *   turn/start → claim inbox → 组装提示 → step/start → 请求模型（assistant-stream 瞬时帧）
- *   → assistant/message | assistant/attempt → tool/call* → 工具管线 → tool/result*
- *   → step/end → （工具待继续 / 校验修复）→ 下一 step → turn/end
- * 事件是唯一事实来源；实时帧只走 onFrame，不落库。
+ * @file: AI 内核 - Agent driver（turn 生命周期 + 渲染层 host 服务）
+ * 主进程 LangGraph 负责 turn 内的 step 循环（提示组装、模型调用、工具轮次、校验修复）；
+ * 渲染层只负责：
+ *  - turn 启停与 inbox 用户消息入队
+ *  - 事件落库（主进程产出的 step/system/assistant 事件 + 本地工具管线事件）
+ *  - host 服务：assemblePrompt / runTools / workflowCheck（依赖画布与工具执行器）
+ *  - 瞬时流式帧（onFrame，不落库）
  */
 import { v4 as uuidv4 } from 'uuid'
 import { AI_EVENT, toPlain } from './events.js'
 import { prepareRequestMessages, friendlyAIError } from './policies/contextBudget'
-import {
-  MAX_TOOL_ROUNDS,
-  STALL_ROUNDS,
-  STALL_PROMPT_MSG,
-  GRACE_PROMPT_MSG,
-  createLoopGuard
-} from './policies/loopGuard'
+import { createLoopGuard } from './policies/loopGuard'
 
 const abortError = () => {
   const error = new Error('aborted')
@@ -25,61 +20,17 @@ const abortError = () => {
 
 const isAbort = (error, signal) => error?.name === 'AbortError' || !!signal?.aborted
 
-// source:agent-inject 的提示只进模型历史，不作为用户气泡展示（与旧实现"仅注入上下文"一致）
-const userMessage = (content, roundId) => ({
-  message_id: uuidv4(),
-  round_id: roundId,
-  role: 'user',
-  source: 'agent-inject',
-  content
-})
-
-/** 单次尝试的流式累积器（text/reasoning/tool-call） */
-const createAttempt = () => {
-  const messageId = uuidv4()
-  let text = ''
-  let reasoning = ''
-  const toolCalls = new Map()
-  return {
-    messageId,
-    push(chunk) {
-      if (chunk.type === 'text-delta') text += chunk.text || ''
-      else if (chunk.type === 'reasoning-delta') reasoning += chunk.text || ''
-      else if (chunk.type === 'tool-call') {
-        toolCalls.set(chunk.callId, { callId: chunk.callId, name: chunk.name || '', input: chunk.input ?? {} })
-      } else if (chunk.type === 'tool-call-delta') {
-        const current = toolCalls.get(chunk.callId)
-        if (current) current.raw = (current.raw || '') + (chunk.delta || '')
-        else toolCalls.set(chunk.callId, { callId: chunk.callId, name: '', input: {}, raw: chunk.delta || '' })
-      }
-    },
-    get text() {
-      return text
-    },
-    get reasoning() {
-      return reasoning
-    },
-    get toolCalls() {
-      return [...toolCalls.values()]
-    },
-    hasVisible() {
-      return !!text || !!reasoning || toolCalls.size > 0
-    },
-    blocks() {
-      const blocks = []
-      if (reasoning) blocks.push({ type: 'reasoning', text: reasoning })
-      if (text) blocks.push({ type: 'text', text })
-      for (const call of toolCalls.values()) {
-        blocks.push({
-          type: 'tool-call',
-          callId: call.callId,
-          name: call.name,
-          arguments: call.input ?? {}
-        })
-      }
-      return blocks
-    }
+/** 主进程 part → 实时帧 chunk */
+const partToChunk = (part) => {
+  if (part.type === 'text') return { type: 'text-delta', text: part.text || '' }
+  if (part.type === 'reasoning') return { type: 'reasoning-delta', text: part.text || '' }
+  if (part.type === 'tool-call') {
+    return { type: 'tool-call', callId: part.toolCallId, name: part.toolName, input: part.args ?? {} }
   }
+  if (part.type === 'tool-arg') {
+    return { type: 'tool-call-delta', callId: part.toolCallId, delta: part.arg || '' }
+  }
+  return null
 }
 
 /**
@@ -110,44 +61,61 @@ export const createAgent = ({
   let running = false
   let controller = null
   let status = 'idle'
+  let guard = null
 
   const setStatus = (next) => {
     status = next
     onStatus?.(next)
   }
 
-  const appendAttempt = (meta, attempt, errorText) => {
-    session.append(
-      AI_EVENT.ASSISTANT_ATTEMPT,
-      {
-        turn: meta.turn,
-        step: meta.step,
-        message: {
-          message_id: attempt.messageId,
-          round_id: meta.roundId,
-          role: 'assistant',
-          content: attempt.blocks()
-        },
-        error: errorText
-      },
-      { turn: meta.turn, step: meta.step }
-    )
+  /** 渲染层 host 服务：主进程按需回调 */
+  const hostCall = async (method, payload = {}) => {
+    const meta = {
+      turn: payload.turn ?? 0,
+      step: payload.step ?? 0,
+      roundId: payload.roundId
+    }
+    if (method === 'assemblePrompt') {
+      return prompt.assemble()
+    }
+    if (method === 'runTools') {
+      const calls = (payload.calls || []).map((call) => ({
+        callId: call.callId,
+        name: call.name,
+        arguments: call.arguments || {}
+      }))
+      return toolsPipeline.execute(calls, {
+        ...meta,
+        signal: controller?.signal,
+        guard
+      })
+    }
+    if (method === 'workflowCheck') {
+      const errors = workflowGuard.inspect()
+      if (Array.isArray(errors) && errors.length > 0 && workflowGuard.canFix()) {
+        workflowGuard.consumeFix()
+        return {
+          errors: errors.map((error) => error.message),
+          canFix: true,
+          repairMessage: workflowGuard.buildRepairMessage(errors)
+        }
+      }
+      return {
+        errors: Array.isArray(errors) ? errors.map((error) => error.message) : [],
+        canFix: false,
+        repairMessage: ''
+      }
+    }
+    throw new Error(`未知 host 方法: ${method}`)
   }
 
-  /** 执行一个 step：请求模型 → 记录 assistant 结果 → （可选）执行工具 */
-  const runStep = async ({ turn, turnId, step, claimed, model, guard, forceFinal }) => {
-    const meta = { turn, step, roundId: turnId }
-    const toolSet = registry.resolve()
-    const { system, runtimeContext, systemChanged } = prompt.assemble()
-    if (systemChanged && system) {
-      session.append(AI_EVENT.SYSTEM_MESSAGE, { turn, step, system }, meta)
-    }
+  const appendClaimed = (claimed, turn, turnId) => {
     for (const message of claimed) {
       session.append(
         AI_EVENT.USER_MESSAGE,
         {
           turn,
-          step,
+          step: 0,
           source: message.source || 'user',
           message: {
             message_id: message.message_id || uuidv4(),
@@ -158,211 +126,97 @@ export const createAgent = ({
             source: message.source
           }
         },
-        meta
+        { turn }
       )
-    }
-    if (runtimeContext) {
-      session.append(
-        AI_EVENT.USER_MESSAGE,
-        {
-          turn,
-          step,
-          source: 'runtime-context',
-          message: {
-            message_id: uuidv4(),
-            round_id: turnId,
-            role: 'user',
-            content: runtimeContext,
-            source: 'runtime-context'
-          }
-        },
-        meta
-      )
-    }
-
-    const history = prepareRequestMessages(session.deriveModel(), model)
-    const attempt = createAttempt()
-    onFrame?.({ kind: 'start', attemptId: attempt.messageId, turnId, turn, step })
-
-    let result
-    try {
-      result = await llm.stream(
-        {
-          providerId: model.providerId,
-          modelId: model.modelId,
-          messages: toPlain(history),
-          tools: toolSet.tools,
-          system
-        },
-        controller?.signal,
-        (chunk) => {
-          attempt.push(chunk)
-          onFrame?.({ kind: 'chunk', attemptId: attempt.messageId, turnId, turn, step, chunk })
-        }
-      )
-    } catch (error) {
-      if (isAbort(error, controller?.signal)) {
-        if (attempt.hasVisible()) {
-          session.append(
-            AI_EVENT.ASSISTANT_MESSAGE,
-            { turn, step, interrupted: true, message: { message_id: attempt.messageId, round_id: turnId, role: 'assistant', content: attempt.blocks() } },
-            meta
-          )
-        } else {
-          appendAttempt(meta, attempt, '已取消')
-        }
-        onFrame?.({ kind: 'end', attemptId: attempt.messageId, turnId, turn, step, aborted: true })
-        throw abortError()
-      }
-      appendAttempt(meta, attempt, friendlyAIError(error))
-      onFrame?.({ kind: 'end', attemptId: attempt.messageId, turnId, turn, step, error: true })
-      throw error
-    }
-
-    // 完整结果兜底：个别 provider 只回传最终值而不发增量
-    if (result.text && !attempt.text) {
-      attempt.push({ type: 'text-delta', text: result.text })
-    }
-    if (result.reasoning && !attempt.reasoning) {
-      attempt.push({ type: 'reasoning-delta', text: result.reasoning })
-    }
-    const finalCalls = Array.isArray(result.toolCalls) ? result.toolCalls : []
-    const blocks = attempt
-      .blocks()
-      .filter((block) => block.type !== 'tool-call')
-      .concat(
-        finalCalls.map((call) => ({
-          type: 'tool-call',
-          callId: call.toolCallId,
-          name: call.toolName,
-          arguments: call.args ?? {}
-        }))
-      )
-    session.append(
-      AI_EVENT.ASSISTANT_MESSAGE,
-      {
-        turn,
-        step,
-        usage: result.usage || null,
-        finishReason: result.finishReason || '',
-        message: { message_id: attempt.messageId, round_id: turnId, role: 'assistant', content: blocks }
-      },
-      meta
-    )
-    onFrame?.({ kind: 'end', attemptId: attempt.messageId, turnId, turn, step })
-    toolSet.dispose()
-
-    if (!finalCalls.length) return { kind: 'completed', finishReason: result.finishReason }
-    if (forceFinal) return { kind: 'completed', finishReason: result.finishReason, skippedTools: true }
-
-    const batch = finalCalls.map((call) => ({
-      callId: call.toolCallId,
-      name: call.toolName,
-      arguments: call.args ?? {}
-    }))
-    const execution = await toolsPipeline.execute(batch, {
-      turn,
-      step,
-      roundId: turnId,
-      signal: controller?.signal,
-      guard
-    })
-    if (execution.concluded) return { kind: 'concluded' }
-    return {
-      kind: 'tools',
-      loopGuardBreak: execution.loopGuardBreak,
-      roundFailed: execution.roundFailed
     }
   }
 
-  /** 一个 turn：可能包含多个 step；返回是否还有下一 turn 需要执行 */
+  /** 一个 turn：主进程执行所有 step，渲染层负责入队/事件/host */
   const runTurn = async () => {
-    if (!inbox.nextTurn.length && !inbox.nextStep.length) return false
+    if (!inbox.hasPending()) return false
     const model = getModel?.()
     // 从事件日志实时取（load() 可能在 agent 创建后才载入历史，缓存值会重复编号）
     const turn = session.lastTurn() + 1
     const turnId = uuidv4()
-    const meta = { turn }
-    session.append(AI_EVENT.TURN_START, { turn, turnId }, meta)
+    session.append(AI_EVENT.TURN_START, { turn, turnId }, { turn })
+
     controller = new AbortController()
-    const guard = createLoopGuard()
+    guard = createLoopGuard()
     workflowGuard.reset()
-    let steps = 0
-    let forceFinal = false
-    let finalPrompted = false
-    let pending = false
-    let target = inbox.nextTurn.length ? 'next-turn' : 'next-step'
     let outcome = { kind: 'completed' }
+    let toolSet = null
 
     try {
       await prompt.refresh()
-      while (true) {
-        if (controller.signal.aborted) throw abortError()
-        const claimed = inbox.claim(target)
-        if (!claimed.length && !pending) break
-        pending = false
 
-        if (steps >= MAX_TOOL_ROUNDS) {
-          if (finalPrompted) break
-          finalPrompted = true
-          forceFinal = true
-          inbox.inject(userMessage(GRACE_PROMPT_MSG, turnId))
-        }
-        steps += 1
-        session.append(AI_EVENT.STEP_START, { turn, step: steps }, { turn, step: steps })
-        const stepResult = await runStep({
+      let claimed = inbox.claim('next-turn')
+      if (!claimed.length) claimed = inbox.claim('next-step')
+      if (!claimed.length) throw abortError()
+      appendClaimed(claimed, turn, turnId)
+
+      toolSet = registry.resolve()
+      const history = prepareRequestMessages(session.deriveModel(), model).filter(
+        (message) => !(message.role === 'user' && message.source === 'runtime-context')
+      )
+
+      const result = await llm.runTurn(
+        {
+          providerId: model?.providerId,
+          modelId: model?.modelId,
+          messages: toPlain(history),
+          tools: toPlain(toolSet.tools),
           turn,
-          turnId,
-          step: steps,
-          claimed,
-          model,
-          guard,
-          forceFinal
-        })
-        session.append(
-          AI_EVENT.STEP_END,
-          { turn, step: steps, reason: { kind: stepResult.kind } },
-          { turn, step: steps }
-        )
-
-        if (forceFinal) {
-          outcome = { kind: 'completed' }
-          break
-        }
-
-        if (stepResult.kind === 'concluded') {
-          outcome = { kind: 'concluded' }
-          break
-        }
-
-        if (stepResult.kind === 'tools') {
-          pending = true
-          target = 'next-step'
-          const stalled = guard.recordRound(stepResult.roundFailed)
-          if (stepResult.loopGuardBreak) {
-            forceFinal = true
-            continue
+          turnId
+        },
+        controller.signal,
+        {
+          onEvent: (event) => {
+            session.append(event.type, event.data, {
+              turn: event.turn ?? turn,
+              step: event.step ?? null
+            })
+          },
+          onHostCall: hostCall,
+          onPart: (part) => {
+            if (part.type === 'attempt-start') {
+              onFrame?.({
+                kind: 'start',
+                attemptId: part.attemptId,
+                turnId: part.turnId || turnId,
+                turn: part.turn ?? turn,
+                step: part.step ?? 0
+              })
+              return
+            }
+            if (part.type === 'attempt-end') {
+              onFrame?.({
+                kind: 'end',
+                attemptId: part.attemptId,
+                turnId: part.turnId || turnId,
+                turn: part.turn ?? turn,
+                step: part.step ?? 0,
+                aborted: !!part.aborted,
+                error: !!part.error
+              })
+              return
+            }
+            const chunk = partToChunk(part)
+            if (chunk) {
+              onFrame?.({
+                kind: 'chunk',
+                attemptId: part.attemptId,
+                turnId,
+                turn,
+                step: part.step ?? 0,
+                chunk
+              })
+            }
           }
-          if (stalled >= STALL_ROUNDS) {
-            inbox.inject(userMessage(STALL_PROMPT_MSG, turnId))
-            forceFinal = true
-            continue
-          }
-          continue
         }
+      )
 
-        // 无工具调用的答复：做工作流校验，未通过则注入修复指令继续
-        const errors = workflowGuard.inspect()
-        if (errors?.length && workflowGuard.canFix()) {
-          workflowGuard.consumeFix()
-          inbox.inject(userMessage(workflowGuard.buildRepairMessage(errors), turnId))
-          pending = true
-          target = 'next-step'
-          continue
-        }
-        outcome = { kind: 'completed' }
-        break
-      }
+      outcome = result?.aborted ? { kind: 'aborted' } : result?.outcome || { kind: 'completed' }
+      if (outcome.kind === 'aborted') throw abortError()
     } catch (error) {
       if (isAbort(error, controller?.signal)) {
         outcome = { kind: 'aborted' }
@@ -370,14 +224,30 @@ export const createAgent = ({
         outcome = { kind: 'error', error: friendlyAIError(error) }
         console.error('AI turn 执行失败:', error)
         // 模型请求前就失败（如模型未配置）时没有 attempt 事件，补一条可展示的失败事实
-        if (!session.events.some((e) => e.turn === turn && e.type === AI_EVENT.ASSISTANT_ATTEMPT)) {
-          appendAttempt({ turn, step: Math.max(steps, 1), roundId: turnId }, createAttempt(), friendlyAIError(error))
+        if (!session.events.some((event) => event.turn === turn && event.type === AI_EVENT.ASSISTANT_ATTEMPT)) {
+          session.append(
+            AI_EVENT.ASSISTANT_ATTEMPT,
+            {
+              turn,
+              step: 1,
+              message: {
+                message_id: uuidv4(),
+                round_id: turnId,
+                role: 'assistant',
+                content: []
+              },
+              error: friendlyAIError(error)
+            },
+            { turn, step: 1 }
+          )
         }
       }
     } finally {
-      session.append(AI_EVENT.TURN_END, { turn, reason: outcome }, meta)
+      toolSet?.dispose?.()
+      session.append(AI_EVENT.TURN_END, { turn, reason: outcome }, { turn })
       session.flush()
       controller = null
+      guard = null
     }
 
     return inbox.nextTurn.length > 0
@@ -385,7 +255,7 @@ export const createAgent = ({
 
   const wake = () => {
     if (running) return
-    if (!inbox.nextTurn.length && !inbox.nextStep.length) return
+    if (!inbox.hasPending()) return
     running = true
     setStatus('running')
     ;(async () => {
@@ -420,6 +290,7 @@ export const createAgent = ({
     cancel() {
       inbox.clear()
       controller?.abort()
+      llm.abort?.()
     },
     get status() {
       return status

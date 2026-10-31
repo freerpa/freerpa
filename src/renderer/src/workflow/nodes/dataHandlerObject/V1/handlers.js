@@ -94,7 +94,7 @@ export const HANDLERS = {
       ],
       output: 'boolean',
       handler: (data, { key }) => {
-        return data.hasOwnProperty(key)
+        return Object.hasOwn(data, key)
       }
     },
     delete: {

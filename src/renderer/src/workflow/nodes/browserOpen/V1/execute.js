@@ -43,7 +43,7 @@ const freeRpaBrowser = async (node, context) => {
   onBeforeDestroy(async () => {
     try {
       await closeBrowser();
-    } catch (_) {}
+    } catch { /* 忽略：关闭浏览器失败不影响销毁流程 */ }
   });
 
   try {
@@ -55,7 +55,7 @@ const freeRpaBrowser = async (node, context) => {
     // 禁止下载
     try {
       await page._client().send('Page.setDownloadBehavior', { behavior: 'deny' });
-    } catch (_) {}
+    } catch { /* 忽略：禁止下载失败不影响后续操作 */ }
   } catch (e) {
     // 节点初始化中途失败：手动关闭已打开的浏览器再抛出，避免与工作流状态脱钩
     await closeBrowser().catch(() => {});
@@ -88,7 +88,7 @@ const cdpBrowser = async (node, context) => {
   for (const p of pages) {
     try {
       if (!global.opendCdpBrowser.includes(p.target()._targetId)) await p.close();
-    } catch (_) {}
+    } catch { /* 忽略：关闭多余页面失败不影响流程 */ }
   }
   // 立即注册销毁钩子，与内置浏览器分支一致：后续任何操作失败也能保证页面被关闭
   let cdpClosed = false;

@@ -1,9 +1,5 @@
 <template>
-    <a-checkbox-group
-    v-model="value"
-    :options="options"
-    :disabled="field.disabled"
-  />
+  <a-checkbox-group v-model="value" :options="options" :disabled="field.disabled" class="checkbox-group" />
 </template>
 
 <script setup>
@@ -26,9 +22,10 @@ loadOptions()
 </script>
 <style scoped>
 .checkbox-group {
-  min-height: 24px;
+  /* 与同尺寸的表单控件等高，选项多时自动换行 */
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  min-height: var(--field-control-height, 24px);
 }
 </style>

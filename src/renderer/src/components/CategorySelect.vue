@@ -66,7 +66,7 @@ onMounted(async () => {
   await _getCategoryList()
   watch(
     () => modelValue.value,
-    (val) => {
+    () => {
       isCategoryExist()
     }
   )
