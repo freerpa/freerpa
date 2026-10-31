@@ -33,7 +33,7 @@
 
     <!-- 添加按钮 -->
     <div class="array-actions">
-      <a-button-group style="padding-left: 1px">
+      <a-button-group>
         <a-button type="secondary" @click="addItem" :disabled="field.maxItems && arrayData?.length >= field.maxItems">
           <icon-plus />
           添加{{ field.name || '项' }}
@@ -186,7 +186,7 @@
       align-items: flex-end;
       gap: 4px;
       padding: 6px;
-      border: 0.5px solid var(--mac-separator);
+      border: var(--mac-hairline) solid var(--mac-separator);
       border-radius: var(--mac-radius-sm);
 
       .array-item-content {

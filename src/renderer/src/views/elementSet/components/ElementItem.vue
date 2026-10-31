@@ -235,7 +235,7 @@
   }
   .element-item {
     margin-bottom: 8px;
-    border: 0.5px solid var(--mac-separator);
+    border: var(--mac-hairline) solid var(--mac-separator);
     border-radius: var(--mac-radius-sm);
     padding: 8px;
     box-sizing: border-box;
@@ -304,7 +304,7 @@
     // 参数引用输入（Text 组件）统一成与 a-input medium 一致的高度与外观
     .expr-input.text-field-container {
       background: rgba(255, 255, 255, 0.78);
-      border: 0.5px solid rgba(0, 0, 0, 0.1);
+      border: var(--mac-hairline) solid rgba(0, 0, 0, 0.1);
       border-radius: var(--mac-radius-sm);
       box-shadow: inset 0 1px 1.5px rgba(0, 0, 0, 0.04);
       transition:

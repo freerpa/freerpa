@@ -149,7 +149,7 @@
       justify-content: space-between;
       gap: 16px;
       padding: 16px 20px 18px;
-      border-top: 0.5px solid var(--mac-separator);
+      border-top: var(--mac-hairline) solid var(--mac-separator);
     }
     .update-copy {
       min-width: 0;

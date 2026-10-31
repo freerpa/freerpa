@@ -369,13 +369,13 @@
       display: flex;
       flex: 1;
       min-height: 0;
-      border: 0.5px solid var(--mac-separator);
+      border: var(--mac-hairline) solid var(--mac-separator);
       border-radius: var(--mac-radius-sm);
       overflow: hidden;
 
       .dp-side {
         width: 220px;
-        border-right: 0.5px solid var(--mac-separator);
+        border-right: var(--mac-hairline) solid var(--mac-separator);
         padding: 8px 4px;
         overflow: auto;
         flex-shrink: 0;
@@ -515,7 +515,7 @@
               flex-direction: column;
               align-items: center;
               padding: 10px 6px 8px;
-              border: 0.5px solid var(--mac-separator);
+              border: var(--mac-hairline) solid var(--mac-separator);
               border-radius: var(--mac-radius-sm);
               cursor: pointer;
               transition:

@@ -269,7 +269,7 @@ const toggleBatch = () => {
   background: rgba(250, 250, 252, 0.6);
   -webkit-backdrop-filter: saturate(180%) blur(30px);
   backdrop-filter: saturate(180%) blur(30px);
-  border: 0.5px solid rgba(255, 255, 255, 0.7);
+  border: var(--mac-hairline) solid rgba(255, 255, 255, 0.7);
   box-shadow: var(--mac-shadow-3);
   border-radius: var(--mac-radius-lg);
 }

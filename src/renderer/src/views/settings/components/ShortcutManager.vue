@@ -140,7 +140,7 @@ onUnmounted(() => removeListener?.())
       display: flex;
       align-items: center;
       padding: 8px 0;
-      border-bottom: 0.5px solid var(--mac-separator);
+      border-bottom: var(--mac-hairline) solid var(--mac-separator);
       &:last-child { border-bottom: none; }
       .shortcut-info { flex: 1; display: flex; align-items: center; gap: 8px; .shortcut-name { font-weight: 500; font-size: 13px; } }
       .shortcut-keys { margin-right: 12px; .keys-tag { cursor: pointer; min-width: 100px; text-align: center; user-select: none; font-family: var(--mac-font-mono); font-size: 12px; letter-spacing: 0; } }

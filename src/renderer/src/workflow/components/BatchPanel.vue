@@ -145,7 +145,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 10px 14px;
-      border-bottom: 0.5px solid var(--mac-separator);
+      border-bottom: var(--mac-hairline) solid var(--mac-separator);
     }
 
     &__title {
@@ -160,7 +160,7 @@
       align-items: center;
       gap: 8px;
       padding: 10px 14px;
-      border-bottom: 0.5px solid var(--mac-separator);
+      border-bottom: var(--mac-hairline) solid var(--mac-separator);
     }
 
     /* 执行/停止按工作流工具栏样式，靠右对齐 */
@@ -182,7 +182,7 @@
       align-items: center;
       gap: 14px;
       padding: 8px 14px;
-      border-top: 0.5px solid var(--mac-separator);
+      border-top: var(--mac-hairline) solid var(--mac-separator);
       font-size: 12px;
       color: var(--mac-text-2);
     }
@@ -200,7 +200,7 @@
     gap: 8px;
     padding: 8px 10px;
     margin-bottom: 8px;
-    border: 0.5px solid var(--mac-separator);
+    border: var(--mac-hairline) solid var(--mac-separator);
     background: rgba(255, 255, 255, 0.6);
     border-radius: var(--mac-radius-sm);
 

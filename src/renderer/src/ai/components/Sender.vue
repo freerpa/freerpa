@@ -533,7 +533,7 @@
 
   .input-card {
     background: rgba(255, 255, 255, 0.82);
-    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    border: var(--mac-hairline) solid rgba(0, 0, 0, 0.1);
     border-radius: var(--mac-radius-md);
     box-shadow:
       inset 0 1px 1.5px rgba(0, 0, 0, 0.04),

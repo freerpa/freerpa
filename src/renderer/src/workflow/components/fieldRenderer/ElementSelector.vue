@@ -218,7 +218,7 @@ const onConfirm = () => {
   min-height: 0;
   padding: 10px;
   background: rgba(120, 120, 128, 0.06);
-  border: 0.5px solid var(--mac-separator);
+  border: var(--mac-hairline) solid var(--mac-separator);
   border-radius: var(--mac-radius-md);
 }
 
@@ -261,7 +261,7 @@ const onConfirm = () => {
     gap: 8px;
     padding-top: 12px;
     margin-top: 10px;
-    border-top: 0.5px solid var(--mac-separator);
+    border-top: var(--mac-hairline) solid var(--mac-separator);
   }
 }
 
@@ -275,7 +275,7 @@ const onConfirm = () => {
   color: var(--mac-text);
   margin-bottom: 8px;
   padding-bottom: 8px;
-  border-bottom: 0.5px solid var(--mac-separator);
+  border-bottom: var(--mac-hairline) solid var(--mac-separator);
   .panel-subtitle {
     font-size: 12px;
     font-weight: 400;

@@ -388,7 +388,7 @@
       display: flex;
       align-items: center;
       padding: 8px;
-      border: 0.5px solid rgba(0, 0, 0, 0.06);
+      border: var(--mac-hairline) solid rgba(0, 0, 0, 0.06);
       /* 浅灰填充卡片：与接近白色的弹出面板拉开层次，保证节点名可读 */
       background: rgba(120, 120, 128, 0.07);
       border-radius: var(--mac-radius-sm);
@@ -428,7 +428,7 @@
           align-items: center;
           padding: 8px 12px;
           width: 360px;
-          border-bottom: 0.5px solid var(--mac-separator);
+          border-bottom: var(--mac-hairline) solid var(--mac-separator);
           background: transparent;
 
           &-icon {

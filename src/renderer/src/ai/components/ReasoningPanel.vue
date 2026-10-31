@@ -105,7 +105,7 @@
     min-width: 0;
     margin: 2px 0 4px;
     padding: 3px 10px 3px 6px;
-    border: 0.5px solid var(--mac-separator);
+    border: var(--mac-hairline) solid var(--mac-separator);
     border-radius: var(--mac-radius-md);
     background: rgba(255, 255, 255, 0.5);
   }
