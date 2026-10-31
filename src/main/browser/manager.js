@@ -20,6 +20,10 @@ const openBrowserInstances = new Map()
 // 引用计数：追踪每个环境有多少使用者在连接
 const refCounts = new Map()
 
+// envId 统一转为字符串作为 Map key：UI 传数字、AI/MCP 传字符串，
+// 不归一化会出现 getBrowserInstance(12) 取不到 getBrowserInstance('12') 的实例，导致关闭无效
+const envKey = (envId) => String(envId)
+
 // 随机指纹临时数据目录根（位于 userData 下；目录名 = 指纹种子）
 const TEMP_SESSION_ROOT = 'tempSession'
 const TEMP_SESSION_PATH = () => path.join(app.getPath('userData'), TEMP_SESSION_ROOT)
@@ -46,14 +50,17 @@ const safeSend = (sender, channel, data) => {
  * 关闭指定浏览器的浏览器进程
  */
 export const killBrowserProcess = async (envId) => {
-  const entry = openBrowserInstances.get(envId)
+  const key = envKey(envId)
+  // 进程被关闭时引用计数一并清空，避免后续 re-open 从旧计数继续叠加、导致无法再关闭
+  refCounts.delete(key)
+  const entry = openBrowserInstances.get(key)
   if (!entry) return
   const { process: proc, senderRef } = entry
   // 置停止标记：startPageMonitor 的轮询下一轮立即终止（避免进程关闭后残留一次 2s 轮询）
   entry.monitorStopped = true
-  openBrowserInstances.delete(envId)
+  openBrowserInstances.delete(key)
 
-  safeSend(senderRef, 'env:browserClosed', { envId: String(envId) })
+  safeSend(senderRef, 'env:browserClosed', { envId: key })
 
   try {
     if (process.platform === 'win32') {
@@ -72,13 +79,14 @@ export const killBrowserProcess = async (envId) => {
  * 注册一个打开的浏览器实例
  */
 export const registerBrowser = (envId, instance, senderRef) => {
+  const key = envKey(envId)
   // 不覆盖已有条目（可能被工作流先注册了）
-  if (openBrowserInstances.has(envId)) {
+  if (openBrowserInstances.has(key)) {
     // 更新 senderRef 为空时保留已有
-    if (senderRef && !openBrowserInstances.get(envId).senderRef) {
-      openBrowserInstances.get(envId).senderRef = senderRef
+    if (senderRef && !openBrowserInstances.get(key).senderRef) {
+      openBrowserInstances.get(key).senderRef = senderRef
     }
-    return openBrowserInstances.get(envId)
+    return openBrowserInstances.get(key)
   }
   const entry = {
     instanceId: String(instance.id),
@@ -89,19 +97,20 @@ export const registerBrowser = (envId, instance, senderRef) => {
     userDataDir: instance.userDataDir,
     senderRef
   }
-  openBrowserInstances.set(envId, entry)
+  openBrowserInstances.set(key, entry)
 
   entry.process.on('exit', () => {
     maybeRemoveTempSessionDir(entry.userDataDir) // 随机指纹临时目录在进程退出后即删
-    if (openBrowserInstances.delete(envId)) {
-      safeSend(entry.senderRef, 'env:browserClosed', { envId: String(envId) })
+    if (openBrowserInstances.delete(key)) {
+      refCounts.delete(key)
+      safeSend(entry.senderRef, 'env:browserClosed', { envId: key })
     }
   })
 
   // 监控页面数，所有页面关闭时自动退出进程
-  startPageMonitor(envId, entry)
+  startPageMonitor(key, entry)
 
-  safeSend(senderRef, 'env:browserOpened', { envId: String(envId) })
+  safeSend(senderRef, 'env:browserOpened', { envId: key })
   return entry
 }
 
@@ -133,30 +142,32 @@ const startPageMonitor = async (envId, entry) => {
 /**
  * 检查浏览器是否已打开
  */
-export const isBrowserOpen = (envId) => openBrowserInstances.has(envId)
+export const isBrowserOpen = (envId) => openBrowserInstances.has(envKey(envId))
 
 /**
  * 获取已打开浏览器实例（用于复用连接）
  */
-export const getBrowserInstance = (envId) => openBrowserInstances.get(envId) || null
+export const getBrowserInstance = (envId) => openBrowserInstances.get(envKey(envId)) || null
 
 /**
  * 增加引用计数（新使用者接入时调用）
  */
 export const incrementRef = (envId) => {
-  refCounts.set(envId, (refCounts.get(envId) || 0) + 1)
+  const key = envKey(envId)
+  refCounts.set(key, (refCounts.get(key) || 0) + 1)
 }
 
 /**
  * 减少引用计数，归零时自动关闭进程
  */
 export const decrementRef = async (envId) => {
-  const count = (refCounts.get(envId) || 1) - 1
+  const key = envKey(envId)
+  const count = (refCounts.get(key) || 1) - 1
   if (count <= 0) {
-    refCounts.delete(envId)
-    await killBrowserProcess(envId)
+    refCounts.delete(key)
+    await killBrowserProcess(key)
   } else {
-    refCounts.set(envId, count)
+    refCounts.set(key, count)
   }
 }
 

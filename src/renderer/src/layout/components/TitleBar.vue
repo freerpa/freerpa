@@ -301,10 +301,10 @@
         display: flex;
         align-items: center;
         font-weight: 600;
-        font-size: 12px;
+        font-size: 16px;
         letter-spacing: 0.02em;
         flex: 0 0 auto;
-        color: var(--mac-text-3);
+        color: var(--mac-text-2);
         line-height: 24px;
       }
       .tabs {

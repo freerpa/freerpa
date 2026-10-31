@@ -3,7 +3,13 @@
  */
 <template>
   <a-spin style="width: 100%; height: calc(100% - 10px)" :loading="loading" tip="加载中...">
-    <div class="flow-canvas" tabindex="0">
+    <div
+      class="flow-canvas"
+      :class="{ 'is-box-selecting': boxSelecting }"
+      tabindex="0"
+      @pointerdown.capture="onCanvasPointerDown"
+      @contextmenu="onCanvasContextMenu"
+    >
       <div v-if="isDragging" class="drag-prompt" :class="{ 'is-ctrl': isCtrl }">
         拖拽节点时按住 <b>{{ platform === 'darwin' ? 'Cmd' : 'Ctrl' }}</b> 键可以穿透子流程
       </div>
@@ -19,7 +25,7 @@
         :zoom-on-double-click="false"
         elevate-edges-on-select
         :select-nodes-on-drag="false"
-        :selection-key-code="['Meta', 'Shift']"
+        :selection-key-code="null"
         :multi-selection-key-code="['Meta', 'Shift']"
         connectionMode="strict"
         :connect-on-click="false"
@@ -91,6 +97,9 @@
         <MiniMap />
       </VueFlow>
 
+      <!-- 右键框选矩形 -->
+      <div v-if="selectionRect" class="box-selection" :style="selectionRectStyle" />
+
       <div :style="quickConnectStyle">
         <ModalPopover position="right" v-model:visible="nodeListVisible">
           <template #content>
@@ -117,8 +126,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, provide, inject, nextTick } from 'vue'
-import { VueFlow } from '@vue-flow/core'
+import { ref, computed, onMounted, onUnmounted, provide, inject, nextTick } from 'vue'
+import { VueFlow, getNodesInside } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { MiniMap } from '@vue-flow/minimap'
 import '@vue-flow/core/dist/style.css'
@@ -225,6 +234,138 @@ const edgeDoubleClick = ({ edge }) => {
   vueFlowRef.value.removeEdges(edge.id)
 }
 
+// ── 右键框选（原先为 Shift/Cmd + 左键框选，现改为鼠标右键按下即框选） ─────
+const boxSelecting = ref(false)
+const selectionRect = ref(null)
+/** 起点（canvas 坐标用于画矩形，pane 坐标用于命中判定） */
+let boxSelectOrigin = null
+let boxSelectBounds = null
+let boxSelectPane = null
+let boxSelectPointerId = null
+let lastBoxSelectedIds = ''
+
+const selectionRectStyle = computed(() => {
+  const rect = selectionRect.value
+  if (!rect) return {}
+  return {
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`
+  }
+})
+
+/** 仅从空白画布区域起框：节点、边、小地图等不触发 */
+const onCanvasPointerDown = (event) => {
+  if (event.button !== 2) return
+  const target = event.target
+  if (!(target instanceof Element) || !target.closest('.vue-flow__pane')) return
+  if (
+    target.closest('.vue-flow__node, .vue-flow__edge, .vue-flow__handle, .vue-flow__nodesselection')
+  ) {
+    return
+  }
+  // 阻止原生拖拽选中文本与后续的 d3 平移/系统右键菜单
+  event.preventDefault()
+  event.stopPropagation()
+
+  const canvasRect = event.currentTarget.getBoundingClientRect()
+  const paneEl = target.closest('.vue-flow__pane')
+  const paneRect = paneEl.getBoundingClientRect()
+  boxSelectBounds = { canvasRect, paneRect }
+  boxSelectOrigin = {
+    canvas: { x: event.clientX - canvasRect.left, y: event.clientY - canvasRect.top },
+    pane: { x: event.clientX - paneRect.left, y: event.clientY - paneRect.top }
+  }
+  lastBoxSelectedIds = ''
+  boxSelecting.value = true
+  boxSelectPane = paneEl
+  boxSelectPointerId = event.pointerId
+  // 锁定指针：拖出窗口后仍能收到 pointermove/pointerup
+  paneEl.setPointerCapture?.(event.pointerId)
+  selectionRect.value = {
+    left: boxSelectOrigin.canvas.x,
+    top: boxSelectOrigin.canvas.y,
+    width: 0,
+    height: 0
+  }
+
+  window.addEventListener('pointermove', onBoxSelectMove)
+  window.addEventListener('pointerup', onBoxSelectEnd)
+  window.addEventListener('pointercancel', onBoxSelectEnd)
+}
+
+const onBoxSelectMove = (event) => {
+  if (!boxSelecting.value || !boxSelectOrigin || !boxSelectBounds) return
+  const { canvasRect, paneRect } = boxSelectBounds
+  const canvasPoint = {
+    x: event.clientX - canvasRect.left,
+    y: event.clientY - canvasRect.top
+  }
+  const panePoint = {
+    x: event.clientX - paneRect.left,
+    y: event.clientY - paneRect.top
+  }
+
+  selectionRect.value = {
+    left: Math.min(boxSelectOrigin.canvas.x, canvasPoint.x),
+    top: Math.min(boxSelectOrigin.canvas.y, canvasPoint.y),
+    width: Math.abs(canvasPoint.x - boxSelectOrigin.canvas.x),
+    height: Math.abs(canvasPoint.y - boxSelectOrigin.canvas.y)
+  }
+
+  const flow = vueFlowRef.value
+  if (!flow) return
+  // 命中判定复用 Vue Flow 的实现（需完全框住节点，视口缩放已折算）
+  const nodes = getNodesInside(
+    flow.getNodes,
+    {
+      x: Math.min(boxSelectOrigin.pane.x, panePoint.x),
+      y: Math.min(boxSelectOrigin.pane.y, panePoint.y),
+      width: Math.abs(panePoint.x - boxSelectOrigin.pane.x),
+      height: Math.abs(panePoint.y - boxSelectOrigin.pane.y)
+    },
+    flow.viewport,
+    false,
+    true
+  )
+  const ids = nodes.map((node) => node.id).join('|')
+  if (ids === lastBoxSelectedIds) return
+  lastBoxSelectedIds = ids
+  flow.addSelectedNodes(nodes)
+}
+
+const onBoxSelectEnd = (event) => {
+  if (!boxSelecting.value) return
+  window.removeEventListener('pointermove', onBoxSelectMove)
+  window.removeEventListener('pointerup', onBoxSelectEnd)
+  window.removeEventListener('pointercancel', onBoxSelectEnd)
+  if (boxSelectPane?.hasPointerCapture?.(boxSelectPointerId)) {
+    boxSelectPane.releasePointerCapture(boxSelectPointerId)
+  }
+
+  const moved =
+    selectionRect.value && (selectionRect.value.width > 3 || selectionRect.value.height > 3)
+  if (event.type === 'pointerup' && moved) onBoxSelectMove(event)
+  // 未拖动视为在空白处单击右键：清空选中
+  if (!moved) {
+    clearClickedNode()
+    vueFlowRef.value?.addSelectedNodes([])
+  }
+  boxSelecting.value = false
+  selectionRect.value = null
+  boxSelectOrigin = null
+  boxSelectBounds = null
+  boxSelectPane = null
+  boxSelectPointerId = null
+  lastBoxSelectedIds = ''
+}
+
+/** 屏蔽画布区域的原生右键菜单（配置抽屉内保留，便于输入框粘贴） */
+const onCanvasContextMenu = (event) => {
+  if (event.target instanceof Element && event.target.closest('.node-config-drawer')) return
+  event.preventDefault()
+}
 
 // 处理节点拖放
 const onDrop = async (event) => {
@@ -346,6 +487,9 @@ defineExpose({
 
 // 组件卸载时清理
 onUnmounted(() => {
+  window.removeEventListener('pointermove', onBoxSelectMove)
+  window.removeEventListener('pointerup', onBoxSelectEnd)
+  window.removeEventListener('pointercancel', onBoxSelectEnd)
   if (engine.value) {
     engine.value.cleanup()
   }
@@ -385,6 +529,26 @@ provide('engine', engine)
   .vue-flow {
     width: 100%;
     height: 100%;
+  }
+
+  /* 右键框选进行中：指针变为十字，框选用绝对定位矩形绘制 */
+  &.is-box-selecting {
+    cursor: crosshair;
+
+    :deep(.vue-flow__pane),
+    :deep(.vue-flow__node),
+    :deep(.vue-flow__edge) {
+      cursor: crosshair;
+    }
+  }
+
+  .box-selection {
+    position: absolute;
+    z-index: 5;
+    border: 1px dashed var(--mac-accent);
+    background: rgb(29 29 31 / 8%);
+    border-radius: 2px;
+    pointer-events: none;
   }
 
   :deep(.vue-flow__minimap) {

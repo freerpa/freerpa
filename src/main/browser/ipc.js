@@ -55,9 +55,14 @@ export const register = () => {
     }
   })
 
-  ipcMain.handle('env:closeBrowser', async (_, { envId }) => {
-    try { await decrementRef(envId); return { code: 200, message: '浏览器已关闭' } }
-    catch (e) { return { code: 400, message: safeMsg(e, '关闭失败') } }
+  // 关闭浏览器：UI「关闭浏览器」按钮传 force=true —— 用户显式关闭时忽略引用计数直接结束进程，
+  // 否则会因工作流/AI 仍持有引用而出现“点了关闭但浏览器还在”的情况
+  ipcMain.handle('env:closeBrowser', async (_, { envId, force = false } = {}) => {
+    try {
+      if (force) await killBrowserProcess(envId)
+      else await decrementRef(envId)
+      return { code: 200, message: '浏览器已关闭' }
+    } catch (e) { return { code: 400, message: safeMsg(e, '关闭失败') } }
   })
 
   // 本地查询 IP/代理地理信息（直连 GEO 服务，多平台容灾，无桥接）

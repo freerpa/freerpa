@@ -145,8 +145,12 @@ const handleOpenCancel = () => { showOpenModal.value = false }
 const handleCloseBrowser = async (env) => {
   loadingMap[env.id] = true
   try {
-    const res = await window.electronAPI.env.closeBrowser({ envId: env.id })
-    if (res.code === 200) envStatusMap[env.id] = false
+    // force：用户显式关闭，忽略工作流/AI 持有的引用计数，直接结束进程
+    const res = await window.electronAPI.env.closeBrowser({ envId: env.id, force: true })
+    if (res.code === 200) {
+      envStatusMap[env.id] = false
+      fetchBrowserStatus() // 以主进程实际状态为准，避免列表与真实运行状态不一致
+    }
   } finally { loadingMap[env.id] = false }
 }
 
