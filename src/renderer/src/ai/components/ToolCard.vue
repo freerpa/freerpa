@@ -138,7 +138,7 @@
   .tool-card {
     min-width: 0;
     margin: 2px 0;
-    border: 0.5px solid rgba(0, 0, 0, 0.08);
+    border: var(--mac-hairline) solid rgba(0, 0, 0, 0.08);
     border-radius: var(--mac-radius-md);
     background: rgba(255, 255, 255, 0.6);
     overflow: hidden;
@@ -258,7 +258,7 @@
     gap: 8px;
     margin: 0;
     padding: 8px 10px 10px;
-    border-top: 0.5px solid var(--mac-separator);
+    border-top: var(--mac-hairline) solid var(--mac-separator);
     min-width: 0;
   }
 
@@ -277,7 +277,7 @@
     margin: 0;
     padding: 6px 8px;
     background: var(--mac-fill);
-    border: 0.5px solid var(--mac-separator);
+    border: var(--mac-hairline) solid var(--mac-separator);
     border-radius: var(--mac-radius-control-sm);
     color: var(--mac-text-2);
     font-family: var(--font-code-family, var(--mac-font-mono));

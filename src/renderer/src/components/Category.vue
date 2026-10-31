@@ -187,7 +187,7 @@ const handleActionSelect = (item) => {
   display: flex;
   flex-direction: column;
   background: rgba(246, 246, 248, 0.55);
-  border-right: 0.5px solid var(--mac-separator);
+  border-right: var(--mac-hairline) solid var(--mac-separator);
   .category-scroll {
     flex: 1;
     min-height: 0;

@@ -331,7 +331,7 @@
     background: rgba(255, 255, 255, 0.62);
     -webkit-backdrop-filter: saturate(180%) blur(28px);
     backdrop-filter: saturate(180%) blur(28px);
-    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    border: var(--mac-hairline) solid rgba(0, 0, 0, 0.1);
     border-radius: var(--mac-radius-lg);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.75),

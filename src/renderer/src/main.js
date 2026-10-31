@@ -10,6 +10,10 @@ import { loadPluginNodes } from '@/workflow/nodes'
 import { confirmExit } from '@/utils/confirmExit'
 import { registerMcpExecutor } from './mcp'
 
+// 平台标识：全局样式据此做平台差异适配（Windows 下 0.5px 发丝边框会因
+// 设备像素取整而消失，需升级为 1px）。用 UA 同步判断，避免首帧闪烁。
+document.body.classList.add(/Windows/i.test(navigator.userAgent) ? 'platform-win32' : 'platform-darwin')
+
 const app = createApp(App)
 const pinia = createPinia()
 

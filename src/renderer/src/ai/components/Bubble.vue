@@ -232,7 +232,7 @@
     padding: 9px 15px;
     border-radius: var(--mac-radius-lg);
     background: linear-gradient(180deg, var(--mac-accent-hover), var(--mac-accent));
-    border: 0.5px solid rgba(0, 0, 0, 0.16);
+    border: var(--mac-hairline) solid rgba(0, 0, 0, 0.16);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.18),
       0 1px 2px rgba(0, 0, 0, 0.16);
@@ -322,7 +322,7 @@
   .answer {
     min-width: 0;
     padding: 10px 14px;
-    border: 0.5px solid rgba(0, 0, 0, 0.08);
+    border: var(--mac-hairline) solid rgba(0, 0, 0, 0.08);
     border-radius: var(--mac-radius-md);
     background: #fff;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);

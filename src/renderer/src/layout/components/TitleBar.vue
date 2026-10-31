@@ -9,7 +9,7 @@
           <div class="tab-icon">
             <icon-home />
           </div>
-          首页
+          <span>首页</span>
         </div>
         <a-divider v-if="Object.keys(openedTabs).length > 0" style="margin: 0 8px" direction="vertical" />
         <div v-if="hasScrollbar" @click="scrollTabs('left')" class="scroll-btn" :class="{ disabled: !isLeftScroll }">
@@ -281,7 +281,7 @@
     justify-content: space-between;
     align-items: center;
     -webkit-app-region: drag;
-    border-bottom: 0.5px solid var(--mac-separator);
+    border-bottom: var(--mac-hairline) solid var(--mac-separator);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
     width: 100%;
     .left {
@@ -365,11 +365,12 @@
         flex: 0 0 auto;
         align-items: center;
         height: 30px;
-        padding: 0 24px;
+        /* 左侧留出图标流式布局的空间，右侧为关闭按钮预留位置 */
+        padding: 0 24px 0 9px;
         font-size: 12px;
         font-weight: 500;
         border-radius: var(--mac-radius-sm);
-        border: 0.5px solid transparent;
+        border: var(--mac-hairline) solid transparent;
         cursor: pointer;
         position: relative;
         color: var(--mac-text-2);
@@ -386,7 +387,7 @@
           white-space: nowrap;
         }
         &.home {
-          padding: 0 12px 0 28px;
+          padding: 0 12px;
         }
         &.active {
           background: rgba(255, 255, 255, 0.92);
@@ -424,16 +425,17 @@
           min-width: 12px;
           text-align: center;
         }
+        /* 图标参与 flex 流式布局（不再绝对定位），由父级 align-items 保证
+           在不同平台/字体下（macOS PingFang / Windows 微软雅黑）都垂直居中 */
         .tab-icon {
           display: flex;
           align-items: center;
           justify-content: center;
+          flex: 0 0 16px;
           width: 16px;
           height: 16px;
-          position: absolute;
+          margin-right: 6px;
           font-size: 12px;
-          top: 7px;
-          left: 9px;
           pointer-events: none;
           color: inherit;
         }
@@ -489,7 +491,7 @@
       font-size: 12px;
       color: #d63a2f !important;
       background: rgba(255, 59, 48, 0.1) !important;
-      border: 0.5px solid rgba(255, 59, 48, 0.28) !important;
+      border: var(--mac-hairline) solid rgba(255, 59, 48, 0.28) !important;
       box-shadow: none !important;
       &:hover {
         background: rgba(255, 59, 48, 0.16) !important;

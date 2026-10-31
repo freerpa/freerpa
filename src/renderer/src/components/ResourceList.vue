@@ -232,7 +232,7 @@
         min-height: 400px;
         background: rgba(255, 255, 255, 0.6);
         border-radius: var(--mac-radius-lg);
-        border: 0.5px solid rgba(255, 255, 255, 0.7);
+        border: var(--mac-hairline) solid rgba(255, 255, 255, 0.7);
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
       }
     }

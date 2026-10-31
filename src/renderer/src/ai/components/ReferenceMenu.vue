@@ -155,7 +155,7 @@
     background: rgba(250, 250, 252, 0.94);
     -webkit-backdrop-filter: saturate(180%) blur(28px);
     backdrop-filter: saturate(180%) blur(28px);
-    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    border: var(--mac-hairline) solid rgba(0, 0, 0, 0.1);
     border-radius: var(--mac-radius-sm);
     box-shadow: var(--mac-shadow-3);
     overflow: hidden;
@@ -165,7 +165,7 @@
       align-items: center;
       gap: 2px;
       padding: 4px;
-      border-bottom: 0.5px solid var(--mac-separator);
+      border-bottom: var(--mac-hairline) solid var(--mac-separator);
       background: rgba(255, 255, 255, 0.35);
     }
 
@@ -254,7 +254,7 @@
 
     &__hint {
       padding: 5px 8px;
-      border-top: 0.5px solid var(--mac-separator);
+      border-top: var(--mac-hairline) solid var(--mac-separator);
       font-size: 11px;
       color: var(--mac-text-3);
       background: rgba(255, 255, 255, 0.35);

@@ -70,6 +70,6 @@ const hasTools = computed(() => props.nodeDefinition.type !== 'workflowStart')
   height: 24px;
   padding: 0 12px;
   border-radius: var(--border-radius-small);
-  border: 0.5px solid var(--mac-separator);
+  border: var(--mac-hairline) solid var(--mac-separator);
 }
 </style>

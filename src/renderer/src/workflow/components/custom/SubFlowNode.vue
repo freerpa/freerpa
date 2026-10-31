@@ -105,7 +105,7 @@ const handlePointerMove = (e) => {
   height: 100%;
   width: 100%;
   background: rgba(255, 255, 255, 0.88);
-  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  border: var(--mac-hairline) solid rgba(0, 0, 0, 0.1);
   border-radius: var(--mac-radius-md);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   display: flex;

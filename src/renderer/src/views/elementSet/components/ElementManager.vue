@@ -246,7 +246,7 @@
 
   .element-table {
     :deep(.arco-table-container) {
-      border: 0.5px solid var(--mac-separator);
+      border: var(--mac-hairline) solid var(--mac-separator);
     }
   }
 

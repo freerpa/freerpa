@@ -121,7 +121,7 @@
       justify-content: center;
       color: var(--mac-text-2);
       background: rgba(255, 255, 255, 0.55);
-      border: 0.5px solid rgba(0, 0, 0, 0.08);
+      border: var(--mac-hairline) solid rgba(0, 0, 0, 0.08);
       border-radius: var(--mac-radius-sm);
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
       cursor: pointer;

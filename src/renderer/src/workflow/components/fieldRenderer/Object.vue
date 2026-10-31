@@ -120,7 +120,7 @@ useFieldWatch(props, objectData)
     width: 100%;
     padding: 6px;
     border-radius: var(--mac-radius-sm);
-    border: 0.5px solid var(--mac-separator);
+    border: var(--mac-hairline) solid var(--mac-separator);
   }
 
   .object-actions {

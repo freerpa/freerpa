@@ -45,7 +45,7 @@ defineProps({
     width: 100px;
     margin-left: -50px;
     border-radius: var(--border-radius-small);
-    border: 0.5px solid var(--mac-separator);
+    border: var(--mac-hairline) solid var(--mac-separator);
     height: 30px;
     display: flex;
     align-items: center;

@@ -53,7 +53,7 @@
     background: rgba(250, 250, 252, 0.92);
     -webkit-backdrop-filter: saturate(180%) blur(24px);
     backdrop-filter: saturate(180%) blur(24px);
-    border: 0.5px solid rgba(0, 0, 0, 0.1);
+    border: var(--mac-hairline) solid rgba(0, 0, 0, 0.1);
     border-radius: var(--mac-radius-md);
     overflow: hidden;
     cursor: pointer;

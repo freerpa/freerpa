@@ -75,7 +75,7 @@
     background: rgb(242 242 245 / 60%);
     -webkit-backdrop-filter: saturate(180%) blur(28px);
     backdrop-filter: saturate(180%) blur(28px);
-    border: 0.5px solid rgba(0, 0, 0, 0.08);
+    border: var(--mac-hairline) solid rgba(0, 0, 0, 0.08);
     border-radius: var(--mac-radius-lg);
     box-shadow: var(--mac-shadow-2);
     z-index: 50;

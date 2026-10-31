@@ -88,7 +88,7 @@ onUnmounted(() => {
 .chat__title {
   height: 46px;
   flex-shrink: 0;
-  border-bottom: 0.5px solid var(--mac-separator);
+  border-bottom: var(--mac-hairline) solid var(--mac-separator);
   display: flex;
   align-items: center;
   justify-content: space-between;

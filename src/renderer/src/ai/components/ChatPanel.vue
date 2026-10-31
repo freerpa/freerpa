@@ -288,13 +288,13 @@
       padding: 6px 14px;
       font-size: 12px;
       color: var(--mac-text-3);
-      border-top: 0.5px solid var(--mac-separator);
+      border-top: var(--mac-hairline) solid var(--mac-separator);
     }
 
     .chat__sender {
       flex-shrink: 0;
       padding: 12px;
-      border-top: 0.5px solid var(--mac-separator);
+      border-top: var(--mac-hairline) solid var(--mac-separator);
     }
   }
 
