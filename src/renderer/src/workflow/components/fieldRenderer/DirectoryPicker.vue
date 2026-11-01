@@ -1,7 +1,7 @@
 <template>
   <a-modal
     :visible="visible"
-    title="文件选择器"
+    :title="pickerTitle"
     :width="880"
     :footer="false"
     :mask-closable="false"
@@ -78,7 +78,7 @@
                   v-for="entry in entries"
                   :key="entry.path"
                   class="dp-row"
-                  :class="{ selected: isSelected(entry) }"
+                  :class="{ selected: isSelected(entry), disabled: isDisabled(entry) }"
                   :title="entry.path"
                   @click="selectEntry(entry)"
                   @dblclick="openEntry(entry)"
@@ -97,7 +97,7 @@
                     v-for="entry in entries"
                     :key="entry.path"
                     class="dp-card"
-                    :class="{ selected: isSelected(entry) }"
+                    :class="{ selected: isSelected(entry), disabled: isDisabled(entry) }"
                     :title="entry.path"
                     @click="selectEntry(entry)"
                     @dblclick="openEntry(entry)"
@@ -139,8 +139,22 @@
     modelValue: { type: String, default: '' },
     visible: { type: Boolean, default: false },
     multiple: { type: Boolean, default: false },
+    /** 路径类型：file 只能选文件；folder/directory 只能选文件夹；null 不限制（兼容旧字段） */
+    pathType: { type: String, default: null },
   });
   const emit = defineEmits(['update:modelValue', 'update:visible', 'select']);
+
+  const mode = computed(() => {
+    const t = (props.pathType || '').toLowerCase();
+    if (t === 'file') return 'file';
+    if (t === 'folder' || t === 'directory') return 'folder';
+    return null;
+  });
+  const pickerTitle = computed(() =>
+    mode.value === 'folder' ? '选择文件夹' : mode.value === 'file' ? '选择文件' : '文件选择器'
+  );
+  /** 当前模式下不可选的条目（folder 模式下文件置灰；file 模式允许进入文件夹但不作为最终值） */
+  const isDisabled = (entry) => mode.value === 'folder' && entry.type !== 'dir';
 
   /** 判断 path 是否落在某个授权根内（根自身或其后代）；path 非字符串一律视为不命中 */
   const inRootOf = (path, root) => {
@@ -252,6 +266,10 @@
   };
 
   const selectEntry = (entry) => {
+    // 类型不匹配的条目（如选择文件夹时的文件）置灰不可选
+    if (isDisabled(entry)) return;
+    // 选择文件时文件夹仅用于双击进入，不能作为最终选择值
+    if (mode.value === 'file' && entry.type !== 'file') return;
     if (props.multiple) {
       const i = selected.value.indexOf(entry.path);
       if (i >= 0) selected.value.splice(i, 1);
@@ -261,6 +279,7 @@
     }
   };
   const openEntry = (entry) => {
+    if (isDisabled(entry)) return;
     // 目录双击进入；文件双击等同点击「选择」完成确认（双击前的 click 已将其置为选中）
     if (entry.type === 'dir') navigate(entry.path);
     else onConfirm();
@@ -476,6 +495,15 @@
             &.selected {
               background: var(--color-fill-2);
             }
+            // 类型不匹配的条目：置灰且不可点击（如选择文件夹时的文件）
+            &.disabled {
+              cursor: not-allowed;
+              opacity: 0.45;
+              &:hover,
+              &.selected {
+                background: transparent;
+              }
+            }
             .dp-row-icon {
               flex-shrink: 0;
               &.dir {
@@ -524,6 +552,14 @@
               &:hover,
               &.selected {
                 background: var(--color-fill-2);
+              }
+              &.disabled {
+                cursor: not-allowed;
+                opacity: 0.45;
+                &:hover,
+                &.selected {
+                  background: transparent;
+                }
               }
               .dp-card-thumb {
                 width: 100%;

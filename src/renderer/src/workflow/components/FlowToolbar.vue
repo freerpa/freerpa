@@ -26,7 +26,7 @@
       </a-button-group>
       <a-tooltip content="自动布局(K)">
         <a-button type="text" size="small" @click="autoLayout(flowStore.vueFlowRef)" :disabled="isExecuting">
-          <template #icon><RiDashboardLine size="24" /></template>
+          <template #icon><RiDashboardLine style="font-size: 16px;" /></template>
         </a-button>
       </a-tooltip>
     </a-space>

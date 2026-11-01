@@ -25,6 +25,7 @@ export default {
           id: 'savePath',
           name: '保存路径',
           type: 'path',
+          pathType: 'folder',
           description: '文件保存目录（自动创建）；为空则不保存文件，仅监听下载信息',
           quickConfig: true
         },
