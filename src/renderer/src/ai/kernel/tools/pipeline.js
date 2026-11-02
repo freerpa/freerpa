@@ -9,6 +9,9 @@ import { v4 as uuidv4 } from 'uuid'
 import { AI_EVENT } from '../events.js'
 import { LOOP_GUARD_MSG } from '../policies/loopGuard'
 
+/** 会改动工作流的工具：成功后标记“有未完成变更”，必须 finish 才能结束本 turn */
+const MUTATING_TOOLS = new Set(['addNode', 'connect', 'updateNode', 'deleteNode', 'deleteEdge'])
+
 const normalizeOutput = (output) => {
   const failed = !!(
     output &&
@@ -116,9 +119,14 @@ export const createToolPipeline = ({ registry, session } = {}) => {
     const finishOne = (outcome, index, overrideContent) => {
       results[index] = outcome
       commitResult(outcome, meta, overrideContent)
+      // 完成契约：finish 成功 = 本 turn 完成；工作流变更成功 = 记录待完成
       if (outcome.name === 'finish') {
-        if (outcome.ok && !overrideContent) concluded = true
-        else roundFailed = true
+        if (outcome.ok && !overrideContent) {
+          concluded = true
+          ctx.workflowGuard?.markFinished?.()
+        }
+      } else if (outcome.ok && MUTATING_TOOLS.has(outcome.name)) {
+        ctx.workflowGuard?.markMutation?.()
       }
     }
 
@@ -159,8 +167,8 @@ export const createToolPipeline = ({ registry, session } = {}) => {
           appendCall(call, meta)
           const outcome = await invoke(call)
           let override = null
+          // finish 失败是“校验未通过”的正常反馈，不参与失败指纹（否则空参数 finish 失败两次就会被误判为死循环）
           if (outcome.name !== 'finish' && outcome.failed) {
-            roundFailed = true
             if (ctx.guard?.recordFailure?.(call)) {
               loopGuardBreak = true
               override = LOOP_GUARD_MSG
@@ -185,7 +193,6 @@ export const createToolPipeline = ({ registry, session } = {}) => {
           const outcome = outcomes[i]
           let override = null
           if (outcome.name !== 'finish' && outcome.failed) {
-            roundFailed = true
             if (ctx.guard?.recordFailure?.(group[i].call)) {
               loopGuardBreak = true
               override = LOOP_GUARD_MSG
@@ -202,11 +209,14 @@ export const createToolPipeline = ({ registry, session } = {}) => {
     } catch (error) {
       // 管线级异常：把剩余调用补成失败结果，绝不留下无配对 tool_call
       console.error('工具管线执行异常:', error)
-      roundFailed = true
       abortRemaining(cursor, `error: 工具执行异常：${error?.message || String(error)}`)
     }
 
-    return { results: results.filter(Boolean), concluded, loopGuardBreak, roundFailed }
+    // “无进展”= 本 step 所有调用都失败；只要成功了一个（含部分成功）就不算停滞，
+    // 避免“探测性失败 → 下一轮修正”被误判为死循环而提前收尾
+    const settled = results.filter(Boolean)
+    roundFailed = settled.length > 0 && settled.every((result) => result.failed)
+    return { results: settled, concluded, loopGuardBreak, roundFailed }
   }
 
   return { execute, invoke }

@@ -479,7 +479,7 @@ export const runAgentTurn = async ({
     }
   }
 
-  /** 无工具调用的答复：工作流校验（未通过则注入修复指令继续） */
+  /** 无工具调用的答复：工作流校验（未通过则注入修复指令继续；有变更未 finish 则注入续跑指令） */
   const checkNode = async (state) => {
     const step = state.step
     const check = await hostCall('workflowCheck', {}, step)
@@ -487,6 +487,14 @@ export const runAgentTurn = async ({
     if (errors.length > 0 && check?.canFix && check?.repairMessage) {
       return {
         pendingInject: check.repairMessage,
+        done: false,
+        stepKind: 'completed'
+      }
+    }
+    // 结构校验通过但本 turn 改过工作流却没成功 finish：说明模型提前收尾，续跑而不是结束
+    if (check?.needsFinish && check?.canFix && check?.continueMessage) {
+      return {
+        pendingInject: check.continueMessage,
         done: false,
         stepKind: 'completed'
       }
