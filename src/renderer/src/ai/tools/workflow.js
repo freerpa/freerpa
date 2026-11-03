@@ -15,7 +15,8 @@ import { autoLayout, autoConnect, getInitNodeData, ConnectionRules, isParamRefer
 import { useFlowStore } from '@/workflow/store'
 import { buildNodeMeta } from './schema.js'
 import { limitText, maskSensitive } from './guard.js'
-import { quickValidateWorkflow } from '@/workflow/engine/validate'
+import { quickValidateWorkflow, validateWorkflow } from '@/workflow/engine/validate'
+import { parseConfigExpression } from '@/workflow/utils/parseConfigExpression'
 import { createWorkflowTools } from './workflowTools.js'
 
 export { createWorkflowTools }
@@ -29,6 +30,42 @@ const flattenConfigFields = (configGroups = []) => {
     }
   }
   return fields
+}
+
+/**
+ * 字段当前是否显示：`show` 条件未满足的字段不参与必填/枚举校验（与画布表单一致）。
+ * 解析复用画布同一套表达式（parseConfigExpression），避免 AI 与 UI 判定不一致。
+ */
+const isFieldVisible = (field, config, fields) => {
+  if (field?.show === undefined) return true
+  if (field.show === false || field.show === 'false') return false
+  try {
+    return !!parseConfigExpression(fields, 'show', String(field.show), config || {})
+  } catch {
+    return true
+  }
+}
+
+/** 是否为参数引用（简写 {{节点.输出}} 或内部完整格式都算） */
+const isReferValue = (value) =>
+  typeof value === 'string' && value.includes('{{') && value.includes('}}')
+
+/** 元素选择器值的结构校验：必须是元素对象（name + selectors[{type, expression}]），或参数引用 */
+const selectorIssue = (value) => {
+  if (typeof value === 'string') {
+    return isReferValue(value) ? '' : '元素选择器必须是元素对象 {name, match_condition, selectors:[...]}'
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return '元素选择器必须是元素对象 {name, match_condition, selectors:[...]}'
+  }
+  if (!String(value.name || '').trim()) return '元素选择器缺少元素名称（name）'
+  if (!Array.isArray(value.selectors) || value.selectors.length === 0) {
+    return '元素选择器缺少定位规则（selectors 至少 1 条）'
+  }
+  const bad = value.selectors.some(
+    (selector) => !selector?.type || !String(selector?.expression || '').trim()
+  )
+  return bad ? '元素选择器的定位规则缺少 type 或 expression' : ''
 }
 
 /** 按字段类型容错转换值（模型可能传任意类型，统一收敛，不抛错） */
@@ -140,12 +177,14 @@ export const createWorkflowExecutors = ({ workflowId }) => {
 
   // AI 改动后附加工作流可执行性检测（同步快速检测，低开销）：
   // 结果结构化为 data.validation（AI 每次工具调用都能看到当前校验状态），
-  // 有问题时再给 warning（与系统提示「warning 请修正后重试」一致）
+  // 有问题时再给 warning（与系统提示「warning 请修正后重试」一致）。
+  // 除结构校验外，把全量必填/枚举/元素选择器问题一起回执，让模型在下一步就能看见并修正。
   const attachValidation = (result) => {
     const { ok, errors } = quickValidateWorkflow(flowStore)
-    result.data = { ...(result.data || {}), validation: { ok, issues: errors.map((e) => e.message) } }
-    if (!ok) {
-      result.warning = `工作流校验未通过：${errors.map((e) => e.message).join('；')}`
+    const issues = [...errors.map((e) => e.message), ...(collectAllConfigIssues?.() || [])]
+    result.data = { ...(result.data || {}), validation: { ok: ok && issues.length === 0, issues } }
+    if (issues.length > 0) {
+      result.warning = `工作流校验未通过：${issues.join('；')}`
     }
     return result
   }
@@ -155,14 +194,19 @@ export const createWorkflowExecutors = ({ workflowId }) => {
   // 保存失败由 saveWorkflow 内部打日志（silent 不弹窗），工具结果不受影响
   const autoSave = () => flowStore.saveWorkflow({ silent: true, force: true })
 
-  /** 节点引用解析：优先节点 ID，否则按节点名称查找（AI 并行创建多个节点时用名称连接，避免依赖事后才返回的 ID） */
-  const resolveNodeRef = (ref) => {
+  /**
+   * 节点引用解析：优先节点 ID，否则按节点名称查找（AI 并行创建多个节点时用名称连接，避免依赖事后才返回的 ID）。
+   * preferLatest：同名节点取最后创建的那个——同一批里连续创建同名节点会被自动加序号，
+   * 后续节点的 connectTo 写的是原始名称，取最新才能连到“刚创建的那个”，而不是更早的同名节点。
+   */
+  const resolveNodeRef = (ref, { preferLatest = false } = {}) => {
     const vf = vueFlowRef.value
     if (!ref || !vf) return undefined
     const byId = vf.getNode(ref)
     if (byId) return byId
     const name = String(ref).trim()
-    return vf.getNodes.find((n) => n.data?.name === name)
+    const matches = vf.getNodes.filter((n) => n.data?.name === name)
+    return preferLatest ? matches[matches.length - 1] : matches[0]
   }
 
   // 自愈：清理画布中两端节点不存在的损坏连线（历史数据遗留，
@@ -186,44 +230,69 @@ export const createWorkflowExecutors = ({ workflowId }) => {
   const nodeFields = (type) => flattenConfigFields(nodes[type]?.config)
 
   /**
-   * 单个节点的配置问题（创建/更新后立即回执）：必填缺失 + 枚举取值非法。
-   * 只检查无条件显示的字段（show 条件未满足的字段不参与），参数引用值跳过枚举校验。
-   * 让模型在当轮就能修正，而不是等到 finish 才被拒绝。
+   * 单个节点的配置问题（创建/更新后立即回执）：必填缺失 + 枚举取值非法 + 元素选择器结构。
+   * `show` 条件按字段当前值动态求值：条件满足的字段才参与校验（与画布表单一致）。
+   * 参数引用值跳过枚举/结构校验。让模型在当轮就能修正，而不是等到 finish 才被拒绝。
    */
   const nodeConfigIssues = (node) => {
     const issues = []
     const groups = nodes[node?.data?.type]?.config || []
+    const config = node?.data?.config || {}
+    // 显隐表达式可能跨分组引用，用全部顶层字段求值
+    const fields = Object.values(flattenConfigFields(groups))
+    const isEmptyValue = (value) =>
+      value === undefined ||
+      value === null ||
+      (typeof value === 'string' && value.trim() === '') ||
+      (Array.isArray(value) && value.length === 0)
+
     for (const group of groups) {
       for (const field of group.fields || []) {
-        if (!field?.id || field.show !== undefined) continue
-        const value = node.data?.config?.[field.id]
-        const isRefer = typeof value === 'string' && value.includes('{{')
-        if (field.required) {
-          const empty = value === undefined || value === null || (typeof value === 'string' && value.trim() === '')
-          if (empty) issues.push(`缺少必填配置「${field.name || field.id}」(字段ID: ${field.id})`)
+        if (!field?.id || !isFieldVisible(field, config, fields)) continue
+        const value = config[field.id]
+        const isRefer = isReferValue(value)
+        if (field.required && isEmptyValue(value)) {
+          issues.push(`缺少必填配置「${field.name || field.id}」(字段ID: ${field.id})`)
+          continue
         }
+        // 元素选择器：必须是元素对象，避免模型塞字符串/空对象后运行时报“未找到元素”
+        if (field.type === 'selector' && !isEmptyValue(value) && !isRefer) {
+          const issue = selectorIssue(value)
+          if (issue) issues.push(`「${field.name || field.id}」${issue}`)
+        }
+        // 数组字段：逐项检查必填子字段（子字段自身的 show 也按该项的值求值）
         if (Array.isArray(value) && Array.isArray(field.fields)) {
+          const subFields = field.fields
           value.forEach((item, index) => {
-            for (const sub of field.fields) {
-              if (!sub?.required || sub.show !== undefined) continue
+            const itemValues = { ...config, ...(item || {}) }
+            for (const sub of subFields) {
+              if (!sub?.id || !sub.required) continue
+              if (!isFieldVisible(sub, itemValues, [...fields, ...subFields])) continue
               const subValue = item?.[sub.id]
-              const subEmpty = subValue === undefined || subValue === null || String(subValue).trim() === ''
-              if (subEmpty) {
+              if (isEmptyValue(subValue)) {
                 issues.push(`「${field.name || field.id}」第 ${index + 1} 项缺少必填的「${sub.name || sub.id}」`)
+              } else if (sub.type === 'selector' && !isReferValue(subValue)) {
+                const subIssue = selectorIssue(subValue)
+                if (subIssue) {
+                  issues.push(`「${field.name || field.id}」第 ${index + 1} 项的「${sub.name || sub.id}」${subIssue}`)
+                }
               }
             }
           })
         }
         if (Array.isArray(field.options) && field.options.length > 0 && !isRefer) {
           const allowed = field.options.map((o) => o?.value ?? o?.label).filter((v) => v !== undefined)
-          const invalid =
-            value !== undefined &&
-            value !== null &&
-            value !== '' &&
-            !allowed.some((option) => String(option) === String(value))
-          if (invalid) {
+          const values = Array.isArray(value) ? value : [value]
+          const invalidValues = values.filter(
+            (item) =>
+              item !== undefined &&
+              item !== null &&
+              item !== '' &&
+              !allowed.some((option) => String(option) === String(item))
+          )
+          if (invalidValues.length > 0) {
             issues.push(
-              `「${field.name || field.id}」取值 ${JSON.stringify(value)} 不在可选范围（${allowed
+              `「${field.name || field.id}」取值 ${JSON.stringify(invalidValues)} 不在可选范围（${allowed
                 .slice(0, 8)
                 .join(' / ')}）`
             )
@@ -234,39 +303,13 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     return issues
   }
 
-  /**
-   * 必填配置项检查（finish 前拦截）：只检查无条件显示的必填字段，
-   * 避免把 `show` 条件未满足的字段误判为缺失；数组字段同时检查每一项的必填子字段。
-   */
-  const collectMissingRequiredConfig = () => {
+  /** finish 前全量配置检查：遍历画布所有节点，返回带节点名的可读问题清单 */
+  const collectAllConfigIssues = () => {
     const vf = vueFlowRef.value
     const issues = []
     for (const node of vf?.getNodes || []) {
-      const groups = nodes[node.data?.type]?.config || []
-      for (const group of groups) {
-        for (const field of group.fields || []) {
-          if (!field?.required || field.show !== undefined) continue
-          const value = node.data?.config?.[field.id]
-          const isEmpty = value === undefined || value === null || value === ''
-          if (isEmpty) {
-            issues.push(`节点【${node.data?.name || node.id}】的必填配置「${field.name || field.id}」未填写`)
-            continue
-          }
-          if (Array.isArray(value) && Array.isArray(field.fields)) {
-            value.forEach((item, index) => {
-              field.fields.forEach((sub) => {
-                if (!sub?.required || sub.show !== undefined) return
-                const subValue = item?.[sub.id]
-                if (subValue === undefined || subValue === null || String(subValue).trim() === '') {
-                  issues.push(
-                    `节点【${node.data?.name || node.id}】的「${field.name || field.id}」第 ${index + 1} 项缺少必填的「${sub.name || sub.id}」`
-                  )
-                }
-              })
-            })
-          }
-        }
-      }
+      const nodeIssues = nodeConfigIssues(node)
+      nodeIssues.forEach((issue) => issues.push(`节点【${node.data?.name || node.id}】${issue}`))
     }
     return issues
   }
@@ -339,9 +382,11 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     initNodeData.name = name
     const ignoredConfig = mergeConfig(initNodeData.config, config, nodeFields(type))
     // connectTo 指定前驱节点时，新节点必须与前驱同级（同一主流程/子流程），
-    // 否则 autoConnect 会生成跨容器非法连线，导致后续 autoLayout/渲染读 null 崩溃
+    // 否则 autoConnect 会生成跨容器非法连线，导致后续 autoLayout/渲染读 null 崩溃。
+    // 同名节点取最新创建的：同一批连续 create 同名节点会被自动加序号，后续 connectTo 写原始名称时应连到最近那个
+    let fromNode = null
     if (connectTo) {
-      const fromNode = resolveNodeRef(connectTo)
+      fromNode = resolveNodeRef(connectTo, { preferLatest: true })
       if (!fromNode) {
         return { ok: false, error: `找不到前驱节点【${connectTo}】（可用节点名称或ID）` }
       }
@@ -394,7 +439,8 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     const dupCount = vf.getNodes.filter(
       (n) => n.parentNode === initNodeData.parentNode && n.data?.name === baseName
     ).length
-    if (dupCount > 0) initNodeData.name = `${baseName}_${dupCount + 1}`
+    const nameAdjusted = dupCount > 0
+    if (nameAdjusted) initNodeData.name = `${baseName}_${dupCount + 1}`
     // 直接经 Vue Flow 实例创建节点（不依赖 FlowCanvas 组件 ref——
     // AI 面板可能先于画布挂载，组件 ref 快照可能为 null 导致 flowRef.value 报错）
     const newNode = {
@@ -503,21 +549,37 @@ export const createWorkflowExecutors = ({ workflowId }) => {
       }, 10)
     }
     // 规则化连接：connectTo 指定前驱节点，端口由 autoConnect 按类型规则自动计算
-    if (connectTo) {
-      const fromNode = resolveNodeRef(connectTo)
-      if (fromNode) {
-        await nextTick()
-        autoConnect(vf, createConnection, fromNode, newNode, handleId || 'next')
-      }
+    if (fromNode) {
+      await nextTick()
+      autoConnect(vf, createConnection, fromNode, newNode, handleId || 'next')
     }
     // 等 Vue Flow 渲染新节点（计算 dimensions/handles）后再布局，
     // 否则 autoLayout 遍历到未渲染节点可能读 null/undefined 崩溃
     await nextTick()
     autoLayout(vf)
+    // 连接结果回执：autoConnect 在端口不匹配时会静默跳过，必须显式告诉模型“这条线没连上”
+    const flowConnected = !!fromNode && vf.getEdges.some(
+      (edge) => edge.source === fromNode.id && edge.target === newNode.id && edge.targetHandle === 'prev'
+    )
     const result = attachValidation({
       ok: true,
-      data: { id: newNode.id, name: initNodeData.name, type, status: 'created' }
+      data: {
+        id: newNode.id,
+        name: initNodeData.name,
+        type,
+        status: 'created',
+        connected: flowConnected
+      }
     })
+    if (!connectTo) {
+      result.warning = `节点【${initNodeData.name}】创建时未指定 connectTo，当前处于未连接状态。请用 connect(source=前驱, target="${initNodeData.name}") 补连线，否则流程无法运行。`
+    } else if (!flowConnected) {
+      result.warning = `节点【${initNodeData.name}】与【${fromNode?.data?.name || connectTo}】的流程连线未建立（端口类型不匹配或对端无对应输入）。请检查 getNodeConfig 的输入输出后改用 connect 补连。`
+    }
+    if (nameAdjusted) {
+      const message = `节点名称「${baseName}」已存在，当前节点最终名称为「${initNodeData.name}」，后续连接/更新请使用最终名称。`
+      result.warning = result.warning ? `${result.warning}；${message}` : message
+    }
     // 配置字段纠正回执：模型填错字段 ID 时不再静默丢弃，而是明确告诉它正确做法
     if (ignoredConfig.length > 0) {
       result.data.ignoredConfig = ignoredConfig
@@ -542,7 +604,7 @@ export const createWorkflowExecutors = ({ workflowId }) => {
     return result
   }
 
-  executors.connect = async ({ source, target }) => {
+  executors.connect = async ({ source, target, handleId = 'next', sourceHandle, targetHandle } = {}) => {
     if (!source || !target) throw new Error('source 与 target 必填')
     const sourceNode = resolveNodeRef(source)
     const targetNode = resolveNodeRef(target)
@@ -554,23 +616,41 @@ export const createWorkflowExecutors = ({ workflowId }) => {
         `节点不存在：${!sourceNode ? source : target}（节点可用名称或ID；当前画布节点：${current}）`
       )
     }
-    // 规则化连线：端口按节点 outputs/inputs 类型匹配自动计算（与画布拖拽一致）。
-    // 预检流程线合法性：source/target 必须同一流程（跨容器连线非法，直接给可读错误，避免生成坏边后崩溃）
-    // ⚠ 必须用解析后的节点 ID 而非模型传入的原始字符串：validateConnection 内部按 el.id 查找节点，
-    // 模型传名称时（resolveNodeRef 已确认存在）会被当成 ID 找不到 → 误报「父容器不同/没有前置输入」
-    const mainEdge = { source: sourceNode.id, target: targetNode.id, sourceHandle: 'next', targetHandle: 'prev' }
-    if (!validateConnection(mainEdge)) {
+    const vf = vueFlowRef.value
+    if (!vf) throw new Error('画布尚未就绪，请稍等片刻再试')
+    // 显式指定端口时按“数据连线”处理（如 page/data 端口）；否则按流程主线连接，
+    // handleId 支持 workflowIf 的 next-false 分支。端口预检用解析后的节点 ID（模型传的名称会被当成 ID 查不到）。
+    const connection = sourceHandle && targetHandle
+      ? { source: sourceNode.id, target: targetNode.id, sourceHandle, targetHandle }
+      : { source: sourceNode.id, target: targetNode.id, sourceHandle: handleId || 'next', targetHandle: 'prev' }
+    if (!validateConnection(connection)) {
       const sn = sourceNode.data?.name || source
       const tn = targetNode.data?.name || target
       throw new Error(
-        `无法连接「${sn}」与「${tn}」：两者不在同一流程（父容器不同）或「${tn}」没有前置输入。请确认两节点同在主流程或同一子流程内（如需在子流程内添加节点，请用 addNode 的 connectTo）`
+        `无法连接「${sn}」与「${tn}」（${connection.sourceHandle} → ${connection.targetHandle}）：两者不在同一流程、端口不存在/类型不匹配，或该连线已存在。` +
+        '流程主线用 handleId=next/next-false；数据端口请按 getNodeConfig 的 inputs/outputs id 传 sourceHandle/targetHandle。'
       )
     }
     await nextTick()
-    autoConnect(vueFlowRef.value, createConnection, sourceNode, targetNode, 'next')
-    autoLayout(vueFlowRef.value)
+    if (!sourceHandle) {
+      // 流程主线：autoConnect 会同时补齐可由类型推断的数据端口（如 page 输入）
+      autoConnect(vf, createConnection, sourceNode, targetNode, handleId || 'next')
+    } else {
+      vf.addEdges([createConnection(connection)])
+    }
+    autoLayout(vf)
     await autoSave()
-    return attachValidation({ ok: true, data: { status: 'connected' } })
+    const connected = vf.getEdges.some(
+      (edge) =>
+        edge.source === sourceNode.id &&
+        edge.target === targetNode.id &&
+        edge.sourceHandle === connection.sourceHandle &&
+        edge.targetHandle === connection.targetHandle
+    )
+    return attachValidation({
+      ok: true,
+      data: { status: connected ? 'connected' : 'unchanged', ...connection }
+    })
   }
 
   executors.updateNode = async ({ nodeId, name, config } = {}) => {
@@ -658,14 +738,30 @@ export const createWorkflowExecutors = ({ workflowId }) => {
   }
 
   executors.finish = async () => {
-    // 完成前强制检测：工作流未通过运行检查时拒绝 finish，返回修复清单让模型修复后再完成
-    const { ok, errors } = quickValidateWorkflow(flowStore)
-    const configIssues = collectMissingRequiredConfig()
-    if (!ok || configIssues.length > 0) {
-      const issues = [...errors.map((e) => e.message), ...configIssues]
+    // 完成前强制检测：结构校验 + 全量必填/枚举/元素选择器检查 + 节点表单深度校验。
+    // 任一未通过都拒绝 finish，把修复清单回给模型，避免“看起来建完了但跑不起来”。
+    const quick = quickValidateWorkflow(flowStore)
+    const configIssues = collectAllConfigIssues()
+    let deepErrors = []
+    try {
+      const deep = await validateWorkflow(flowStore, { deep: true })
+      deepErrors = (deep?.errors || [])
+        .filter((error) => error.code === 'config-invalid')
+        .map((error) => error.message)
+    } catch (error) {
+      console.warn('finish 深度校验失败（忽略节点表单校验）:', error)
+    }
+    const issues = [
+      ...(quick.ok ? [] : quick.errors.map((e) => e.message)),
+      ...configIssues,
+      ...deepErrors
+    ]
+    // 去重（节点表单校验与全量配置检查可能报同一问题）
+    const uniqueIssues = [...new Set(issues)]
+    if (!quick.ok || uniqueIssues.length > 0) {
       return {
         ok: false,
-        error: `工作流尚未通过运行检查，请先修复以下问题再调用 finish：\n${issues
+        error: `工作流尚未通过运行检查，请先修复以下问题再调用 finish：\n${uniqueIssues
           .map((message) => `- ${message}`)
           .join('\n')}`
       }

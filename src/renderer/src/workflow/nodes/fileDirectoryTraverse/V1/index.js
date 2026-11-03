@@ -17,6 +17,7 @@ export default {
           id: 'directoryPath',
           name: '目录路径',
           type: 'path',
+          pathType: 'folder',
           description: '要读取的目录路径',
           required: true,
           quickConfig: true

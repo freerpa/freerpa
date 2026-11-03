@@ -265,6 +265,12 @@ body {
 
 /* ────────────────────────────── 按钮 ────────────────────────────── */
 .arco-btn {
+  /* 主题(@arco-themes/vue-xavier)把按钮重置成了 inline-block，导致图标/文字
+     失去 flex 居中、退化为基线对齐（Windows 字体度量下图标明显偏上/偏下）。
+     这里恢复 Arco 原生的 inline-flex 居中，是图标居中的全局根因修复 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: var(--mac-control-h);
   padding: 0 14px;
   border-radius: var(--mac-radius-sm);

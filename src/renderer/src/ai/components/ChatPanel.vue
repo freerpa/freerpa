@@ -42,13 +42,33 @@
           />
         </div>
       </template>
-      <!-- 空状态：AI 欢迎消息 -->
+      <!-- 空状态：AI 欢迎卡片 -->
       <div v-else class="message-item message-item--welcome">
-        <div class="assistant-block">
-          <div class="welcome-text">
-            <p>你好，我已连接工作流引擎，可以帮你设计、编辑和运行自动化工作流。</p>
-            <p>请描述你的自动化需求，我会通过思考、调用工具逐步为你生成可执行的工作流配置。</p>
+        <div class="welcome-card">
+          <div class="welcome-card__head">
+            <div class="welcome-card__badge">
+              <RiSparklingLine />
+            </div>
+            <div class="welcome-card__heading">
+              <div class="welcome-card__title">你好，我是智能编排助手</div>
+              <div class="welcome-card__subtitle">已连接工作流引擎，可以帮你设计、编辑和运行自动化工作流</div>
+            </div>
           </div>
+          <div class="welcome-card__abilities">
+            <div class="welcome-card__ability">
+              <span class="welcome-card__ability-icon"><RiFlowChart /></span>
+              <span><strong>设计工作流</strong> · 自然语言描述需求，自动搭建节点与连线</span>
+            </div>
+            <div class="welcome-card__ability">
+              <span class="welcome-card__ability-icon"><RiSettings3Line /></span>
+              <span><strong>调整配置</strong> · 修改节点参数、字段与流程结构</span>
+            </div>
+            <div class="welcome-card__ability">
+              <span class="welcome-card__ability-icon"><RiPlayLine /></span>
+              <span><strong>运行调试</strong> · 执行工作流并逐步定位问题</span>
+            </div>
+          </div>
+          <div class="welcome-card__hint">在下方输入你的需求即可开始，例如：「打开浏览器，抓取商品价格并保存到表格」</div>
         </div>
       </div>
     </div>
@@ -72,6 +92,7 @@
   import Sender from './Sender.vue';
   import ChatHeader from './ChatHeader.vue';
   import RoundNav from './RoundNav.vue';
+  import { RiSparklingLine, RiFlowChart, RiSettings3Line, RiPlayLine } from '@remixicon/vue';
   import { buildRoundGroups } from '../turnModel';
   import { useFlowStore } from '@/workflow/store';
   import { useAiChat } from '../composables/useAiChat';
@@ -298,22 +319,98 @@
     }
   }
 
-  // 空状态欢迎消息（与助手正文一致的纯文本排版，无气泡底色）
+  // 空状态欢迎卡片（白底卡片与助手气泡同风格，能力要点用浅灰分组承载）
   .message-item--welcome {
     display: flex;
-    .assistant-block {
+    .welcome-card {
       flex: 1;
-      max-width: 100%;
-    }
-    .welcome-text {
-      font-size: 13.5px;
-      line-height: 1.7;
-      color: var(--mac-text);
-      p {
-        margin: 0;
+      min-width: 0;
+      padding: 16px 16px 14px;
+      border: var(--mac-hairline) solid rgba(0, 0, 0, 0.08);
+      border-radius: var(--mac-radius-lg);
+      background: #fff;
+      box-shadow: var(--mac-shadow-1);
+
+      &__head {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
       }
-      p + p {
-        margin-top: 8px;
+      &__badge {
+        flex-shrink: 0;
+        width: 34px;
+        height: 34px;
+        font-size: 17px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--mac-radius-md);
+        color: #fff;
+        background: linear-gradient(180deg, var(--mac-accent-hover), var(--mac-accent));
+        box-shadow:
+          0 4px 10px rgba(0, 0, 0, 0.18),
+          inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      }
+      &__heading {
+        min-width: 0;
+        padding-top: 1px;
+      }
+      &__title {
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.4;
+        color: var(--mac-text);
+      }
+      &__subtitle {
+        margin-top: 2px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--mac-text-3);
+      }
+
+      &__abilities {
+        margin-top: 12px;
+        padding: 9px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        border-radius: var(--mac-radius-sm);
+        background: rgba(120, 120, 128, 0.06);
+      }
+      &__ability {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: var(--mac-text-2);
+        strong {
+          font-weight: 600;
+          color: var(--mac-text);
+        }
+      }
+      &__ability-icon {
+        flex-shrink: 0;
+        width: 18px;
+        height: 18px;
+        margin-top: 2px;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--mac-radius-xs);
+        background: #fff;
+        color: var(--mac-text);
+        box-shadow: var(--mac-shadow-1);
+      }
+
+      &__hint {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: var(--mac-hairline) solid var(--mac-separator);
+        font-size: 12px;
+        line-height: 1.55;
+        color: var(--mac-text-3);
       }
     }
   }

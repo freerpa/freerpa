@@ -6,7 +6,7 @@
 export const MAX_LOOP_GUARD_FAILURES = 2 // 同一工具同一参数连续失败次数 → 阻断循环
 export const STALL_ROUNDS = 3 // 连续失败/无进展轮数上限 → 提示输出结论并结束
 export const MAX_TOOL_ROUNDS = 128 // turn 内 step 上限
-export const MAX_FINAL_FIX_ROUNDS = 5 // 工作流校验最终兜底修正轮数
+export const MAX_FINAL_FIX_ROUNDS = 12 // 工作流校验最终兜底修正轮数（复杂流程需要多轮补连线/补配置）
 
 export const LOOP_GUARD_MSG =
   'blocked: [loop guard] 同一工具调用已连续失败，请停止重试并修正参数或改用其他方式，然后直接输出阶段性结论或询问用户'

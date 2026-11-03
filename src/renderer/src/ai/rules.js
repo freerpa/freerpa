@@ -46,6 +46,11 @@ export const HARD_RULES = [
 
 /** 工作流操作规则（工具使用方式，与工具定义对应） */
 export const OPERATION_RULES = [
+  '【完成契约】只要你在本轮创建/修改了工作流（addNode/connect/updateNode/deleteNode/deleteEdge），就必须在全部需求实现且 finish 校验通过后，显式调用 finish 结束；' +
+    '不允许只输出一段文字就停下（系统会判定“任务尚未完成”并自动要求你继续，浪费轮次）。' +
+    '收到“任务尚未完成”提示时，继续推进剩余步骤，不要把它当成用户让我暂停；只有确实缺少关键信息时才向用户提问并结束。',
+  '【节点命名唯一】创建节点时直接用业务化的唯一名称（如「点击登录」「填写用户名」「读取订单」），不要连续创建同名节点；' +
+    '若回执提示名称已被改为「名称_2」，后续 connectTo/connect/updateNode 必须使用回执里的最终名称，否则会连错节点。',
   '【先确认再动手】用户描述含糊或存在关键歧义（目标网站/系统、要填写的字段、判断条件、触发方式、数据来源）时，不要自行臆测实现，' +
     '先用不超过 3 个关键问题向用户确认，等回答后再搭建；需求清晰时，先用一句话复述你理解的目标与步骤，再在同一轮发起工具调用。' +
     '用户明确说“我自己填/我来配置/让用户输入”的条目，一律做成节点配置项（config），不要做成输入项；用户说“从上一个节点拿/传过来”的才用连线输入。',
@@ -55,13 +60,16 @@ export const OPERATION_RULES = [
     '需要补充能力时先说明理由并询问，而不是直接加进流程。复用已有工作流/数据表/浏览器/元素集优先于新建。',
   '创建节点用 addNode（type 从节点类型目录中选），除流程首个业务节点外必须用 connectTo 指定前驱（节点名称或ID均可，推荐用名称，如「开始流程」），工具会自动按端口类型规则连线；' +
     'addNode 回执中的 name 是最终名称（同名会自动追加序号），后续连接/更新优先使用回执里的 id 或最终 name，避免连到旧的重名节点。' +
-    '连接两个已有节点用 connect（source=前驱节点名称或ID，target=目标节点名称或ID）。' +
+    '连接两个已有节点用 connect（source=前驱节点名称或ID，target=目标节点名称或ID）；判断节点的“否”分支用 connect 的 handleId=next-false，' +
+    '显式连数据端口时传 sourceHandle+targetHandle（取值见 getNodeConfig 的 outputs/inputs id）。' +
     '创建一串串行节点时（可并行多个 addNode），每个新节点 connectTo 前一个节点的名称，保证从开始到结束成链；' +
     '若收到“未连接/必填输入未连接”提示，立即用 connect 补连或重新用 addNode 指定 connectTo，不要忽略。',
   '批量创建要一次并行：规划好完整流程后，在**一次回复中同时发起多个 addNode 工具调用**（每个新节点用 connectTo 写前驱节点名称成链，可一次建完一条链），需要的数据输入随后一次性用 connect 补齐；不要一个一个串行创建，那样会浪费大量轮次与 token。',
   '填写节点配置前，先调用 getNodeConfig 查询该类型的配置说明（默认返回精简概览，传 detail=true 获取完整字段说明），再按字段填 addNode/updateNode 的 config；' +
     '节点目录中已列出 required 配置字段时可直接照填。若 addNode/updateNode 回执出现 ignoredConfig（字段不存在被忽略）或 warning，必须先用 getNodeConfig 核对字段ID并修正，不要重复提交同样的错误字段。',
-  '修改节点配置/名称用 updateNode；删除节点用 deleteNode（危险操作会弹确认框）；删除连线用 deleteEdge。nodeId 参数既支持节点ID也支持节点名称。',
+  '修改节点配置/名称用 updateNode；删除节点用 deleteNode（危险操作会弹确认框）；删除连线用 deleteEdge。nodeId 参数既支持节点ID也支持节点名称。' +
+    '配置有效性以 finish 校验为准：带显示条件的必填字段只要在当前模式下显示就必须填写（如键盘操作默认“输入文本”模式下的“目标元素”）；' +
+    '元素选择器字段必须是元素对象 {name, match_condition, selectors:[{type, expression}]}，不能填字符串或空对象。',
   '创建数据表/浏览器/元素集等资源前先查询是否已存在可复用的（listTables/listBrowsers/listElementSets），避免重复创建；' +
     '浏览器类节点的 envId 必须来自 listBrowsers 或 createBrowser 的返回值；' +
     '枚举选项（如表 ID、浏览器 ID）以查询返回值为准，不要臆造。',

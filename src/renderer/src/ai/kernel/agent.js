@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { AI_EVENT, toPlain } from './events.js'
 import { prepareRequestMessages, friendlyAIError } from './policies/contextBudget'
 import { createLoopGuard } from './policies/loopGuard'
+import { CONTINUE_MESSAGE } from './policies/workflowGuard'
 
 const abortError = () => {
   const error = new Error('aborted')
@@ -87,23 +88,41 @@ export const createAgent = ({
       return toolsPipeline.execute(calls, {
         ...meta,
         signal: controller?.signal,
-        guard
+        guard,
+        workflowGuard
       })
     }
     if (method === 'workflowCheck') {
       const errors = workflowGuard.inspect()
+      // 1. 结构/参数校验未通过：注入修复清单，继续本轮
       if (Array.isArray(errors) && errors.length > 0 && workflowGuard.canFix()) {
         workflowGuard.consumeFix()
         return {
           errors: errors.map((error) => error.message),
           canFix: true,
-          repairMessage: workflowGuard.buildRepairMessage(errors)
+          repairMessage: workflowGuard.buildRepairMessage(errors),
+          needsFinish: false
         }
+      }
+      // 2. 结构通过但本 turn 有变更却没成功 finish：模型只是提前收尾，强制续跑
+      if (workflowGuard.needsFinish()) {
+        if (workflowGuard.canFix()) {
+          workflowGuard.consumeFix()
+          return {
+            errors: [],
+            canFix: true,
+            repairMessage: '',
+            needsFinish: true,
+            continueMessage: CONTINUE_MESSAGE
+          }
+        }
+        return { errors: [], canFix: false, repairMessage: '', needsFinish: true, continueMessage: '' }
       }
       return {
         errors: Array.isArray(errors) ? errors.map((error) => error.message) : [],
         canFix: false,
-        repairMessage: ''
+        repairMessage: '',
+        needsFinish: false
       }
     }
     throw new Error(`未知 host 方法: ${method}`)

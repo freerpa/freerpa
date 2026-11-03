@@ -89,6 +89,7 @@ export const createPromptContext = ({ workflowId, flowStore }) => {
       '3. 业务节点必须用 connectTo 连成「开始流程 → … → 结束流程」的完整链路。',
       '4. 引用上游输出只能整体写 {{节点名称.输出名称}}，禁止取内部字段/索引/计算。',
       '5. 只实现用户要求的内容，不额外添加节点或资源；字段不确定时先 getNodeConfig 核对，不照抄示例里的值。',
+      '6. 一轮内改过工作流就必须推进到全部完成并成功调用 finish 才算结束：不要建了一半就输出总结停下，也不要等用户说“继续”。finish 返回未通过时按清单继续修复，直到通过。',
       '可用节点类型目录（JSON，精简）：',
       JSON.stringify(nodeCatalog),
       '常见需求 → 节点选择（先按此定位，选定后再 getNodeConfig 核对字段；目录里有更贴切的可替换）：',

@@ -8,23 +8,26 @@
       </template>
       <template #suffix>
         <a-button class="select-btn" @click="handleSelect">
-          <icon-folder />
+          <icon-file v-if="isFileType" />
+          <icon-folder v-else />
         </a-button>
       </template>
     </a-input-tag>
     <refInput v-else v-model="modelValue" :field="field">
       <template #suffix>
         <a-button class="select-btn" @click="handleSelect">
-          <icon-folder />
+          <icon-file v-if="isFileType" />
+          <icon-folder v-else />
         </a-button>
       </template>
     </refInput>
 
-    <!-- 自定义 Windows 风格目录选择器（仅可选定文件夹，未授权目录可在面板快速授权；文件路径字段同样复用） -->
+    <!-- 自定义 Windows 风格文件选择器（按 pathType 限定文件/文件夹，未授权目录可在面板快速授权） -->
     <directoryPicker
       :visible="pickerVisible"
       :model-value="modelValue"
       :multiple="field.multiple"
+      :path-type="field.pathType"
       @update:visible="pickerVisible = $event"
       @select="onPick"
     />
@@ -32,9 +35,9 @@
 </template>
 
 <script setup>
-import { watch, ref } from 'vue'
+import { watch, ref, computed } from 'vue'
 import refInput from './Text.vue'
-import { IconFolder } from '@arco-design/web-vue/es/icon'
+import { IconFolder, IconFile } from '@arco-design/web-vue/es/icon'
 import directoryPicker from './DirectoryPicker.vue'
 // 定义属性
 const props = defineProps({
@@ -50,8 +53,10 @@ const modelValue = defineModel({
 })
 
 const pickerVisible = ref(false)
+// 文件路径字段用文件图标，其余（文件夹/目录）用文件夹图标
+const isFileType = computed(() => props.field.pathType === 'file')
 
-// 处理选择路径：统一使用自定义目录选择器（仅可选定已授权文件夹，未授权可快速授权）
+// 处理选择路径：统一使用自定义文件选择器（按 pathType 限定文件/文件夹，未授权可快速授权）
 const handleSelect = () => {
   pickerVisible.value = true
 }

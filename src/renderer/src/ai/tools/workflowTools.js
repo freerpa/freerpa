@@ -66,15 +66,33 @@ export const createWorkflowTools = () => [
       additionalProperties: false,
     }
   ),
-  defineTool('connect', '连接两个已有节点（按节点端口类型规则自动连线，无需指定端口）。', {
-    type: 'object',
-    properties: {
-      source: { type: 'string', description: '源节点（输出方）：名称或ID均可' },
-      target: { type: 'string', description: '目标节点（输入方）：名称或ID均可' },
-    },
-    required: ['source', 'target'],
-    additionalProperties: false,
-  }),
+  defineTool(
+    'connect',
+    '连接两个已有节点。默认按流程主线连接并自动补齐可由类型推断的数据端口；handleId 可指定判断节点的 next / next-false 分支；需要显式连某个数据端口时传 sourceHandle + targetHandle（取值见 getNodeConfig 的 outputs/inputs id）。',
+    {
+      type: 'object',
+      properties: {
+        source: { type: 'string', description: '源节点（输出方）：名称或ID均可' },
+        target: { type: 'string', description: '目标节点（输入方）：名称或ID均可' },
+        handleId: {
+          type: 'string',
+          enum: ['next', 'next-false'],
+          description: '流程主线分支：next（默认）/ next-false（判断节点条件不满足的分支）',
+          default: 'next',
+        },
+        sourceHandle: {
+          type: 'string',
+          description: '数据连线时源节点的输出端口 id（可选，传了就按数据端口连接）',
+        },
+        targetHandle: {
+          type: 'string',
+          description: '数据连线时目标节点的输入端口 id（可选，需与 sourceHandle 同时传）',
+        },
+      },
+      required: ['source', 'target'],
+      additionalProperties: false,
+    }
+  ),
   defineTool(
     'updateNode',
     '更新已有节点的配置（config）或名称（name）。config 只放人工配置项字段；需要用户交互配置的内容写到配置项，不要写入输入项（inputs/params 等仅用于连线注入的数据声明）。',
